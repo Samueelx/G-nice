@@ -31,7 +31,7 @@ const EmailValidationSection: React.FC<EmailValidationSectionProps> = ({
         type="text"
         value={code}
         onChange={handleInputChange}
-        className="input input-bordered w-full max-w-xs mb-4"
+        className="input input-bordered w-full max-w-xs mb-4 bg-white text-black"
       />
       <div className="flex justify-between">
         <button

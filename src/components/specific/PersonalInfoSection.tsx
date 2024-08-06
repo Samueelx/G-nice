@@ -29,7 +29,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             name="name"
             value={formData.name}
             onChange={handleInputChange}
-            className="input input-bordered w-full max-w-xs"
+            className="input input-bordered w-full max-w-xs bg-white text-black"
           />
         </div>
         <div className="mb-4">
@@ -39,7 +39,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            className="input input-bordered w-full max-w-xs"
+            className="input input-bordered w-full max-w-xs bg-white text-black"
           />
         </div>
         <div className="mb-4">
@@ -49,7 +49,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             name="dateOfBirth"
             value={formData.dateOfBirth}
             onChange={handleInputChange}
-            className="input input-bordered w-full max-w-xs"
+            className="input input-bordered w-full max-w-xs bg-white text-black"
           />
         </div>
         <button
