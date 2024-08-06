@@ -5,14 +5,15 @@ interface CircularImageProps {
   src: string;
   size: string;
   style: React.CSSProperties;
+  mobileSize: string;
 }
 
-const CircularImage: React.FC<CircularImageProps> = ({ src, size, style }) => {
+const CircularImage: React.FC<CircularImageProps> = ({src, size, style, mobileSize}) => {
   return (
-    <div className={`rounded-full overflow-hidden ${size}`} style={style}>
-      <img src={src} alt="User" className="object-cover w-full h-full" />
+    <div className={`${mobileSize} md:${size} rounded-full overflow-hidden flex items-center justify-center`} style={style}>
+      <img src={src} alt="circular" className='w-full h-full object-cover'/>
     </div>
   );
-};
+}
 
 export default CircularImage;
