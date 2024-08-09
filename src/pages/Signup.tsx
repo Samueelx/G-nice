@@ -5,7 +5,8 @@ import EmailValidationSection from '../components/specific/EmailValidationSectio
 const Signup: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     dateOfBirth: '',
   });
