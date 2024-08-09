@@ -42,7 +42,7 @@ const AccountDetailsSection: React.FC<AccountDetailsSectionProps> = ({
   };
 
   return (
-    <div className="w-full p-8 bg-white rounded-lg shadow-md md:max-w-md mx-auto my-16 flex flex-col justify-center h-screen">
+    <div className="w-full md:max-w-full p-8 bg-white rounded-lg shadow-md md:w-2/5 md:mx-auto md:my-16 h-screen md:h-full flex flex-col justify-center">
       <h2 className="text-2xl font-bold mb-4">Create Account</h2>
       <form className="space-y-4">
         <div>
