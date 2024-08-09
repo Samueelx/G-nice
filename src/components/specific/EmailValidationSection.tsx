@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import NextButton from '../common/NextButton';
 
 interface EmailValidationSectionProps {
   handleEmailValidation: (isValid: boolean) => void;
@@ -58,13 +59,15 @@ const EmailValidationSection: React.FC<EmailValidationSectionProps> = ({
         >
           Back
         </button>
-        <button
+        {/* <button
           type="button"
           onClick={validateEmail}
           className="py-3 px-6 bg-[#6A00F4] text-white rounded-full"
         >
           Validate
-        </button>
+        </button> */}
+        <NextButton onClick={validateEmail}/>
+
       </div>
     </div>
   );

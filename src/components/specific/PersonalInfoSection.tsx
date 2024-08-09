@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ArrowRightIcon } from "@heroicons/react/24/solid";
 
 interface PersonalInfoSectionProps {
   formData: {
@@ -131,10 +132,12 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         <button
           type="button"
           onClick={validate}
-          className="w-full py-4 px-4 bg-[#6A00F4] text-white hover:bg-blue-700 rounded-full"
+          className={`w-full flex items-center justify-center py-4 px-4 bg-[#6A00F4] text-white hover:bg-blue-700 rounded-full`}
         >
           Next
+          <ArrowRightIcon className="w-6 h-6 ml-2"/>
         </button>
+        {/* <NextButton onClick={validate}/> */}
       </form>
     </div>
   );
