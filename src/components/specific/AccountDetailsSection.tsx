@@ -23,16 +23,27 @@ const AccountDetailsSection: React.FC<AccountDetailsSectionProps> = ({
     password: '',
   });
 
-  const validate = () => {
-    const newErrors = {
-      username: formData.username.trim() === '' ? 'Username is required' : '',
-      phoneNumber: formData.phoneNumber.trim() === '' ? 'Phone number is required' : '',
-      password: formData.password.length < 6 ? 'Password must be at least 6 characters' : '',
-    };
+  const validate = (): boolean => {
+    let valid: boolean = true;
+    const newErrors = {username: '', phoneNumber: '', password: ''};
+    /**Username validation */
+    if(formData.username.length < 3){
+        newErrors.username = "Username must contain at least 3 characters."
+        valid = false;
+    }
+    /**Phone number validation */
+    if(!/^\d+$/.test(formData.phoneNumber)){
+        newErrors.phoneNumber = 'Phone number must contain only numbers.';
+        valid = false;
+    }
 
+    /**Password validation */
+    if(formData.password.length < 8){
+        newErrors.password = "Password must be at least 8 characters long.";
+        valid = false;
+    }
     setErrors(newErrors);
-
-    return !Object.values(newErrors).some((error) => error !== '');
+    return valid
   };
 
   const handleFormSubmit = () => {
@@ -60,9 +71,10 @@ const AccountDetailsSection: React.FC<AccountDetailsSectionProps> = ({
           <label className="block text-gray-700">Phone Number</label>
           <input
             type="tel"
-            name="phone"
+            name="phoneNumber"
             value={formData.phoneNumber}
             onChange={handleInputChange}
+            pattern="[0-9]{10}"
             className="input input-bordered w-full max-w-xs bg-white text-black"
           />
           {errors.phoneNumber && <p className="text-red-500 text-sm">{errors.phoneNumber}</p>}
