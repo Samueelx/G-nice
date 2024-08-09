@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import BackButton from '../common/BackButton';
+import { ArrowRightEndOnRectangleIcon } from '@heroicons/react/24/solid';
 
 interface AccountDetailsSectionProps {
   formData: {
@@ -91,19 +93,21 @@ const AccountDetailsSection: React.FC<AccountDetailsSectionProps> = ({
           {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
         </div>
         <div className="flex justify-between mt-4">
-          <button
+          {/* <button
             type="button"
             onClick={prevStep}
             className="py-3 px-6 bg-gray-500 text-white rounded-full hover:bg-gray-700"
           >
             Back
-          </button>
+          </button> */}
+          <BackButton onClick={prevStep}/>
           <button
             type="button"
             onClick={handleFormSubmit}
-            className="py-3 px-6 bg-[#6A00F4] text-white rounded-full hover:bg-[#4e00b3]"
+            className=" flex items-center py-3 px-6 bg-[#6A00F4] text-white rounded-full hover:bg-[#4e00b3]"
           >
             Sign Up
+            <ArrowRightEndOnRectangleIcon className='size-6 inline ml-2'/>
           </button>
         </div>
       </form>

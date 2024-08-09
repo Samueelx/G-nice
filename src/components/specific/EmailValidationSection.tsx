@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import NextButton from '../common/NextButton';
+import BackButton from '../common/BackButton';
 
 interface EmailValidationSectionProps {
   handleEmailValidation: (isValid: boolean) => void;
@@ -52,13 +53,14 @@ const EmailValidationSection: React.FC<EmailValidationSectionProps> = ({
       />
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <div className="flex justify-between">
-        <button
+        {/* <button
           type="button"
           onClick={prevStep}
           className="py-3 px-6 bg-gray-500 text-white rounded-full hover:bg-gray-700"
         >
           Back
-        </button>
+        </button> */}
+        <BackButton onClick={prevStep}/>
         {/* <button
           type="button"
           onClick={validateEmail}
