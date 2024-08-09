@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PersonalInfoSection from '../components/specific/PersonalInfoSection';
 import EmailValidationSection from '../components/specific/EmailValidationSection';
+import AccountDetailsSection from '../components/specific/AccountDetailsSection';
 
 const Signup: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -9,6 +10,9 @@ const Signup: React.FC = () => {
     lastName: '',
     email: '',
     dateOfBirth: '',
+    username: '',
+    phoneNumber: '',
+    password: ''
   });
 
   const nextStep = () => setCurrentStep(currentStep + 1);
@@ -30,6 +34,11 @@ const Signup: React.FC = () => {
     }
   };
 
+  const createAccount = () => {
+    // Logic to create account with formData
+    console.log('Account created with:', formData);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#E500A4]">
       {currentStep === 1 && (
@@ -41,8 +50,15 @@ const Signup: React.FC = () => {
       )}
       {currentStep === 2 && (
         <EmailValidationSection
-          email={formData.email}
           handleEmailValidation={handleEmailValidation}
+          prevStep={prevStep}
+        />
+      )}
+       {currentStep === 3 && (
+        <AccountDetailsSection
+          formData={formData}
+          handleInputChange={handleInputChange}
+          handleSignup={createAccount}
           prevStep={prevStep}
         />
       )}
