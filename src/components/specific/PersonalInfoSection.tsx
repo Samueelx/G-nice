@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ArrowRightIcon } from "@heroicons/react/24/solid";
+import InputField from "../common/InputField";
 
 interface PersonalInfoSectionProps {
   formData: {
@@ -64,64 +65,37 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
 
   return (
     <div className="w-full md:max-w-full p-8 bg-white rounded-lg shadow-md md:w-2/5 md:mx-auto md:my-16 h-screen md:h-full flex flex-col justify-center">
-      <div className="mb-6 text-center mx-auto">
+      <div className="mb-8 text-center mx-auto">
         <h2 className="text-3xl font-bold">Let's Get Started</h2>
         <p className="text-gray-500">Connect with your friends today</p>
       </div>
-      <form className="w-full mx-auto">
-        <div className="mb-4">
-          <label className="block text-gray-700">First Name</label>
-          <input
-            type="text"
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleInputChange}
-            className={`input input-bordered w-full max-w-xs bg-white text-black ${
-              errors.firstName ? "border-red-500" : ""
-            }`}
-          />
+      <form className="w-full flex flex-col gap-4 md:justify-center">
+        <div className="my-4">
+          <InputField onChange={handleInputChange} name="firstName" label="First Name" type="text" value={formData.firstName} errors={errors.firstName}/>
           {errors.firstName && (
             <p className="text-red-500 text-sm">{errors.firstName}</p>
           )}
         </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Last Name</label>
-          <input
-            type="text"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleInputChange}
-            className={`input input-bordered w-full max-w-xs bg-white text-black ${
-              errors.lastName ? "border-red-500" : ""
-            }`}
-          />
+        <div className="my-4">
+          <InputField onChange={handleInputChange} name="lastName" label="Last Name" value={formData.lastName} type="text" errors={errors.lastName}/>
           {errors.lastName && (
             <p className="text-red-500 text-sm">{errors.lastName}</p>
           )}
         </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            className={`input input-bordered w-full max-w-xs bg-white text-black ${
-              errors.email ? "border-red-500" : ""
-            }`}
-          />
+        <div className="my-4">
+          <InputField onChange={handleInputChange} name="email" label="Email" value={formData.email} type="text" errors={errors.email}/>
           {errors.email && (
             <p className="text-red-500 text-sm">{errors.email}</p>
           )}
         </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Date of Birth</label>
+        <div className="my-4">
+          <label className="block text-gray-400">Date of Birth</label>
           <input
             type="date"
             name="dateOfBirth"
             value={formData.dateOfBirth}
             onChange={handleInputChange}
-            className={`input input-bordered w-full max-w-xs bg-white text-black ${
+            className={`block w-full max-w-xs px-0.5 border-0 border-b-2 bg-transparent text-gray-950 focus:outline-none focus:ring-0 peer ${
               errors.dateOfBirth ? "border-red-500" : ""
             }`}
           />
