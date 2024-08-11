@@ -69,7 +69,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         <h2 className="text-3xl font-bold">Let's Get Started</h2>
         <p className="text-gray-500">Connect with your friends today</p>
       </div>
-      <form className="w-full flex flex-col gap-4 md:justify-center">
+      <form className="w-full space-y-12">
         <div className="my-4">
           <InputField onChange={handleInputChange} name="firstName" label="First Name" type="text" value={formData.firstName} errors={errors.firstName}/>
           {errors.firstName && (
