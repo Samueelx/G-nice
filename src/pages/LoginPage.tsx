@@ -3,7 +3,7 @@ import InputField from "../components/common/InputField";
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
   });
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -14,10 +14,14 @@ const LoginPage: React.FC = () => {
     });
     console.log(`${name}: ${value}`);
   };
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log("User Logged in with: ", formData);
+  }
   return (
     <div className="md:min-h-screen flex items-center justify-center bg-[#E500A4]">
       <div className="md:w-full md:max-w-xs p-8 bg-white rounded-lg shadow-md w-screen h-screen md:h-full">
-        <form className="space-y-6 md:h-fit flex flex-col gap-4 justify-center">
+        <form className="space-y-6 md:h-fit flex flex-col gap-4 justify-center" onSubmit={handleSubmit}>
           <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
           {/* Username/Email Input */}
           <div className="relative">
@@ -26,8 +30,8 @@ const LoginPage: React.FC = () => {
               errors=""
               label="Username or Email"
               onChange={handleInputChange}
-              name="email"
-              value={formData.email}
+              name="username"
+              value={formData.username}
             />
           </div>
 
