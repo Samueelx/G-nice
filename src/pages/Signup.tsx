@@ -24,7 +24,6 @@ const Signup: React.FC = () => {
       ...formData,
       [name]: value,
     });
-    console.log(`Input changed. ${value}`);
   };
 
   const handleEmailValidation = (isValid: boolean) => {

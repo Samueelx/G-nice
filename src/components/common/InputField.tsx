@@ -18,6 +18,7 @@ const InputField: React.FC<InputFieldProps> = ({ label, type, value, onChange, n
         type={type}
         value={value}
         name={name}
+        id={name}
         onChange={onChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(value !== '')}  // Keeps label up if there's text
@@ -26,7 +27,7 @@ const InputField: React.FC<InputFieldProps> = ({ label, type, value, onChange, n
           isFocused ? 'border-gray-950' : 'border-gray-300'
         } text-gray-900 focus:outline-none focus:ring-0 peer ${errors ? 'border-red-500' : ''}`}
       />
-      <label
+      <label htmlFor={name}
         className={`absolute left-0 -top-1 text-base text-gray-500 transition-transform transform ${
           isFocused || value ? '-translate-y-5 scale-75 text-gray-400 opacity-100' : 'opacity-0 translate-y-0 scale-100'
         } peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:-translate-y-5 peer-focus:scale-75`}
