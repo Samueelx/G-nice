@@ -1,41 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-
+import React, { useEffect, useState } from 'react';
 import CircularImage from "../components/specific/CircularImage";
 import HomeButton from "../components/specific/HomeButton";
 import LoginButton from "../components/specific/LoginButton";
 
-type fetchedData = {
+type Person = {
   id: string;
-  email: string;
   src: string;
   style: {
     top: string;
     left: string;
-    transform?: string;
   };
   size: string;
-  mobileSize: string;
 };
 
 const Homepage: React.FC = () => {
-  const [people, setPeople] = useState<fetchedData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const hasFetched = useRef(false);
-  const styles = useMemo(() => {
-    return [
-      { top: "15%", left: "20%" },
-      { top: "90%", left: "60%" },
-      { top: "50%", left: "50%", transform: "translate(-50%, -50%)" },
-      { top: "70%", left: "20%" },
-      { top: "60%", left: "80%" },
-    ];
-  }, []);
-  
-  useEffect(() => {
-    if (hasFetched.current) {
-      return;
-    }
+  const [people, setPeople] = useState<Person[]>([]);
 
+  useEffect(() => {
     const emojis = [
       "/smiling-face-with-halo.svg",
       "/reshot-icon-rolling-on-the-floor-laughing.svg",
@@ -47,70 +28,62 @@ const Homepage: React.FC = () => {
       "/face-haha.svg"
     ];
 
-    const fetchedPeople = emojis.map((emoji, index) => ({
+    const positions = [
+      { top: '10%', left: '10%' },
+      { top: '20%', left: '80%' },
+      { top: '40%', left: '20%' },
+      { top: '60%', left: '75%' },
+      { top: '80%', left: '15%' },
+      { top: '85%', left: '60%' },
+      { top: '30%', left: '50%' },
+      { top: '70%', left: '40%' },
+    ];
+
+    const sizes = ["w-12 h-12", "w-16 h-16", "w-20 h-20", "w-24 h-24"];
+
+    const newPeople = emojis.map((emoji, index) => ({
       id: `emoji-${index}`,
-      email: `emoji${index}@example.com`,
       src: emoji,
-      style: getRandomPosition(),
-      size: getRandomSize(),
-      mobileSize: getMobileSize(),
+      style: positions[index],
+      size: sizes[index % sizes.length],
     }));
 
-    setPeople(fetchedPeople);
-    setLoading(false);
-    hasFetched.current = true;
-  }, [hasFetched, styles]);
-
-  const getRandomSize = () => {
-    const sizes = ["w-20 h-20", "w-24 h-24", "w-32 h-32", "w-36 h-36"];
-    return sizes[Math.floor(Math.random() * sizes.length)];
-  };
-  const getMobileSize = () => {
-    const sizes = ["w-20 h-20", "w-24 h-24", "w-32 h-32", "w-36 h-36"];
-    return sizes[Math.floor(Math.random() * sizes.length)];
-  };
-  const getRandomPosition = () => {
-    const top = Math.floor(Math.random() * 90) + 5 + "%";
-    const left = Math.floor(Math.random() * 90) + 5 + "%";
-    return { top, left, transform: "translate(-50%, -50%)" };
-  };
-
-  if (loading)
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-[#E500A4]">
-        Loading...
-      </div>
-    );
+    setPeople(newPeople);
+  }, []);
 
   return (
-    <div className="relative min-h-screen bg-[#E500A4] flex flex-col items-center gap-4">
-      <div className="relative h-3/4 py-16 flex items-baseline justify-center gap-2 min-h-3.5 w-4/6">
+    <div className="flex items-center justify-center min-h-screen bg-[#E500A4] p-4">
+      <div className="relative w-full max-w-2xl aspect-square">
         {people.map((person) => (
           <CircularImage
             key={person.id}
             src={person.src}
             size={person.size}
-            style={person.style}
-            mobileSize={person.mobileSize}
+            style={{
+              position: 'absolute',
+              top: person.style.top,
+              left: person.style.left,
+              transform: 'translate(-50%, -50%)'
+            }}
           />
         ))}
-      </div>
-      <div className="relative text-center text-white md:p-4">
-        <h1 className="text-2xl font-bold md:text-3xl">
-          The Social site brimming with fun and laughter!
-        </h1>
-        <p className="md:text-2xl">
-          Join and discover endless humour to light up every moment of life.
-        </p>
-      </div>
-      <div className="flex flex-col gap-6">
-        <HomeButton
-          color={`text-[#290628]`}
-          border={`border`}
-          text="Sign Up"
-          bgColor={`bg-white`}
-        />
-        <LoginButton />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center z-10 bg-[#E500A4]/50 rounded-lg p-4">
+          <h1 className="text-2xl md:text-3xl font-bold mb-4">
+            The Social site brimming with fun and laughter!
+          </h1>
+          <p className="text-lg md:text-xl mb-8">
+            Join and discover endless humour to light up every moment of life.
+          </p>
+          <div className="flex flex-col gap-4 w-full max-w-xs">
+            <HomeButton
+              color="text-[#290628]"
+              border="border"
+              text="Sign Up"
+              bgColor="bg-white"
+            />
+            <LoginButton />
+          </div>
+        </div>
       </div>
     </div>
   );
