@@ -6,7 +6,11 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        'akronim': ['Akronim', 'cursive'],
+      },
+    },
   },
   plugins: [
     daisyui,

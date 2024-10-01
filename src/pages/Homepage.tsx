@@ -52,36 +52,39 @@ const Homepage: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#E500A4] p-4">
-      <div className="relative w-full max-w-2xl aspect-square">
-        {people.map((person) => (
-          <CircularImage
-            key={person.id}
-            src={person.src}
-            size={person.size}
-            style={{
-              position: 'absolute',
-              top: person.style.top,
-              left: person.style.left,
-              transform: 'translate(-50%, -50%)'
-            }}
-          />
-        ))}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center z-10 bg-[#E500A4]/50 rounded-lg p-4">
-          <h1 className="text-2xl md:text-3xl font-bold mb-4">
-            The Social site brimming with fun and laughter!
-          </h1>
-          <p className="text-lg md:text-xl mb-8">
-            Join and discover endless humour to light up every moment of life.
-          </p>
-          <div className="flex flex-col gap-4 w-full max-w-xs">
-            <HomeButton
-              color="text-[#290628]"
-              border="border"
-              text="Sign Up"
-              bgColor="bg-white"
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#E500A4] p-4">
+      <div className="relative w-full max-w-2xl">
+        <h1 className="text-6xl font-bold text-[#003049] text-center mb-8 font-akronim">G-nyce</h1>
+        <div className="relative aspect-square">
+          {people.map((person) => (
+            <CircularImage
+              key={person.id}
+              src={person.src}
+              size={person.size}
+              style={{
+                position: 'absolute',
+                top: person.style.top,
+                left: person.style.left,
+                transform: 'translate(-50%, -50%)'
+              }}
             />
-            <LoginButton />
+          ))}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center z-10 bg-[#E500A4]/50 rounded-lg p-4">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">
+              The Social site brimming with fun and laughter!
+            </h2>
+            <p className="text-lg md:text-xl mb-8">
+              Join and discover endless humour to light up every moment of life.
+            </p>
+            <div className="flex flex-col gap-4 w-full max-w-xs">
+              <HomeButton
+                color="text-[#290628]"
+                border="border"
+                text="Sign Up"
+                bgColor="bg-white"
+              />
+              <LoginButton />
+            </div>
           </div>
         </div>
       </div>
