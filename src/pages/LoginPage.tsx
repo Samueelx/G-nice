@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import InputField from "../components/common/InputField";
+import { Button } from "@/components/ui/button";
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -41,24 +42,14 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* Login Button */}
-          <button
-            type="submit"
-            className="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-500 focus:outline-none transition-all"
-          >
-            Login
-          </button>
+          <Button>Login</Button>
         </form>
 
         {/* Or */}
         <div className="text-center my-4 text-gray-500">or</div>
 
         {/* Google Login Button */}
-        <button
-          type="button"
-          className="w-full py-2 px-4 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-500 focus:outline-none transition-all"
-        >
-          Login with Google
-        </button>
+        <Button variant="destructive">Login with Google</Button>
       </div>
     </div>
   );
