@@ -54,7 +54,7 @@ const Homepage: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#E500A4] p-4">
       <div className="relative w-full max-w-2xl">
-        <h1 className="text-6xl font-bold text-[#003049] text-center mb-8 font-akronim">G-nyce</h1>
+        <h1 className="text-6xl font-bold text-[#002D74] text-center mb-8 font-akronim">G-nyce</h1>
         <div className="relative aspect-square">
           {people.map((person) => (
             <CircularImage
