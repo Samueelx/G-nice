@@ -2,7 +2,7 @@ const LoginPage: React.FC = () => {
   return (
     <section className="bg-[#E500A4] min-h-screen flex items-center justify-center">
       {/* login container */}
-      <div className="bg-cyan-100 flex rounded-2xl shadow-lg max-w-3xl p-5">
+      <div className="bg-cyan-100 flex rounded-2xl shadow-lg max-w-3xl p-5 h-svh md:h-full">
         {/* form */}
         <div className="sm:w-1/2 px-16">
           <h2 className="font-bold text-2xl text-[#002D74]">Login</h2>

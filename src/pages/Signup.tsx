@@ -13,7 +13,7 @@ const Signup: React.FC = () => {
   return (
     <main className="bg-[#E500A4] min-h-screen flex items-center justify-center flex-col">
       {/* signup container */}
-      <div className="bg-cyan-100 rounded-2xl shadow-lg p-5 md:max-w-5xl min-w-full min-h-svh md:min-w-max md:min-h-fit">
+      <div className="bg-cyan-100 rounded-2xl shadow-lg p-5 md:max-w-5xl min-w-full min-h-screen md:min-w-max md:min-h-fit">
         <div className="p-6">
           <h2 className="text-6xl font-bold text-[#002D74] text-center pb-4 font-akronim">
             G-nyce
