@@ -6,6 +6,7 @@ import LoginPage from "../pages/LoginPage";
 import PrivateRoute from "./PrivateRoute";
 import ProfilePage from "../pages/ProfilePage";
 import Signup from "../pages/Signup";
+import PasswordSetup from "@/pages/PasswordSetup";
 
 const router = createBrowserRouter([
     {
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
     {
         path: '/signup',
         element: <PublicRoute><Signup /></PublicRoute>
+    },
+    {
+        path: '/password-setup',
+        element: <PublicRoute><PasswordSetup /></PublicRoute>
     }
 ]);
 

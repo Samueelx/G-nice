@@ -4,10 +4,11 @@ const Signup: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const handleClick = async (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent> 
   ) => {
     e.preventDefault();
     setLoading(true);
+    window.location.href = "/password-setup";
   };
 
   return (
