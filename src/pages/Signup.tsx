@@ -23,11 +23,11 @@ const Signup: React.FC = () => {
           </p>
         </div>
         <div>
-          <form className="flex flex-col gap-8">
+          <form className="flex flex-col gap-8 md:items-center">
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none`}
+                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none`}
                 name="firstname"
                 id="firstname"
                 placeholder=" "
@@ -43,7 +43,7 @@ const Signup: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none`}
+                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none`}
                 name="lastname"
                 id="lastname"
                 placeholder=" "
@@ -59,7 +59,7 @@ const Signup: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none`}
+                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none`}
                 name="email"
                 id="email"
                 placeholder=" "
@@ -75,7 +75,7 @@ const Signup: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none`}
+                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none`}
                 name="username"
                 id="username"
                 placeholder=" "
@@ -92,7 +92,7 @@ const Signup: React.FC = () => {
               onClick={handleClick}
               disabled={loading}
               className={`
-              relative flex items-center justify-between 
+              relative flex items-center justify-between md:w-56
               px-6 py-3 text-[#002D74] font-semibold rounded-3xl bg-[#FEC5D8]
               focus:ring-4 focus:ring-purple-300 focus:outline-none
               transition duration-300 ease-in-out 
