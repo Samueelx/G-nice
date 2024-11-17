@@ -1,6 +1,6 @@
 // userSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import instance from '@/api/axiosConfig';
 
 // Types for the registration data and response
 interface UserRegistrationData {
@@ -39,7 +39,7 @@ export const registerUser = createAsyncThunk<
   }
 >('user/register', async (userData: UserRegistrationData, { rejectWithValue }) => {
   try {
-    const response = await axios.post<RegistrationResponse>('/api/register', userData);
+    const response = await instance.post<RegistrationResponse>('/api/register', userData);
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Registration failed');
