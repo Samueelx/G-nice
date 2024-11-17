@@ -13,8 +13,8 @@ const Signup: React.FC = () => {
   return (
     <main className="bg-[#E500A4] min-h-screen flex items-center justify-center flex-col">
       {/* signup container */}
-      <div className="bg-cyan-100 rounded-2xl shadow-lg p-5 md:max-w-5xl min-w-full min-h-screen md:min-w-max md:min-h-fit">
-        <div className="p-6">
+      <div className="bg-cyan-100 rounded-2xl shadow-lg p-5 md:max-w-5xl min-w-full min-h-screen md:min-w-max md:min-h-fit sm:w-1/2 px-16">
+        <div className="p-6 pb-8">
           <h2 className="text-6xl font-bold text-[#002D74] text-center pb-4 font-akronim">
             G-nyce
           </h2>
@@ -91,14 +91,17 @@ const Signup: React.FC = () => {
             <button
               onClick={handleClick}
               disabled={loading}
-              className={`relative flex items-center justify-center px-6 py-3 text-[#002D74] font-semibold rounded-3xl bg-[#FEC5D8]
-              focus:ring-4 focus:ring-purple-300 focus:outline-none 
-              transition duration-300 ease-in-out ${
-                loading ? "opacity-75 cursor-not-allowed" : ""
-              }`}
+              className={`
+              relative flex items-center justify-between 
+              px-6 py-3 text-[#002D74] font-semibold rounded-3xl bg-[#FEC5D8]
+              focus:ring-4 focus:ring-purple-300 focus:outline-none
+              transition duration-300 ease-in-out 
+              ${loading ? "opacity-75 cursor-not-allowed" : ""}
+              group  /* Added group class for hover effects */
+            `}
             >
               {loading ? (
-                <>
+                <div className="flex items-center">
                   <svg
                     className="animate-spin h-5 w-5 text-white mr-2"
                     xmlns="http://www.w3.org/2000/svg"
@@ -120,9 +123,25 @@ const Signup: React.FC = () => {
                     ></path>
                   </svg>
                   Signing Up...
-                </>
+                </div>
               ) : (
-                "Sign Up"
+                <>
+                  <span>Continue</span>
+                  <svg
+                    className="w-5 h-5 transform transition-transform duration-200 group-hover:translate-x-1"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9 6L15 12L9 18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </>
               )}
             </button>
           </form>
