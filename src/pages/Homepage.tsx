@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import CircularImage from "../components/specific/CircularImage";
-import HomeButton from "../components/specific/HomeButton";
-import LoginButton from "../components/specific/LoginButton";
 
 type Person = {
   id: string;
@@ -25,18 +23,18 @@ const Homepage: React.FC = () => {
       "/icon-glasses-smirk.svg",
       "/icon-glasses-kiss.svg",
       "/face-laughing.svg",
-      "/face-haha.svg"
+      "/face-haha.svg",
     ];
 
     const positions = [
-      { top: '10%', left: '10%' },
-      { top: '20%', left: '80%' },
-      { top: '40%', left: '20%' },
-      { top: '60%', left: '75%' },
-      { top: '80%', left: '15%' },
-      { top: '85%', left: '60%' },
-      { top: '30%', left: '50%' },
-      { top: '70%', left: '40%' },
+      { top: "10%", left: "10%" },
+      { top: "20%", left: "80%" },
+      { top: "40%", left: "20%" },
+      { top: "60%", left: "75%" },
+      { top: "80%", left: "15%" },
+      { top: "85%", left: "60%" },
+      { top: "30%", left: "50%" },
+      { top: "70%", left: "40%" },
     ];
 
     const sizes = ["w-12 h-12", "w-16 h-16", "w-20 h-20", "w-24 h-24"];
@@ -54,7 +52,9 @@ const Homepage: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#E500A4] p-4">
       <div className="relative w-full max-w-2xl">
-        <h1 className="text-6xl font-bold text-[#002D74] text-center mb-8 font-akronim">G-nyce</h1>
+        <h1 className="text-6xl font-bold text-[#002D74] text-center mb-8 font-akronim">
+          G-nyce
+        </h1>
         <div className="relative aspect-square">
           {people.map((person) => (
             <CircularImage
@@ -62,10 +62,10 @@ const Homepage: React.FC = () => {
               src={person.src}
               size={person.size}
               style={{
-                position: 'absolute',
+                position: "absolute",
                 top: person.style.top,
                 left: person.style.left,
-                transform: 'translate(-50%, -50%)'
+                transform: "translate(-50%, -50%)",
               }}
             />
           ))}
@@ -77,13 +77,33 @@ const Homepage: React.FC = () => {
               Join and discover endless humour to light up every moment of life.
             </p>
             <div className="flex flex-col gap-4 w-full max-w-xs">
-              <HomeButton
-                color="text-[#290628]"
-                border="border"
-                text="Sign Up"
-                bgColor="bg-white"
-              />
-              <LoginButton />
+              <button
+                onClick={() => (window.location.href = "/signup")} // Redirects to the signup page
+                className={`
+                relative flex items-center justify-between
+                px-8 py-4 text-white font-bold text-lg rounded-full bg-gradient-to-r from-purple-500 to-pink-500
+              hover:from-pink-500 hover:to-purple-500
+                shadow-lg hover:shadow-xl active:scale-95
+                focus:ring-4 focus:ring-purple-300 focus:outline-none
+                transition duration-300 ease-in-out group
+              `}
+              >
+                <span className="tracking-wide text-sm">Let’s Get Started</span>
+                <svg
+                  className="w-6 h-6 transform transition-transform duration-200 group-hover:translate-x-2 group-hover:scale-110"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M9 6L15 12L9 18"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
