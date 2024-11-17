@@ -1,14 +1,60 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { registerUser } from "@/features/auth/userSlice";
+import type { RootState } from "@/store/store";
+import { useAppDispatch } from "@/hooks/hooks";
+import { useAppSelector } from "@/hooks/hooks";
 
 const Signup: React.FC = () => {
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  /**Form state */
+  const [formData, setFormData] = useState({
+    firstname: "",
+    lastname: "",
+    email: "",
+    username: "",
+  });
+
+  /**Get state from redux */
+  const { loading } = useAppSelector((state: RootState) => state.user);
+
+  /**Handle input changes */
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleClick = async (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent> 
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
   ) => {
     e.preventDefault();
-    setLoading(true);
-    window.location.href = "/password-setup";
+    /**Basic validation */
+    if (
+      !formData.firstname ||
+      !formData.lastname ||
+      !formData.email ||
+      !formData.username
+    ) {
+      // You might want to add proper form validation here
+      return;
+    }
+
+    try {
+      const response = await dispatch(registerUser(formData)).unwrap();
+      if (response.success) {
+        navigate("/password-setup");
+      } else {
+        // Handle unsuccessful registration but valid response
+        console.error("Registration unsuccessful:", response.message);
+      }
+    } catch (error) {
+      console.error("Registration failed: ", error);
+    }
   };
 
   return (
@@ -32,6 +78,8 @@ const Signup: React.FC = () => {
                 name="firstname"
                 id="firstname"
                 placeholder=" "
+                value={formData.firstname}
+                onChange={handleChange}
               />
               <label
                 htmlFor="firstname"
@@ -48,6 +96,8 @@ const Signup: React.FC = () => {
                 name="lastname"
                 id="lastname"
                 placeholder=" "
+                value={formData.lastname}
+                onChange={handleChange}
               />
               <label
                 htmlFor="lastname"
@@ -59,11 +109,13 @@ const Signup: React.FC = () => {
             </div>
             <div className="relative">
               <input
-                type="text"
+                type="email"
                 className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white`}
                 name="email"
                 id="email"
                 placeholder=" "
+                value={formData.email}
+                onChange={handleChange}
               />
               <label
                 htmlFor="email"
@@ -80,6 +132,8 @@ const Signup: React.FC = () => {
                 name="username"
                 id="username"
                 placeholder=" "
+                value={formData.username}
+                onChange={handleChange}
               />
               <label
                 htmlFor="username"
