@@ -73,7 +73,7 @@ const PasswordSetup: React.FC = () => {
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
-                className="p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none"
+                className="p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white"
                 name="password"
                 id="password"
                 placeholder=" "
@@ -108,7 +108,7 @@ const PasswordSetup: React.FC = () => {
             <div className="relative">
               <input
                 type={showConfirmPassword ? "text" : "password"}
-                className="p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none"
+                className="p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white"
                 name="confirmPassword"
                 id="confirmPassword"
                 placeholder=" "

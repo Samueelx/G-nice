@@ -28,7 +28,7 @@ const Signup: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none`}
+                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white`}
                 name="firstname"
                 id="firstname"
                 placeholder=" "
@@ -44,7 +44,7 @@ const Signup: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none`}
+                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white`}
                 name="lastname"
                 id="lastname"
                 placeholder=" "
@@ -60,7 +60,7 @@ const Signup: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none`}
+                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white`}
                 name="email"
                 id="email"
                 placeholder=" "
@@ -76,7 +76,7 @@ const Signup: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none`}
+                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white`}
                 name="username"
                 id="username"
                 placeholder=" "
