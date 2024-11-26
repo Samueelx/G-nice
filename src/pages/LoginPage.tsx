@@ -1,4 +1,48 @@
+import { loginUser } from '@/features/auth/authSlice';
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+
+
 const LoginPage: React.FC = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const {name, value} = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async(e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if(!formData.email || !formData.password){
+      setError('Please fill all fields')
+      return;
+    }
+
+    try{
+      const resultAction = await dispatch(loginUser(formData) as any);
+      if(loginUser.fulfilled.match(resultAction)){
+        navigate('/dashbord');
+      } else if(loginUser.rejected.match(resultAction)){
+        setError(resultAction.payload as string)
+      }
+    } catch(err){
+      setError('An error occured during login');
+    }
+  };
+
+
   return (
     <section className="bg-[#E500A4] min-h-screen flex items-center justify-center">
       {/* login container */}
@@ -10,19 +54,27 @@ const LoginPage: React.FC = () => {
             If you're already a member, easily log in
           </p>
 
-          <form action="" className="flex flex-col gap-4">
+          {error && (
+            <div className="mt-4 text-red-500 text-sm">{error}</div>
+          )}
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <input
               className="p-2 mt-8 rounded-xl border"
               type="email"
               name="email"
               placeholder="Email"
+              value={formData.email}
+              onChange={handleInputChange}
             />
             <div className="relative">
               <input
                 className="p-2 rounded-xl border w-full"
-                type="password"
-                name=""
+                type={showPassword ? 'text' : 'password'}
+                name="password"
                 placeholder="Password"
+                value={formData.password}
+                onChange={handleInputChange}
               />
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -31,12 +83,13 @@ const LoginPage: React.FC = () => {
                 fill="gray"
                 className="absolute top-1/2 right-3 -translate-y-1/2 bi bi-eye"
                 viewBox="0 0 16 16"
+                onClick={() => setShowPassword(!showPassword)}
               >
                 <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z" />
                 <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0" />
               </svg>
             </div>
-            <button className="bg-[#FEC5D8] rounded-xl py-2">Log in</button>
+            <button type='submit' className="bg-[#FEC5D8] rounded-xl py-2 hover:bg-[#feb5ce] transition-colors">Log in</button>
           </form>
 
           <div className="mt-10 grid grid-cols-3 items-center text-gray-500">
