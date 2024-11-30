@@ -33,7 +33,7 @@ const LoginPage: React.FC = () => {
     try{
       const resultAction = await dispatch(loginUser(formData) as any);
       if(loginUser.fulfilled.match(resultAction)){
-        navigate('/dashbord');
+        navigate('/feeds');
       } else if(loginUser.rejected.match(resultAction)){
         setError(resultAction.payload as string)
       }

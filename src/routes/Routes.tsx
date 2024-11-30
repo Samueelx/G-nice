@@ -7,6 +7,7 @@ import PrivateRoute from "./PrivateRoute";
 import ProfilePage from "../pages/ProfilePage";
 import Signup from "../pages/Signup";
 import PasswordSetup from "@/pages/PasswordSetup";
+import LandingPage from "@/pages/LandingPage";
 
 const router = createBrowserRouter([
     {
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
     {
         path: '/password-setup',
         element: <PublicRoute><PasswordSetup /></PublicRoute>
+    },
+    {
+        path: '/feeds',
+        element: <PrivateRoute><LandingPage/></PrivateRoute>
     }
 ]);
 
