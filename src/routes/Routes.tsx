@@ -32,7 +32,7 @@ const router = createBrowserRouter([
     },
     {
         path: '/feeds',
-        element: <PrivateRoute><LandingPage/></PrivateRoute>
+        element: <PublicRoute><LandingPage/></PublicRoute>
     }
 ]);
 
