@@ -1,18 +1,26 @@
 import { loginUser } from '@/features/auth/authSlice';
-import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { useNavigate } from 'react-router-dom';
 
 
 const LoginPage: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [error, setError] = useState<string | null>(null);
+  // const [error, setError] = useState<string | null>(null);
+  const {isLoading, error, token} = useAppSelector((state) => state.auth);
+
+  /**Redirect authenticated users away from login page */
+  useEffect(() => {
+    if(token){
+      navigate('/feeds');
+    }
+  }, [token, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {name, value} = e.target;
@@ -24,21 +32,13 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    if(!formData.email || !formData.password){
-      setError('Please fill all fields')
-      return;
-    }
-
     try{
       const resultAction = await dispatch(loginUser(formData) as any);
       if(loginUser.fulfilled.match(resultAction)){
         navigate('/feeds');
-      } else if(loginUser.rejected.match(resultAction)){
-        setError(resultAction.payload as string)
       }
     } catch(err){
-      setError('An error occured during login');
+      console.log('Unexpected error during login:', err);
     }
   };
 
@@ -89,7 +89,7 @@ const LoginPage: React.FC = () => {
                 <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0" />
               </svg>
             </div>
-            <button type='submit' className="bg-[#FEC5D8] rounded-xl py-2 hover:bg-[#feb5ce] transition-colors">Log in</button>
+            <button type='submit' className="bg-[#FEC5D8] rounded-xl py-2 hover:bg-[#feb5ce] transition-colors" disabled={isLoading}>{isLoading ? 'Logging in...' : 'Log In'}</button>
           </form>
 
           <div className="mt-10 grid grid-cols-3 items-center text-gray-500">

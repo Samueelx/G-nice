@@ -16,16 +16,20 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async(credentials: LoginCredentials, { rejectWithValue }) => {
     try{
+      /**Create Base64 encoded credentials for Basic Auth */
+      const encodedCredentials = btoa(`${credentials.email}:${credentials.password}`);
       const response = await fetch('http://localhost:5000/login-endpoint', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${encodedCredentials}`
         },
         body: JSON.stringify(credentials),
       });
 
       if(!response.ok){
-        throw new Error('Login failed');
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Login Failed!');
       }
 
       const data = await response.json();
