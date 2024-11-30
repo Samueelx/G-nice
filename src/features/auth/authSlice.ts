@@ -17,14 +17,13 @@ export const loginUser = createAsyncThunk(
   async(credentials: LoginCredentials, { rejectWithValue }) => {
     try{
       /**Create Base64 encoded credentials for Basic Auth */
-      const encodedCredentials = btoa(`${credentials.username}:${credentials.password}`);
-      const response = await fetch('http://localhost:5000/login-endpoint', {
-        method: 'POST',
+      //const encodedCredentials = btoa(`${credentials.username}:${credentials.password}`);
+      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/login', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${encodedCredentials}`
-        },
-        body: JSON.stringify(credentials),
+          'Authorization': `Basic ${credentials.username}:${credentials.password}`
+        }
       });
 
       if(!response.ok){
