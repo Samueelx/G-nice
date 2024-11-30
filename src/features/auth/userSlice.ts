@@ -39,7 +39,7 @@ export const registerUser = createAsyncThunk<
   }
 >('user/register', async (userData: UserRegistrationData, { rejectWithValue }) => {
   try {
-    const response = await instance.post<RegistrationResponse>('/api/register', userData);
+    const response = await instance.put<RegistrationResponse>('Memefest-SNAPSHOT-01/resources/SignIn/Verify-email', userData);
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Registration failed');
