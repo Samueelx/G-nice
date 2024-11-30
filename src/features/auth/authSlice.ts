@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 interface LoginCredentials{
-  email: string;
+  username: string;
   password: string;
 }
 interface AuthState{
@@ -17,7 +17,7 @@ export const loginUser = createAsyncThunk(
   async(credentials: LoginCredentials, { rejectWithValue }) => {
     try{
       /**Create Base64 encoded credentials for Basic Auth */
-      const encodedCredentials = btoa(`${credentials.email}:${credentials.password}`);
+      const encodedCredentials = btoa(`${credentials.username}:${credentials.password}`);
       const response = await fetch('http://localhost:5000/login-endpoint', {
         method: 'POST',
         headers: {

@@ -9,7 +9,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
   });
   // const [error, setError] = useState<string | null>(null);
@@ -61,10 +61,10 @@ const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <input
               className="p-2 mt-8 rounded-xl border"
-              type="email"
-              name="email"
-              placeholder="Email"
-              value={formData.email}
+              type="text"
+              name="username"
+              placeholder="Username"
+              value={formData.username}
               onChange={handleInputChange}
             />
             <div className="relative">
