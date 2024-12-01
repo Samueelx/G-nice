@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
+import { useNavigate, useLocation } from "react-router-dom";
+import { setupPassword, resetPasswordSetupState } from "@/features/auth/passwordSetupSlice";
+
+
 
 const PasswordSetup: React.FC = () => {
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [password, setPassword] = useState("");
@@ -12,6 +16,19 @@ const PasswordSetup: React.FC = () => {
     confirmPassword: "",
   });
 
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  /**Get token from the url */
+  const searchParams = new URLSearchParams(location.search);
+  const token = searchParams.get('token');
+
+  /**select state from redux store */
+  const { loading, error } = useAppSelector((state) => state.passwordSetup);
+
+
+  /**Validate password */
   const validatePassword = (pass: string) => {
     if (pass.length < 8) {
       return "Password must be at least 8 characters long";
@@ -42,19 +59,59 @@ const PasswordSetup: React.FC = () => {
     setConfirmPassword(newConfirmPassword);
     setErrors({
       ...errors,
-      confirmPassword: 
+      confirmPassword:
         newConfirmPassword !== password ? "Passwords do not match" : "",
     });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (errors.password || errors.confirmPassword) {
+    /**Validate inputs */
+    const passwordError = validatePassword(password);
+    const confirmPasswordError = password !== confirmPassword ? "Passwords do not match" : "";
+    /**update errors */
+    setErrors({
+      password: passwordError,
+      confirmPassword: confirmPasswordError
+    });
+
+    if (passwordError || confirmPasswordError) {
       return;
     }
-    setLoading(true);
-    // Add your password submission logic here
+
+    /**Check if password exists */
+    if (!token) {
+      alert("Invalid or missing token");
+      return;
+    }
+
+    /**Dispatch password setup action */
+    try {
+      const resultAction = await dispatch(setupPassword({ token, password }));
+      /**Check if action was successful */
+      if (setupPassword.fulfilled.match(resultAction)) {
+        navigate('/feeds', {
+          state: { message: 'Account created successfully' }
+        });
+      }
+    } catch (error) {
+      console.error("Password setup failed", error);
+    }
   };
+
+  /**Reset error state on component unmount */
+  useEffect(() => {
+    return () => {
+      dispatch(resetPasswordSetupState());
+    }
+  }, [dispatch]);
+
+  /**Handle error display */
+  useEffect(() => {
+    if (error) {
+      alert(error);
+    }
+  }, [error]);
 
   return (
     <main className="bg-[#E500A4] min-h-screen flex items-center justify-center flex-col">
@@ -67,7 +124,7 @@ const PasswordSetup: React.FC = () => {
             Set up your account password
           </p>
         </div>
-        
+
         <form className="flex flex-col gap-8 md:items-center" onSubmit={handleSubmit}>
           <div className="relative">
             <div className="relative">
@@ -151,7 +208,7 @@ const PasswordSetup: React.FC = () => {
 
           <button
             type="submit"
-            // disabled={loading || errors!.password || errors!.confirmPassword}
+            disabled={loading || !!errors.password || !!errors.confirmPassword}
             className={`
               relative flex items-center justify-between md:w-56
               px-6 py-3 text-[#002D74] font-semibold rounded-3xl bg-[#FEC5D8]
