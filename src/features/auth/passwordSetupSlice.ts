@@ -1,7 +1,4 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import instance from "@/api/axiosConfig";
-import axios from "axios";
-
 interface PasswordSetupState {
     loading: boolean;
     error: string | null;
@@ -22,16 +19,23 @@ export const setupPassword = createAsyncThunk(
         {rejectWithValue}
     ) => {
         try {
-            const response = await instance.put('/api/auth/setup-password', {
-                token, password
+            const response = await fetch('/api/auth/setup-password', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({token, password})
             });
-            return response.data;
-        } catch (error) {
-            if(axios.isAxiosError(error)){
+            if(!response.ok){
+                const errorData = await response.json().catch(() => ({}));
                 return rejectWithValue(
-                    error.response?.data?.message || 'Password setup failed'
-                );
+                    errorData.message || 'password setup failed'
+                )
             }
+
+            return await response.json();
+            
+        } catch (error) {
             return rejectWithValue('An unexpected error occured when trying to setup the password.');
         }
     }
