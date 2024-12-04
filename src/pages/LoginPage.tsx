@@ -45,6 +45,7 @@ const LoginPage: React.FC = () => {
 
   const handleGoogleSuccess = async (credentialResponse: {credential?: string}) => {
     if(credentialResponse.credential){
+      console.log("Credentials: ", credentialResponse.credential);
       try{
         const resultAction = await dispatch(googleSignIn(credentialResponse.credential));
         if(googleSignIn.fulfilled.match(resultAction)){
@@ -133,7 +134,7 @@ const LoginPage: React.FC = () => {
           </div>
           <div className="mt-3 text-xs flex justify-between items-center">
             <p>If you don't have an account...</p>
-            <button className="py-2 px-5 bg-white border rounded-xl">Register</button>
+            <button className="py-2 px-5 bg-white border rounded-xl" onClick={() => navigate('/signup')}>Register</button>
           </div>
         </div>
         {/* image */}

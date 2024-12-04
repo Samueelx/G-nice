@@ -72,6 +72,31 @@ export const googleSignIn = createAsyncThunk(
   }
 );
 
+/**Async thunk for reset password */
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async(
+    {token, newPassword} : { token: string; newPassword: string },
+    {rejectWithValue}
+  ) => {
+    try {
+      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/google-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({token, newPassword}),
+      });
+      return await response.json();
+    } catch (error: any) {
+      if(error.response && error.response?.data){
+        return rejectWithValue(error.response.data?.message);
+      }
+      return rejectWithValue('An unexpected error occured');
+    }
+  }
+);
+
 /** Auth Slice */
 const authSlice = createSlice({
   name: 'auth',
@@ -125,6 +150,19 @@ const authSlice = createSlice({
         state.error = action.payload as string;
         state.user = null;
         state.token = null;
+      })
+      //Reset reducers
+      .addCase(resetPassword.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string || 'Password reset failed!'
       });
   },
 });

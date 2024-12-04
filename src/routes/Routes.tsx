@@ -8,6 +8,7 @@ import ProfilePage from "../pages/ProfilePage";
 import Signup from "../pages/Signup";
 import PasswordSetup from "@/pages/PasswordSetup";
 import LandingPage from "@/pages/LandingPage";
+import ResetPassword from "@/pages/ResetPassword";
 
 const router = createBrowserRouter([
     {
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
     {
         path: '/feeds',
         element: <PublicRoute><LandingPage/></PublicRoute>
+    },
+    {
+        path: '/reset-password',
+        element: <PublicRoute><ResetPassword /></PublicRoute>
     }
 ]);
 
