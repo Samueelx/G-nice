@@ -1,12 +1,10 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 
 const EmailVerification: React.FC = () => {
-  const navigate = useNavigate();
 
   const handleContinue = () => {
-    navigate('/password-setup');
+    window.location.href = 'mailto:';
   };
 
   return (
