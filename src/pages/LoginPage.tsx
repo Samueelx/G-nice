@@ -48,6 +48,7 @@ const LoginPage: React.FC = () => {
       console.log("Credentials: ", credentialResponse.credential);
       try{
         const resultAction = await dispatch(googleSignIn(credentialResponse.credential));
+        console.log("result action: ", resultAction);
         if(googleSignIn.fulfilled.match(resultAction)){
           navigate('/feeds');
         }

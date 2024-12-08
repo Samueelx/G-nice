@@ -5,7 +5,7 @@ interface LoginCredentials {
   password: string;
 }
 interface AuthState {
-  user: any | null;
+  user: unknown | null;
   token: string | null;
   isLoading: boolean | null;
   error: string | null;
@@ -47,26 +47,52 @@ export const googleSignIn = createAsyncThunk(
   'auth/googleSignIn',
   async (credential: string, { rejectWithValue }) => {
     try {
-      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/google-login', {
+      const googleResponse = await fetch('https://oauth2.googleapis.com/tokeninfo', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: JSON.stringify({ credential })
+        body: `id_token=${credential}`
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!googleResponse.ok) {
+        const errorData = await googleResponse.json().catch(() => ({}));
+        console.log("Google Sign in error: ", errorData);
         throw new Error(errorData.message || 'Google sign in failed')
       }
 
-      const data = await response.json();
+      const googleUserInfo = await googleResponse.json();
+      console.log("Google sign in data: ", googleUserInfo);
+
+      /**Send user info to your backend */
+      const backendResponse = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/google-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          googleToken: credential,
+          userInfo: {
+            email: googleUserInfo?.email,
+            name: googleUserInfo?.name,
+            sub: googleUserInfo?.sub,
+          }
+        })
+      });
+
+      if(!backendResponse.ok){
+        const errorData = await backendResponse.json().catch(() => ({}));
+        throw new Error(errorData || 'Backend Auth Failed');
+      }
+
+      const data = await backendResponse.json();
 
       /**Store token in local storage */
       localStorage.setItem('token', data.accessTkn);
       localStorage.setItem('refresh-token', data.refreshTkn);
       return data;
     } catch (error) {
+      console.log("Network Error!")
       return rejectWithValue((error as Error).message);
     }
   }
@@ -80,7 +106,7 @@ export const resetPassword = createAsyncThunk(
     {rejectWithValue}
   ) => {
     try {
-      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/google-login', {
+      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
