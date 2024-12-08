@@ -57,24 +57,38 @@ const Signup: React.FC = () => {
     }
   };
 
+  const handleLoginNavigation = () => {
+    navigate("/login");
+  };
+
   return (
-    <main className="bg-[#E500A4] min-h-screen flex items-center justify-center flex-col">
-      {/* signup container */}
-      <div className="bg-cyan-100 rounded-2xl shadow-lg p-5 md:max-w-5xl min-w-full min-h-screen md:min-w-max md:min-h-fit sm:w-1/2 px-16">
-        <div className="p-6 pb-8">
-          <h2 className="text-6xl font-bold text-[#002D74] text-center pb-4 font-akronim">
-            G-nyce
-          </h2>
-          <p className="text-[#002D74] text-center font-mono font-thin">
-            Connect with your friends today
-          </p>
+    <main className="bg-[#E500A4] min-h-screen flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-lg flex w-4/5 max-w-4xl">
+        {/* Image Section */}
+        <div className="w-1/2 bg-[#FEC5D8] rounded-l-2xl flex items-center justify-center p-8">
+          <img 
+            src="/api/placeholder/500/600" 
+            alt="Signup Illustration" 
+            className="max-w-full max-h-full object-contain"
+          />
         </div>
-        <div>
-          <form className="flex flex-col gap-8 md:items-center">
+
+        {/* Form Section */}
+        <div className="w-1/2 p-12 flex flex-col justify-center">
+          <div className="mb-8 text-center">
+            <h2 className="text-5xl font-bold text-[#002D74] pb-4 font-akronim">
+              G-nyce
+            </h2>
+            <p className="text-[#002D74] font-mono font-thin">
+              Connect with your friends today
+            </p>
+          </div>
+
+          <form className="flex flex-col gap-6">
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white`}
+                className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
                 name="firstname"
                 id="firstname"
                 placeholder=" "
@@ -92,7 +106,7 @@ const Signup: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white`}
+                className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
                 name="lastname"
                 id="lastname"
                 placeholder=" "
@@ -110,7 +124,7 @@ const Signup: React.FC = () => {
             <div className="relative">
               <input
                 type="email"
-                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white`}
+                className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
                 name="email"
                 id="email"
                 placeholder=" "
@@ -128,7 +142,7 @@ const Signup: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                className={`p-2 rounded-xl border w-full md:w-56 peer placeholder-transparent focus:outline-none dark:text-white`}
+                className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
                 name="username"
                 id="username"
                 placeholder=" "
@@ -147,16 +161,16 @@ const Signup: React.FC = () => {
               onClick={handleClick}
               disabled={loading}
               className={`
-              relative flex items-center justify-between md:w-56
+              relative flex items-center justify-between w-full
               px-6 py-3 text-[#002D74] font-semibold rounded-3xl bg-[#FEC5D8]
               focus:ring-4 focus:ring-purple-300 focus:outline-none
               transition duration-300 ease-in-out 
               ${loading ? "opacity-75 cursor-not-allowed" : ""}
-              group  /* Added group class for hover effects */
+              group
             `}
             >
               {loading ? (
-                <div className="flex items-center">
+                <div className="flex items-center justify-center w-full">
                   <svg
                     className="animate-spin h-5 w-5 text-white mr-2"
                     xmlns="http://www.w3.org/2000/svg"
@@ -199,6 +213,19 @@ const Signup: React.FC = () => {
                 </>
               )}
             </button>
+
+            {/* Login Navigation */}
+            <div className="text-center mt-4">
+              <p className="text-sm text-gray-600 mb-2">
+                Already have an account?
+              </p>
+              <button
+                onClick={handleLoginNavigation}
+                className="text-[#002D74] font-semibold hover:underline"
+              >
+                Log In
+              </button>
+            </div>
           </form>
         </div>
       </div>

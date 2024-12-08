@@ -9,6 +9,7 @@ import Signup from "../pages/Signup";
 import PasswordSetup from "@/pages/PasswordSetup";
 import LandingPage from "@/pages/LandingPage";
 import ResetPassword from "@/pages/ResetPassword";
+import EmailVerification from "@/pages/EmailVerification";
 
 const router = createBrowserRouter([
     {
@@ -38,6 +39,10 @@ const router = createBrowserRouter([
     {
         path: '/reset-password',
         element: <PublicRoute><ResetPassword /></PublicRoute>
+    },
+    {
+        path: '/email-verification',
+        element: <PublicRoute><EmailVerification/></PublicRoute>
     }
 ]);
 
