@@ -46,6 +46,7 @@ const Signup: React.FC = () => {
 
     try {
       const response = await dispatch(registerUser(formData)).unwrap();
+      console.log("User Registration: ", response);
       if (response.success) {
         navigate("/password-setup");
       } else {
@@ -62,10 +63,10 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <main className="bg-[#E500A4] min-h-screen flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-lg flex w-4/5 max-w-4xl">
-        {/* Image Section */}
-        <div className="w-1/2 bg-[#FEC5D8] rounded-l-2xl flex items-center justify-center p-8">
+    <main className="bg-[#E500A4] min-h-screen flex items-center justify-center p-4 md:p-0">
+      <div className="bg-cyan-100 rounded-2xl shadow-lg w-dvw md:max-w-4xl md:flex">
+        {/* Image Section - Hidden on mobile, visible on md screens and up */}
+        <div className="hidden md:block md:w-1/2 bg-[#FEC5D8] rounded-l-2xl sm:flex items-center justify-center p-8">
           <img 
             src="/api/placeholder/500/600" 
             alt="Signup Illustration" 
@@ -74,17 +75,17 @@ const Signup: React.FC = () => {
         </div>
 
         {/* Form Section */}
-        <div className="w-1/2 p-12 flex flex-col justify-center">
+        <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col justify-center">
           <div className="mb-8 text-center">
-            <h2 className="text-5xl font-bold text-[#002D74] pb-4 font-akronim">
+            <h2 className="text-4xl md:text-5xl font-bold text-[#002D74] pb-4 font-akronim">
               G-nyce
             </h2>
-            <p className="text-[#002D74] font-mono font-thin">
+            <p className="text-[#002D74] font-mono font-thin text-sm md:text-base">
               Connect with your friends today
             </p>
           </div>
 
-          <form className="flex flex-col gap-6">
+          <form className="flex flex-col gap-4 md:gap-6">
             <div className="relative">
               <input
                 type="text"
