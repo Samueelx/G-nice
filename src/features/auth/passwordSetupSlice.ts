@@ -15,16 +15,16 @@ const initialState: PasswordSetupState = {
 export const setupPassword = createAsyncThunk(
     'auth/setupPassword',
     async(
-        {token, password}: {token: string; password: string },
+        {accessTkn, password}: {accessTkn: string; password: string },
         {rejectWithValue}
     ) => {
         try {
-            const response = await fetch('/api/auth/setup-password', {
+            const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/Sign-Up', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({token, password})
+                body: JSON.stringify({accessTkn, password})
             });
             if(!response.ok){
                 const errorData = await response.json().catch(() => ({}));
@@ -32,8 +32,7 @@ export const setupPassword = createAsyncThunk(
                     errorData.message || 'password setup failed'
                 )
             }
-
-            return await response.json();
+            return response;
             
         } catch (error) {
             return rejectWithValue('An unexpected error occured when trying to setup the password.');
