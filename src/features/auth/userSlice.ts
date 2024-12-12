@@ -1,6 +1,7 @@
 // userSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import instance from '@/api/axiosConfig';
+import { AxiosResponse } from 'axios';
 
 // Types for the registration data and response
 interface UserRegistrationData {
@@ -32,7 +33,7 @@ const initialState: UserState = {
 };
 
 export const registerUser = createAsyncThunk<
-  RegistrationResponse, // Return type of the payload creator
+  AxiosResponse<RegistrationResponse>, // Return type is now the full Axios response
   UserRegistrationData, // First argument to the payload creator
   {
     rejectValue: string; // Type for the rejection value
@@ -40,7 +41,7 @@ export const registerUser = createAsyncThunk<
 >('user/register', async (userData: UserRegistrationData, { rejectWithValue }) => {
   try {
     const response = await instance.put<RegistrationResponse>('Memefest-SNAPSHOT-01/resources/SignIn/Verify-email', userData);
-    return response.data;
+    return response;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Registration failed');
   }

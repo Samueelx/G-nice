@@ -47,7 +47,7 @@ const Signup: React.FC = () => {
     try {
       const response = await dispatch(registerUser(formData)).unwrap();
       console.log("User Registration: ", response);
-      if (response.success) {
+      if (response.status === 200) {
         navigate("/password-setup");
       } else {
         // Handle unsuccessful registration but valid response
