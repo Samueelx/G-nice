@@ -22,7 +22,7 @@ const PasswordSetup: React.FC = () => {
 
   /**Get token from the url */
   const searchParams = new URLSearchParams(location.search);
-  const token = searchParams.get('token');
+  const accessTkn = searchParams.get('token');
 
   /**select state from redux store */
   const { loading, error } = useAppSelector((state) => state.passwordSetup);
@@ -80,14 +80,15 @@ const PasswordSetup: React.FC = () => {
     }
 
     /**Check if password exists */
-    if (!token) {
+    if (!accessTkn) {
       alert("Invalid or missing token");
       return;
     }
 
     /**Dispatch password setup action */
     try {
-      const resultAction = await dispatch(setupPassword({ token, password }));
+      const resultAction = await dispatch(setupPassword({ accessTkn, password }));
+      console.log(resultAction);
       /**Check if action was successful */
       if (setupPassword.fulfilled.match(resultAction)) {
         navigate('/feeds', {
