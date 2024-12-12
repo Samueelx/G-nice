@@ -3,8 +3,7 @@ import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { useNavigate, useLocation } from "react-router-dom";
 import { setupPassword, resetPasswordSetupState } from "@/features/auth/passwordSetupSlice";
-
-
+import { UnknownAction } from "@reduxjs/toolkit";
 
 const PasswordSetup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -20,15 +19,15 @@ const PasswordSetup: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  /**Get token from the url */
+  // Get token from the url 
   const searchParams = new URLSearchParams(location.search);
   const accessTkn = searchParams.get('token');
+  const refreshTkn = searchParams.get('refreshToken'); // Add refresh token parameter
 
-  /**select state from redux store */
+  // Select state from redux store
   const { loading, error } = useAppSelector((state) => state.passwordSetup);
 
-
-  /**Validate password */
+  // Validate password 
   const validatePassword = (pass: string) => {
     if (pass.length < 8) {
       return "Password must be at least 8 characters long";
@@ -66,10 +65,12 @@ const PasswordSetup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    /**Validate inputs */
+    
+    // Validate inputs
     const passwordError = validatePassword(password);
     const confirmPasswordError = password !== confirmPassword ? "Passwords do not match" : "";
-    /**update errors */
+    
+    // Update errors
     setErrors({
       password: passwordError,
       confirmPassword: confirmPasswordError
@@ -79,17 +80,21 @@ const PasswordSetup: React.FC = () => {
       return;
     }
 
-    /**Check if password exists */
+    // Check if token exists
     if (!accessTkn) {
       alert("Invalid or missing token");
       return;
     }
 
-    /**Dispatch password setup action */
+    // Dispatch password setup action
     try {
-      const resultAction = await dispatch(setupPassword({ accessTkn, password }));
-      console.log(resultAction);
-      /**Check if action was successful */
+      const resultAction = await dispatch(setupPassword({ 
+        accessTkn, 
+        refreshTkn: refreshTkn || '',
+        password 
+      }) as unknown as  UnknownAction);
+
+      // Check if action was successful
       if (setupPassword.fulfilled.match(resultAction)) {
         navigate('/feeds', {
           state: { message: 'Account created successfully' }
@@ -100,14 +105,14 @@ const PasswordSetup: React.FC = () => {
     }
   };
 
-  /**Reset error state on component unmount */
+  // Reset error state on component unmount
   useEffect(() => {
     return () => {
       dispatch(resetPasswordSetupState());
     }
   }, [dispatch]);
 
-  /**Handle error display */
+  // Handle error display
   useEffect(() => {
     if (error) {
       alert(error);

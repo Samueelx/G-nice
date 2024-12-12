@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import { UnknownAction } from '@reduxjs/toolkit';
 
 
 const LoginPage: React.FC = () => {
@@ -34,7 +35,7 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
     try{
-      const resultAction = await dispatch(loginUser(formData) as any);
+      const resultAction = await dispatch(loginUser(formData) as unknown as UnknownAction);
       if(loginUser.fulfilled.match(resultAction)){
         navigate('/feeds');
       }
@@ -47,7 +48,7 @@ const LoginPage: React.FC = () => {
     if(credentialResponse.credential){
       console.log("Credentials: ", credentialResponse.credential);
       try{
-        const resultAction = await dispatch(googleSignIn(credentialResponse.credential));
+        const resultAction = await dispatch(googleSignIn(credentialResponse.credential) as unknown as  UnknownAction);
         console.log("result action: ", resultAction);
         if(googleSignIn.fulfilled.match(resultAction)){
           navigate('/feeds');

@@ -33,15 +33,18 @@ const initialState: UserState = {
 };
 
 export const registerUser = createAsyncThunk<
-  AxiosResponse<RegistrationResponse>, // Return type is now the full Axios response
-  UserRegistrationData, // First argument to the payload creator
+  RegistrationResponse,
+  UserRegistrationData, 
   {
     rejectValue: string; // Type for the rejection value
   }
 >('user/register', async (userData: UserRegistrationData, { rejectWithValue }) => {
   try {
-    const response = await instance.put<RegistrationResponse>('Memefest-SNAPSHOT-01/resources/SignIn/Verify-email', userData);
-    return response;
+    const response: AxiosResponse<RegistrationResponse> = await instance.put(
+      'Memefest-SNAPSHOT-01/resources/SignIn/Verify-email',
+      userData
+    );
+    return response.data; // Fix: Return only the `data` property
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Registration failed');
   }
@@ -63,7 +66,7 @@ const userSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.registrationResponse = action.payload;
+        state.registrationResponse = action.payload; // Fix: `action.payload` is now `RegistrationResponse`
         state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {
