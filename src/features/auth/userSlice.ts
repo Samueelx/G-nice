@@ -44,7 +44,7 @@ export const registerUser = createAsyncThunk<
       'Memefest-SNAPSHOT-01/resources/SignIn/Verify-email',
       userData
     );
-    return response.data; // Fix: Return only the `data` property
+    return response; // Fix: Return only the `data` property
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Registration failed');
   }

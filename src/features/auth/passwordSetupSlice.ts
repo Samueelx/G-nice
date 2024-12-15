@@ -43,7 +43,7 @@ export const setupPassword = createAsyncThunk(
                     errorData.message || 'password setup failed'
                 )
             }
-            
+            console.log(response);
             // Store tokens in localStorage
             localStorage.setItem('accessToken', accessTkn);
             localStorage.setItem('refreshToken', refreshTkn);
