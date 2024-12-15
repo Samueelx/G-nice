@@ -123,6 +123,29 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
+/**async thunk for forgot password */
+export const forgotPassword = createAsyncThunk(
+  'auth/forgotPassword',
+  async (email: string, { rejectWithValue }) => {
+    try {
+      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/reset-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(email),
+      })
+
+      return await response.json();
+    } catch(error: any) {
+      if(error.response && error.response?.data){
+        return rejectWithValue(error.response.data?.message);
+      }
+      return rejectWithValue('An unexpected error occured');
+    }
+  }
+)
+
 /** Auth Slice */
 const authSlice = createSlice({
   name: 'auth',

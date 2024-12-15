@@ -132,7 +132,10 @@ const LoginPage: React.FC = () => {
           </div>
 
           <div className="mt-10 text-xs border-b py-4">
-            <a href="#">Forgot your password?</a>
+            <a href="#" onClick={(e) => {
+              e.preventDefault();
+              navigate('/forgot-password');
+            }}>Forgot your password?</a>
           </div>
           <div className="mt-3 text-xs flex justify-between items-center">
             <p>If you don't have an account...</p>

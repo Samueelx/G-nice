@@ -10,6 +10,7 @@ import PasswordSetup from "@/pages/PasswordSetup";
 import LandingPage from "@/pages/LandingPage";
 import ResetPassword from "@/pages/ResetPassword";
 import EmailVerification from "@/pages/EmailVerification";
+import ForgotPassword from "@/pages/ForgotPassword";
 
 const router = createBrowserRouter([
     {
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
     {
         path: '/email-verification',
         element: <PublicRoute><EmailVerification/></PublicRoute>
+    },
+    {
+        path: '/forgot-password',
+        element: <PublicRoute><ForgotPassword/></PublicRoute>
     }
 ]);
 
