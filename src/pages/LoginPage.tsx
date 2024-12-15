@@ -15,11 +15,13 @@ const LoginPage: React.FC = () => {
     password: '',
   });
   // const [error, setError] = useState<string | null>(null);
-  const {isLoading, error, isAuthenticated} = useAppSelector((state) => state.auth);
+  const {isLoading, error} = useAppSelector((state) => state.auth);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
 
   /**Redirect authenticated users away from login page */
   useEffect(() => {
     if(isAuthenticated){
+      console.log("Is Authenticated ?", isAuthenticated);
       navigate('/feeds');
     }
   }, [isAuthenticated, navigate]);
