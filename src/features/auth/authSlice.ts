@@ -129,7 +129,7 @@ export const forgotPassword = createAsyncThunk(
   'auth/forgotPassword',
   async (email: string, { rejectWithValue }) => {
     try {
-      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/reset-password', {
+      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/ResetPassword', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
