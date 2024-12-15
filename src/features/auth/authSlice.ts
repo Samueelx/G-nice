@@ -9,6 +9,7 @@ interface AuthState {
   token: string | null;
   isLoading: boolean | null;
   error: string | null;
+  isAuthenticated: boolean;
 }
 
 /**async thunk for login */
@@ -151,16 +152,18 @@ const authSlice = createSlice({
   name: 'auth',
   initialState: {
     user: null,
-    token: localStorage.getItem('token'),
+    token: localStorage.getItem('accessTkn'),
     isLoading: false,
     error: null,
+    isAuthenticated: !!localStorage.getItem('accessTkn'),
   } as AuthState,
   reducers: {
     logout: (state) => {
       state.user = null;
       state.token = null;
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh-token');
+      state.isAuthenticated = false;
+      localStorage.removeItem('accessTkn');
+      localStorage.removeItem('refreshTkn');
     },
   },
   extraReducers: (builder) => {
@@ -175,12 +178,14 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.token = action.payload.accessTkn;
         state.error = null;
+        state.isAuthenticated = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
         state.user = null;
         state.token = null;
+        state.isAuthenticated = false;
       })
 
       // Google Sign-In reducers
@@ -193,6 +198,7 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.token = action.payload.accessTkn;
         state.error = null;
+        state.isAuthenticated = true;
       })
       .addCase(googleSignIn.rejected, (state, action) => {
         state.isLoading = false;
@@ -208,6 +214,7 @@ const authSlice = createSlice({
       .addCase(resetPassword.fulfilled, (state) => {
         state.isLoading = false;
         state.error = null;
+        state.isAuthenticated = false;
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.isLoading = false;

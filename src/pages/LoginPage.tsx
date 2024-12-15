@@ -15,14 +15,14 @@ const LoginPage: React.FC = () => {
     password: '',
   });
   // const [error, setError] = useState<string | null>(null);
-  const {isLoading, error, token} = useAppSelector((state) => state.auth);
+  const {isLoading, error, isAuthenticated} = useAppSelector((state) => state.auth);
 
   /**Redirect authenticated users away from login page */
   useEffect(() => {
-    if(token){
+    if(isAuthenticated){
       navigate('/feeds');
     }
-  }, [token, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {name, value} = e.target;
