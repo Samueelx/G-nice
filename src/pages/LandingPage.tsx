@@ -1,8 +1,8 @@
-import { Menu } from "lucide-react";
 import SocialPost from "@/components/common/SocialPost";
 
 import data from '@/data.json'
 import PostFilter from "@/components/common/PostFilter";
+import HamburgerSwap from "@/components/specific/HamburgerSwap";
 
 const LandingPage: React.FC = () => {
   return (
@@ -23,14 +23,8 @@ const LandingPage: React.FC = () => {
                 alt="G Icon"
               />
             </div>
-            <div>
-              <Menu
-                size={45}
-                style={{
-                  boxShadow: "3px 3px red .5rem 0 .4em olive",
-                  cursor: "pointer",
-                }}
-              />
+            <div className="">
+              <HamburgerSwap />
             </div>
           </div>
         </nav>
