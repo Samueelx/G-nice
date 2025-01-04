@@ -1,30 +1,28 @@
-import { useState } from 'react';
-import MobileSidebar from '../common/MobileSidebar';
+import { useState } from "react";
+import MobileSidebar from "../common/MobileSidebar";
 
 const HamburgerSwap = () => {
+  const recentCommunities = [
+    {
+      id: "1",
+      name: "r/programming",
+      memberCount: 4200000,
+      isSubscribed: true,
+      avatar: "/path/to/avatar.png",
+    },
+    // ... more communities
+  ];
 
-    const recentCommunities = [
-        {
-          id: '1',
-          name: 'r/programming',
-          memberCount: 4200000,
-          isSubscribed: true,
-          avatar: '/path/to/avatar.png'
-        },
-        // ... more communities
-      ];
-      
-      const subscribedCommunities = [
-        {
-          id: '2',
-          name: 'r/react',
-          memberCount: 300000,
-          isSubscribed: true,
-          avatar: '/path/to/avatar.png'
-        },
-        // ... more communities
-      ];
-
+  const subscribedCommunities = [
+    {
+      id: "2",
+      name: "r/react",
+      memberCount: 300000,
+      isSubscribed: true,
+      avatar: "/path/to/avatar.png",
+    },
+    // ... more communities
+  ];
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -53,12 +51,16 @@ const HamburgerSwap = () => {
         </svg>
       </button>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <MobileSidebar recentCommunities={recentCommunities} 
-        subscribedCommunities={subscribedCommunities} 
-        onCommunityClick={(communityId) => {console.log('Selected communuty: ', communityId)}}/>
-      )}
+      {/* Sidebar */}
+      <MobileSidebar
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        recentCommunities={recentCommunities}
+        subscribedCommunities={subscribedCommunities}
+        onCommunityClick={(communityId) => {
+          console.log("Selected community: ", communityId);
+        }}
+      />
     </div>
   );
 };
