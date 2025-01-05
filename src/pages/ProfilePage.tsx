@@ -185,7 +185,7 @@ const ProfilePage = ({
 
         {/* Tabs */}
         <div className="mb-6 border-b border-gray-200">
-          <div className="flex gap-8">
+          <div className="flex gap-8 w-screen justify-evenly">
             {(['posts', 'comments', 'about'] as const).map((tab) => (
               <button
                 key={tab}
