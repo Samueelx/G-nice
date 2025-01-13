@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pencil, MapPin, Calendar, Briefcase, Users } from 'lucide-react';
+import { Pencil, MapPin, Calendar, Briefcase, Users, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 type UserProfile = {
   username: string;
@@ -44,6 +45,7 @@ const ProfilePage = ({
   onEditProfile,
 }: ProfileProps) => {
   const [activeTab, setActiveTab] = useState<'posts' | 'comments' | 'about'>('posts');
+  const navigate = useNavigate();
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -150,8 +152,17 @@ const ProfilePage = ({
       {/* Profile Header */}
       <div className="bg-gray-900 pb-32 pt-8">
         <div className="relative max-w-4xl mx-auto px-4">
+          {/* Changed: Moved back button to left side */}
+          <div className="absolute -top-8 left-1 p-4">
+            <button 
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6 text-white" />
+            </button>
+          </div>
           {/* Avatar and Status */}
-          <div className="absolute -bottom-16">
+          <div className="absolute -bottom-16 right-4">
             <div className="relative">
               <img
                 src={user.avatar}

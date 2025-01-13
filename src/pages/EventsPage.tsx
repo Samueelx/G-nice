@@ -1,3 +1,4 @@
+import BackNavigationTemplate from '@/components/templates/BackNavigationTemplate';
 import { Circle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -57,7 +58,7 @@ const EventsPage = () => {
     },
     {
       id: '4',
-      title: 'Digital Electronics 101',
+      title: 'Power Electronics 101',
       location: "Online",
       time: '9:00 PM',
       date: {
@@ -74,68 +75,70 @@ const EventsPage = () => {
   };
 
   return (
-    <div className="p-4 bg-gray-50 min-h-screen">
-      {/* Header Section */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">Upcoming events</h1>
-          <button className="text-[#B43E8F] font-medium">See All</button>
-        </div>
-        
-        {/* Category Pills */}
-        <div className="flex gap-3 justify-center">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#B43E8F] text-white">
-            <Circle className="w-4 h-4" />
-            <span>Mine</span>
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-700">
-            <Circle className="w-4 h-4" />
-            <span>Food</span>
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-700">
-            <Circle className="w-4 h-4" />
-            <span>Concerts</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Events Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {events.map((event) => (
-          <div 
-            key={event.id} 
-            className="relative bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => handleEventClick(event.id)}
-          >
-            <div className="relative">
-              <img 
-                src={event.imageUrl} 
-                alt={event.title}
-                className="w-full h-48 object-cover"
-              />
-              <div className="absolute top-3 right-3 bg-white rounded-full p-2 text-sm opacity-60">
-                <div className="font-bold">{event.date.day}</div>
-                <div className="text-gray-500">{event.date.month}</div>
-              </div>
-            </div>
-            
-            <div className="p-4">
-              <h3 className="font-semibold text-lg text-gray-900 mb-1">
-                {event.title}
-              </h3>
-              <div className="flex justify-between items-center">
-                <div className="text-[#B43E8F]">
-                  {event.location} - {event.time}
-                </div>
-                <div className="font-bold text-[#B43E8F]">
-                  ${event.price.toFixed(2)}
-                </div>
-              </div>
-            </div>
+    <BackNavigationTemplate title='Events'>
+      <div className="p-4 bg-gray-50 min-h-screen">
+        {/* Header Section */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">Upcoming events</h1>
+            <button className="text-[#B43E8F] font-medium">See All</button>
           </div>
-        ))}
+
+          {/* Category Pills */}
+          <div className="flex gap-3 justify-center">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#B43E8F] text-white">
+              <Circle className="w-4 h-4" />
+              <span>Mine</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-700">
+              <Circle className="w-4 h-4" />
+              <span>Food</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-700">
+              <Circle className="w-4 h-4" />
+              <span>Concerts</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Events Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {events.map((event) => (
+            <div
+              key={event.id}
+              className="relative bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => handleEventClick(event.id)}
+            >
+              <div className="relative">
+                <img
+                  src={event.imageUrl}
+                  alt={event.title}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="absolute top-3 right-3 bg-white rounded-full p-2 text-sm opacity-60">
+                  <div className="font-bold">{event.date.day}</div>
+                  <div className="text-gray-500">{event.date.month}</div>
+                </div>
+              </div>
+
+              <div className="p-4">
+                <h3 className="font-semibold text-lg text-gray-900 mb-1">
+                  {event.title}
+                </h3>
+                <div className="flex justify-between items-center">
+                  <div className="text-[#B43E8F]">
+                    {event.location} - {event.time}
+                  </div>
+                  <div className="font-bold text-[#B43E8F]">
+                    ${event.price.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </BackNavigationTemplate>
   );
 };
 
