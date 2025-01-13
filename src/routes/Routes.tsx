@@ -13,6 +13,7 @@ import EmailVerification from "@/pages/EmailVerification";
 import ForgotPassword from "@/pages/ForgotPassword";
 import AppLayout from "./AppLayout";
 import EventsPage from "@/pages/EventsPage";
+import EventDetailsPage from "@/pages/EventDetailsPage";
 
 const userProfile = {
     username: "knightwing",
@@ -87,6 +88,10 @@ const router = createBrowserRouter([
     {
         path: '/events',
         element: <PrivateRoute><EventsPage /></PrivateRoute>
+    },
+    {
+        path: '/events/:id',
+        element: <PrivateRoute><EventDetailsPage /></PrivateRoute>
     }
 ]);
 
