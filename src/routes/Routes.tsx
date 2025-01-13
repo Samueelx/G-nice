@@ -11,6 +11,8 @@ import LandingPage from "@/pages/LandingPage";
 import ResetPassword from "@/pages/ResetPassword";
 import EmailVerification from "@/pages/EmailVerification";
 import ForgotPassword from "@/pages/ForgotPassword";
+import AppLayout from "./AppLayout";
+import EventsPage from "@/pages/EventsPage";
 
 const userProfile = {
     username: "knightwing",
@@ -68,7 +70,7 @@ const router = createBrowserRouter([
     },
     {
         path: '/feeds',
-        element: <PrivateRoute><LandingPage/></PrivateRoute>
+        element: <PrivateRoute><AppLayout><LandingPage/></AppLayout></PrivateRoute>
     },
     {
         path: '/reset-password',
@@ -81,6 +83,10 @@ const router = createBrowserRouter([
     {
         path: '/forgot-password',
         element: <PublicRoute><ForgotPassword/></PublicRoute>
+    },
+    {
+        path: '/events',
+        element: <PrivateRoute><EventsPage /></PrivateRoute>
     }
 ]);
 
