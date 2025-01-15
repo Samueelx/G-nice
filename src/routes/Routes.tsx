@@ -14,6 +14,7 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import AppLayout from "./AppLayout";
 import EventsPage from "@/pages/EventsPage";
 import EventDetailsPage from "@/pages/EventDetailsPage";
+import NotificationsPage from "@/pages/NotificationsPage";
 
 const userProfile = {
     username: "knightwing",
@@ -92,6 +93,10 @@ const router = createBrowserRouter([
     {
         path: '/events/:id',
         element: <PrivateRoute><EventDetailsPage /></PrivateRoute>
+    },
+    {
+        path: '/notifications',
+        element: <PrivateRoute><NotificationsPage /></PrivateRoute>
     }
 ]);
 

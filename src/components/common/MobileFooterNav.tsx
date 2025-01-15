@@ -1,5 +1,6 @@
 import React from 'react';
 import { Home, Search, PlusSquare, MessageCircle, Bell } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -22,6 +23,17 @@ const NavItem = ({ icon, label, isActive = false, onClick }: NavItemProps) => (
 
 const MobileFooterNav = () => {
   const [activeTab, setActiveTab] = React.useState('home');
+  const navigate = useNavigate();
+
+  const onClickNotifications = () => {
+    setActiveTab('notifications');
+    navigate('/notifications');
+  }
+  
+  const onClickHome = () => {
+    setActiveTab('home');
+    navigate('/feeds');
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-1 sm:px-6">
@@ -30,7 +42,7 @@ const MobileFooterNav = () => {
           icon={<Home className={activeTab === 'home' ? 'fill-current' : ''} />}
           label="Home"
           isActive={activeTab === 'home'}
-          onClick={() => setActiveTab('home')}
+          onClick={() => onClickHome()}
         />
         <NavItem
           icon={<Search />}
@@ -54,7 +66,7 @@ const MobileFooterNav = () => {
           icon={<Bell />}
           label="Notifications"
           isActive={activeTab === 'notifications'}
-          onClick={() => setActiveTab('notifications')}
+          onClick={() => onClickNotifications()}
         />
       </div>
     </nav>
