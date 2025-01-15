@@ -40,8 +40,8 @@ const MobileNotifications = () => {
       id: '2',
       type: 'fileAdd',
       user: { name: 'Teo Le', avatar: teoAvatar },
-      action: 'added file to',
-      target: 'WhatsApp Ads Campaign',
+      action: 'shared a post',
+      target: 'Had a gread day hiking',
       timeAgo: '44 minutes ago',
       fileDetails: {
         name: 'LezatkaFoods_MarketingAssets_Sept2024.zip',
@@ -53,7 +53,7 @@ const MobileNotifications = () => {
       type: 'access',
       user: { name: 'Sarah', avatar: sarahAvatar },
       action: 'requested access to',
-      target: 'Instagram Ads',
+      target: 'Club Trenton',
       campaign: 'Lezatos',
       timeAgo: '56 minutes ago'
     }
@@ -72,7 +72,7 @@ const MobileNotifications = () => {
             <p className="text-sm">
               <span className="font-semibold">{notification.user.name}</span>{' '}
               <span className="text-gray-600">{notification.action}</span>{' '}
-              <span className="font-medium">{notification.target}</span>
+              <span className="font-medium"><p className='truncate inline'>{notification.target}</p></span>
               {notification.campaign && (
                 <span className="text-gray-600"> for {notification.campaign}</span>
               )}
