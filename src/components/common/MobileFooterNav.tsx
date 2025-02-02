@@ -39,6 +39,10 @@ const MobileFooterNav = () => {
     setActiveTab('events');
     navigate('/events');
   }
+  const onClickCreate = () => {
+    setActiveTab('create');
+    navigate('/create-post');
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-1 sm:px-6">
@@ -59,7 +63,7 @@ const MobileFooterNav = () => {
           icon={<PlusSquare />}
           label="Create"
           isActive={activeTab === 'create'}
-          onClick={() => setActiveTab('create')}
+          onClick={() => onClickCreate()}
         />
         <NavItem
           icon={<CalendarCog />}

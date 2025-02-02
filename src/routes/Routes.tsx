@@ -15,6 +15,7 @@ import AppLayout from "./AppLayout";
 import EventsPage from "@/pages/EventsPage";
 import EventDetailsPage from "@/pages/EventDetailsPage";
 import NotificationsPage from "@/pages/NotificationsPage";
+import CreatePost from "@/pages/CreatePost";
 
 const userProfile = {
     username: "knightwing",
@@ -97,6 +98,10 @@ const router = createBrowserRouter([
     {
         path: '/notifications',
         element: <PrivateRoute><NotificationsPage /></PrivateRoute>
+    },
+    {
+        path: '/create-post',
+        element: <PrivateRoute><CreatePost /></PrivateRoute>
     }
 ]);
 
