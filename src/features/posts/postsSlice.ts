@@ -1,11 +1,12 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import axios from "axios";
 
 // Types
 interface Post {
   id: string;
   title: string;
   body: string;
+  imageUrl?: string;
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -16,6 +17,7 @@ interface Post {
 interface CreatePostData {
   title: string;
   body: string;
+  image?: File;
 }
 
 interface PostsState {
@@ -34,44 +36,60 @@ const initialState: PostsState = {
 
 // Async thunks
 export const createPost = createAsyncThunk(
-  'posts/createPost',
+  "posts/createPost",
   async (postData: CreatePostData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/api/posts', postData);
+      const formData = new FormData();
+      formData.append("title", postData.title);
+      formData.append("body", postData.body);
+      if (postData.image) {
+        formData.append("image", postData.image);
+      }
+      const response = await axios.post("/api/posts", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create post');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create post"
+      );
     }
   }
 );
 
 export const fetchPosts = createAsyncThunk(
-  'posts/fetchPosts',
+  "posts/fetchPosts",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/posts');
+      const response = await axios.get("/api/posts");
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch posts');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch posts"
+      );
     }
   }
 );
 
 export const fetchUserPosts = createAsyncThunk(
-  'posts/fetchUserPosts',
+  "posts/fetchUserPosts",
   async (userId: string, { rejectWithValue }) => {
     try {
       const response = await axios.get(`/api/posts/user/${userId}`);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch user posts');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch user posts"
+      );
     }
   }
 );
 
 // Slice
 const postsSlice = createSlice({
-  name: 'posts',
+  name: "posts",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -100,8 +118,8 @@ const postsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-    
-    // Fetch Posts
+
+      // Fetch Posts
       .addCase(fetchPosts.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -114,16 +132,19 @@ const postsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-    
-    // Fetch User Posts
+
+      // Fetch User Posts
       .addCase(fetchUserPosts.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchUserPosts.fulfilled, (state, action: PayloadAction<Post[]>) => {
-        state.isLoading = false;
-        state.userPosts = action.payload;
-      })
+      .addCase(
+        fetchUserPosts.fulfilled,
+        (state, action: PayloadAction<Post[]>) => {
+          state.isLoading = false;
+          state.userPosts = action.payload;
+        }
+      )
       .addCase(fetchUserPosts.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
