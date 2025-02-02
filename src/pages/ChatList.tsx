@@ -83,9 +83,9 @@ const ChatList = () => {
         <Button
           onClick={handleNewChat}
           size="icon"
-          className="w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-blue-500 hover:bg-blue-600"
+          className="w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-[#4A90E2] hover:bg-[#3372ba]"
         >
-          <MessageSquarePlus className="w-6 h-6 text-white" />
+          <MessageSquarePlus className="w-10 h-10 text-white" />
         </Button>
       </div>
     </div>
