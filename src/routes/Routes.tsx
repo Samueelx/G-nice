@@ -17,6 +17,7 @@ import EventDetailsPage from "@/pages/EventDetailsPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import CreatePost from "@/pages/CreatePost";
 import ChatList from "@/pages/ChatList";
+import NewChat from "@/pages/NewChat";
 
 const userProfile = {
     username: "knightwing",
@@ -107,6 +108,10 @@ const router = createBrowserRouter([
     {
         path: '/chats',
         element: <PrivateRoute><ChatList /></PrivateRoute>
+    },
+    {
+        path: '/new-chat',
+        element: <PrivateRoute><NewChat /></PrivateRoute>
     }
 ]);
 
