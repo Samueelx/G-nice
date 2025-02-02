@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import SocialPost from "@/components/common/SocialPost";
 import data from '@/data.json';
 import PostFilter from "@/components/common/PostFilter";
-import HamburgerSwap from "@/components/specific/HamburgerSwap";
 import Sidebar from '@/components/common/Sidebar'; // Adjust import path as needed
 
 const LandingPage: React.FC = () => {
@@ -39,11 +38,6 @@ const LandingPage: React.FC = () => {
                   src="/g-icon.svg"
                   alt="G Icon"
                 />
-              </div>
-
-              {/* Hamburger Menu */}
-              <div>
-                <HamburgerSwap />
               </div>
             </div>
           </nav>
