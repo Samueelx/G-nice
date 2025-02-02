@@ -1,31 +1,40 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Image, Link } from 'lucide-react';
+import { createPost } from '@/features/posts/postsSlice';
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
+import { useToast } from '@/hooks/use-toast';
 
 const CreatePost = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const { toast } = useToast();
+  const isLoading = useAppSelector((state) => state.posts.isLoading);
+//   const error = useAppSelector((state) => state.posts.error);
+  
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !body.trim()) return;
 
-    setIsSubmitting(true);
     try {
-      // You would replace this with your actual Redux action
-      // await dispatch(createPost({ title, body }));
+      await dispatch(createPost({ title, body })).unwrap();
       setTitle('');
       setBody('');
+      toast({
+        title: 'Success',
+        description: 'Post created successfully!',
+      });
     } catch (error) {
-      console.error('Failed to create post:', error);
-    } finally {
-      setIsSubmitting(false);
+      toast({
+        title: 'Error',
+        description: error as string,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -74,10 +83,10 @@ const CreatePost = () => {
           
           <Button 
             type="submit" 
-            disabled={isSubmitting || !title.trim() || !body.trim()}
+            disabled={isLoading || !title.trim() || !body.trim()}
             className="px-6"
           >
-            {isSubmitting ? 'Posting...' : 'Post'}
+            {isLoading ? 'Posting...' : 'Post'}
           </Button>
         </CardFooter>
       </form>
