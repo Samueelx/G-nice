@@ -35,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems: MenuItem[] = [
     { icon: <div onClick={() => navigate('/profile')}><Newspaper size={24}/></div>, label: 'Profile', count: 0 },
-    { icon: <div onClick={() => navigate('/events')}><MessageCircle size={24} /></div>, label: 'Events', count: 6 },
+    { icon: <MessageCircle size={24} />, label: 'Chat', count: 1 },
     { icon: <Users2 size={24} />, label: 'Forums', count: 0 },
     { icon: <UserRound size={24} />, label: 'Friends', count: 3 },
     { icon: <Film size={24} />, label: 'Media', count: 0 },

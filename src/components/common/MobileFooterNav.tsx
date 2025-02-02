@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Search, PlusSquare, MessageCircle, Bell } from 'lucide-react';
+import { Home, Search, PlusSquare, Bell, CalendarCog } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface NavItemProps {
@@ -35,6 +35,11 @@ const MobileFooterNav = () => {
     navigate('/feeds');
   }
 
+  const onClickCalendar = () => {
+    setActiveTab('events');
+    navigate('/events');
+  }
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-1 sm:px-6">
       <div className="flex items-center justify-between max-w-md mx-auto">
@@ -57,10 +62,10 @@ const MobileFooterNav = () => {
           onClick={() => setActiveTab('create')}
         />
         <NavItem
-          icon={<MessageCircle />}
-          label="Chat"
-          isActive={activeTab === 'chat'}
-          onClick={() => setActiveTab('chat')}
+          icon={<CalendarCog />}
+          label="Events"
+          isActive={activeTab === 'events'}
+          onClick={() => onClickCalendar()}
         />
         <NavItem
           icon={<Bell />}
