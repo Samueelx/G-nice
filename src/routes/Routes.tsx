@@ -75,7 +75,7 @@ const router = createBrowserRouter([
     },
     {
         path: '/feeds',
-        element: <PrivateRoute><AppLayout><LandingPage/></AppLayout></PrivateRoute>
+        element: <PrivateRoute><AppLayout><LandingPage setIsSidebarOpen={() => false}/></AppLayout></PrivateRoute>
     },
     {
         path: '/reset-password',
