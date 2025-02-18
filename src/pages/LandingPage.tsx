@@ -1,13 +1,22 @@
-import React from 'react';
+import React from "react";
 import SocialPost from "@/components/common/SocialPost";
-import data from '@/data.json';
-import PostFilter from "@/components/common/PostFilter";
+import data from "@/data.json";
+import JokeJumbotron from "@/components/templates/JokeJumbotron";
 
 interface LandingPageProps {
   setIsSidebarOpen: (isOpen: boolean) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
+
+  const joke = {
+    setup: "Why don't programmers like nature?",
+    punchline: "It has too many bugs!",
+    author: "John Doe",
+    date: "2025-02-18",
+    likes: 42,
+  };
+
   return (
     <>
       <header className="p-4 md:p-6 static top-0 z-10 shadow-sm bg-white">
@@ -38,8 +47,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
       {/* Feeds Section */}
       <section className="max-w-4xl mx-auto px-4 md:px-6 py-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Feeds</h2>
-          <PostFilter />
+          <JokeJumbotron joke={joke} onShare={() => console.log("Share Clicked!")}/>
         </div>
         <div className="space-y-6">
           {data.map((post, index) => (
