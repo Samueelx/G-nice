@@ -18,7 +18,7 @@ export const searchContent = createAsyncThunk(
   'search/searchContent',
   async ({ query, category }: { query: string; category: SearchCategory }, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/search`, {
+      const response = await axios.get(`http://localhost:8080/api/search`, {
         params: { query, category }
       });
       return response.data;

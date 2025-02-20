@@ -44,6 +44,11 @@ const MobileFooterNav = () => {
     navigate('/create-post');
   }
 
+  const onClickSearch = () => {
+    setActiveTab('search');
+    navigate('/search')
+  }
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-1 sm:px-6">
       <div className="flex items-center justify-between max-w-md mx-auto">
@@ -57,7 +62,7 @@ const MobileFooterNav = () => {
           icon={<Search />}
           label="Search"
           isActive={activeTab === 'search'}
-          onClick={() => setActiveTab('search')}
+          onClick={() => onClickSearch()}
         />
         <NavItem
           icon={<PlusSquare />}
