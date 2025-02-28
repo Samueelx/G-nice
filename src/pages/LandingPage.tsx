@@ -10,12 +10,12 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
-  const joke = {
-    setup: "Why don't programmers like nature?",
-    punchline: "It has too many bugs!",
-    author: "John Doe",
-    date: "2025-02-18",
+  const joke={
+    setup: "Why don't scientists trust atoms?",
+    punchline: "Because they make up everything!",
+    author: "Anonymous",
     likes: 42,
+    comments: 5,
   };
 
   return (
@@ -42,7 +42,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
                   alt="G Icon"
                 />
                 <h1 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-transparent bg-clip-text">
-                  GiggleHub
+                  Gnice
                 </h1>
               </div>
 
@@ -65,7 +65,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
       <main className="w-full px-3 py-4">
         {/* Jumbotron - Made responsive */}
         <div className="mb-6 max-w-2xl mx-auto">
-          <JokeJumbotron joke={joke} onShare={() => console.log("Share Clicked!")}/>
+          <JokeJumbotron joke={joke} onShare={() => console.log("Share Clicked!")} 
+          onLike={() => {console.log("Liked")}} 
+          onComment={() => console.log("Comment Ckicked!")}/>
         </div>
 
         {/* Posts Grid - Single column on mobile, centered on desktop */}
