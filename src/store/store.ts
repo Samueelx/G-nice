@@ -6,6 +6,7 @@ import userReducer from '../features/auth/userSlice';
 import passwordSetupReducer from '../features/auth/passwordSetupSlice';
 import chatsReducer from '../features/chats/chatsSlice'
 import searchReducer from '../features/search/searchSlice'
+import jokesReducer from '../features/jumbotron/jokesSlice'
 
 export const store: Store = configureStore({
     reducer: {
@@ -15,7 +16,8 @@ export const store: Store = configureStore({
         user: userReducer,
         passwordSetup: passwordSetupReducer,
         chats: chatsReducer,
-        search: searchReducer
+        search: searchReducer,
+        jokes: jokesReducer
     },
 
     // Add middleware to handle async actions and provide better dev experience
