@@ -5,6 +5,7 @@ import { Share, ThumbsUp, MessageCircle } from 'lucide-react';
 import CommentSection from './CommentSection';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { fetchJokeOfTheDay, likeJoke, likeLocalJoke } from '@/features/jumbotron/jokesSlice';
+import { dummyJoke } from '@/data/dummyJoke'; // Import dummy data
 
 const JokeJumbotron: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -13,18 +14,28 @@ const JokeJumbotron: React.FC = () => {
   // Get current joke from Redux store
   const { currentJoke, loading, error } = useAppSelector(state => state.jokes);
   
+  // Use dummy joke if no joke is loaded
+  const joke = currentJoke || dummyJoke;
+  
   // Fetch joke of the day on component mount
   useEffect(() => {
     dispatch(fetchJokeOfTheDay());
-  }, [dispatch]);
+    console.log("Joke", joke);
+  }, [dispatch, joke]);
   
-  const handleLikeClick = () => {
-    if (currentJoke) {
+  const handleLikeClick = async () => {
+    if (joke) {
       // Optimistic update
       dispatch(likeLocalJoke());
       
-      // API call
-      dispatch(likeJoke(currentJoke.id));
+      try {
+        // API call
+        await dispatch(likeJoke(joke.id)).unwrap();
+      } catch (error) {
+        // Revert optimistic update on failure
+        dispatch(likeLocalJoke()); // Dispatch again to toggle back
+        console.error('Failed to like joke:', error);
+      }
     }
   };
   
@@ -33,17 +44,25 @@ const JokeJumbotron: React.FC = () => {
   };
   
   const handleShareClick = () => {
-    // Implement share functionality
-    if (navigator.share && currentJoke) {
-      navigator.share({
-        title: 'Joke of the Day',
-        text: `${currentJoke.setup ? currentJoke.setup + ' ' : ''}${currentJoke.punchline}`,
-        url: window.location.href,
-      }).catch(err => {
-        console.error('Error sharing:', err);
-      });
-    } else {
-      alert('Share feature not supported on this browser');
+    if (joke) {
+      const jokeText = `${joke.setup ? joke.setup + ' ' : ''}${joke.punchline}`;
+      
+      if (navigator.share) {
+        navigator.share({
+          title: 'Joke of the Day',
+          text: jokeText,
+          url: window.location.href,
+        }).catch(err => {
+          console.error('Error sharing:', err);
+        });
+      } else {
+        // Fallback: Copy to clipboard
+        navigator.clipboard.writeText(jokeText).then(() => {
+          alert('Joke copied to clipboard!');
+        }).catch(() => {
+          alert('Failed to copy joke to clipboard.');
+        });
+      }
     }
   };
   
@@ -70,7 +89,8 @@ const JokeJumbotron: React.FC = () => {
     );
   }
   
-  if (error || !currentJoke) {
+  /**Remove this section while testing */
+  if (error) {
     return (
       <Card className="w-full max-w-xl bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg">
         <CardContent className="py-8">
@@ -96,10 +116,10 @@ const JokeJumbotron: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
-          {currentJoke.setup && (
-            <p className="text-md font-medium text-gray-800">{currentJoke.setup}</p>
+          {joke.setup && (
+            <p className="text-md font-medium text-gray-800">{joke.setup}</p>
           )}
-          <p className="text-xl font-semibold text-gray-900">{currentJoke.punchline}</p>
+          <p className="text-xl font-semibold text-gray-900">{joke.punchline}</p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4 border-t border-gray-300 pt-4">
           <div className="flex justify-between items-center w-full">
@@ -109,18 +129,20 @@ const JokeJumbotron: React.FC = () => {
                 size="sm"
                 onClick={handleLikeClick}
                 className="flex items-center gap-2"
+                aria-label="Like joke"
               >
                 <ThumbsUp className="w-4 h-4" />
-                <span>{currentJoke.likes}</span>
+                <span>{joke.likes}</span>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleCommentClick}
                 className="flex items-center gap-2"
+                aria-label="View comments"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>{currentJoke.comments?.length || 0}</span>
+                <span>{joke.comments?.length || 0}</span>
               </Button>
             </div>
             <Button
@@ -128,14 +150,15 @@ const JokeJumbotron: React.FC = () => {
               size="sm"
               onClick={handleShareClick}
               className="flex items-center gap-2"
+              aria-label="Share joke"
             >
               <Share className="w-4 h-4" />
               Share
             </Button>
           </div>
-          {currentJoke.author && (
+          {joke.author && (
             <p className="text-sm text-gray-600 w-full text-left">
-              Powered by {currentJoke.author}
+              Powered by {joke.author}
             </p>
           )}
         </CardFooter>
@@ -143,7 +166,7 @@ const JokeJumbotron: React.FC = () => {
       
       {/* Comment Section Dialog */}
       <CommentSection 
-        jokeId={currentJoke.id} 
+        jokeId={joke.id} 
         open={commentSectionOpen} 
         onClose={() => setCommentSectionOpen(false)} 
       />
