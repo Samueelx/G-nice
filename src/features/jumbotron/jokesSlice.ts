@@ -2,7 +2,7 @@ import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
 // Types
-interface Comment {
+export interface Comment {
   id: string;
   authorId: string;
   authorName: string;
