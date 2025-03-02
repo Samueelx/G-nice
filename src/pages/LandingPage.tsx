@@ -2,7 +2,6 @@ import React from "react";
 import SocialPost from "@/components/common/SocialPost";
 import data from "@/data.json";
 import JokeJumbotron from "@/components/templates/JokeJumbotron";
-// import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react"; // Removed Sparkles import
 
 interface LandingPageProps {
@@ -10,14 +9,6 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
-  const joke={
-    setup: "Why don't scientists trust atoms?",
-    punchline: "Because they make up everything!",
-    author: "Anonymous",
-    likes: 42,
-    comments: 5,
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 overflow-x-hidden">
       {/* Mobile-optimized header */}
@@ -65,9 +56,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
       <main className="w-full px-3 py-4">
         {/* Jumbotron - Made responsive */}
         <div className="mb-6 max-w-2xl mx-auto">
-          <JokeJumbotron joke={joke} onShare={() => console.log("Share Clicked!")} 
-          onLike={() => {console.log("Liked")}} 
-          onComment={() => console.log("Comment Ckicked!")}/>
+          <JokeJumbotron />
         </div>
 
         {/* Posts Grid - Single column on mobile, centered on desktop */}
