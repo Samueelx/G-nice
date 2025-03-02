@@ -5,7 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { HeartIcon, MessageSquare, Share2, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
-import { addJokeComment, likeComment, fetchJokeComments, addLocalComment, likeLocalComment } from "@/features/jumbotron/jokesSlice";
+import { addJokeComment, likeComment, fetchJokeComments, addLocalComment, likeLocalComment, Comment } from "@/features/jumbotron/jokesSlice";
+
+import { dummyJoke } from '@/data/dummyJoke';
 
 interface CommentSectionProps {
   jokeId: string;
@@ -17,10 +19,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
   const dispatch = useAppDispatch();
   const [newComment, setNewComment] = useState("");
   
-  // Get current joke from Redux store
+  // Get current joke and state from Redux store
   const currentJoke = useAppSelector(state => state.jokes.currentJoke);
-  const comments = currentJoke?.comments || [];
+  const comments = currentJoke?.comments || dummyJoke.comments;
   const loading = useAppSelector(state => state.jokes.loading);
+  const error = useAppSelector(state => state.jokes.error);
   
   // Get current user (this would come from your auth state)
   const currentUser = {
@@ -36,8 +39,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
     }
   }, [open, jokeId, dispatch]);
   
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (newComment.trim()) {
+      // Validate comment length
+      if (newComment.length > 500) {
+        alert("Comment is too long. Maximum 500 characters allowed.");
+        return;
+      }
+      
       // For optimistic UI updates
       const tempComment = {
         id: `temp-${Date.now()}`,
@@ -53,23 +62,36 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
       // Update local state immediately for a responsive UI
       dispatch(addLocalComment({ comment: tempComment }));
       
-      // Then make the API call
-      dispatch(addJokeComment({ 
-        jokeId, 
-        content: newComment, 
-        user: currentUser 
-      }));
-      
-      setNewComment("");
+      try {
+        // Make the API call
+        await dispatch(addJokeComment({ 
+          jokeId, 
+          content: newComment, 
+          user: currentUser 
+        })).unwrap();
+        
+        setNewComment("");
+      } catch (error) {
+        // Revert optimistic update on failure
+        dispatch(likeLocalComment({ commentId: tempComment.id })); // Remove temporary comment
+        console.error("Failed to add comment:", error);
+        alert("Failed to add comment. Please try again.");
+      }
     }
   };
   
-  const handleLike = (commentId: string) => {
+  const handleLike = async (commentId: string) => {
     // Optimistic update
     dispatch(likeLocalComment({ commentId }));
     
-    // Then make API call
-    dispatch(likeComment({ jokeId, commentId }));
+    try {
+      // Make the API call
+      await dispatch(likeComment({ jokeId, commentId })).unwrap();
+    } catch (error) {
+      // Revert optimistic update on failure
+      dispatch(likeLocalComment({ commentId }));
+      console.error("Failed to like comment:", error);
+    }
   };
   
   // If we have no joke data yet
@@ -82,8 +104,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>Comment</DialogTitle>
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 p-0">
+            <DialogTitle>Comments</DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onClose} 
+              className="h-8 w-8 p-0"
+              aria-label="Close comments"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -91,50 +119,57 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
         
         {loading ? (
           <div className="py-4 text-center">Loading comments...</div>
+        ) : error ? (
+          <div className="py-4 text-center text-red-500">{error}</div>
+        ) : comments.length === 0 ? (
+          <div className="py-4 text-center text-gray-500">No comments yet. Be the first to comment!</div>
         ) : (
           <div className="max-h-80 overflow-y-auto mb-4">
-            {comments.length === 0 ? (
-              <div className="py-4 text-center text-gray-500">No comments yet. Be the first to comment!</div>
-            ) : (
-              comments.map((comment) => (
-                <div key={comment.id} className="mb-4">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={comment.authorAvatar} alt={comment.authorName} />
-                      <AvatarFallback>{comment.authorName.charAt(0)}</AvatarFallback>
-                    </Avatar>
+            {comments.map((comment: Comment) => (
+              <div key={comment.id} className="mb-4">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={comment.authorAvatar} alt={comment.authorName} />
+                    <AvatarFallback>{comment.authorName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1">
+                    <div className="flex justify-between">
+                      <h4 className="font-medium text-sm">{comment.authorName}</h4>
+                      <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                    </div>
                     
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <h4 className="font-medium text-sm">{comment.authorName}</h4>
-                        <span className="text-xs text-gray-500">{comment.timestamp}</span>
-                      </div>
+                    <p className="text-sm mt-1">{comment.content}</p>
+                    
+                    <div className="flex items-center mt-2 gap-4">
+                      <button 
+                        className="flex items-center gap-1 text-xs text-gray-600"
+                        onClick={() => handleLike(comment.id)}
+                        aria-label={`Like comment by ${comment.authorName}`}
+                      >
+                        <HeartIcon size={16} className={comment.likes > 0 ? "text-red-500 fill-red-500" : ""} />
+                        <span>{comment.likes}</span>
+                      </button>
                       
-                      <p className="text-sm mt-1">{comment.content}</p>
+                      <button 
+                        className="flex items-center gap-1 text-xs text-gray-600"
+                        aria-label={`Reply to comment by ${comment.authorName}`}
+                      >
+                        <MessageSquare size={16} />
+                        <span>{comment.replies}</span>
+                      </button>
                       
-                      <div className="flex items-center mt-2 gap-4">
-                        <button 
-                          className="flex items-center gap-1 text-xs text-gray-600"
-                          onClick={() => handleLike(comment.id)}
-                        >
-                          <HeartIcon size={16} className={comment.likes > 0 ? "text-red-500 fill-red-500" : ""} />
-                          <span>{comment.likes}</span>
-                        </button>
-                        
-                        <button className="flex items-center gap-1 text-xs text-gray-600">
-                          <MessageSquare size={16} />
-                          <span>{comment.replies}</span>
-                        </button>
-                        
-                        <button className="flex items-center text-xs text-gray-600 ml-auto">
-                          <Share2 size={16} />
-                        </button>
-                      </div>
+                      <button 
+                        className="flex items-center text-xs text-gray-600 ml-auto"
+                        aria-label={`Share comment by ${comment.authorName}`}
+                      >
+                        <Share2 size={16} />
+                      </button>
                     </div>
                   </div>
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
         )}
         
@@ -150,6 +185,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
             onChange={(e) => setNewComment(e.target.value)}
             className="flex-1 text-sm"
             onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+            aria-label="Write a comment"
           />
           
           <div className="flex gap-2">
@@ -157,8 +193,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
               variant="ghost" 
               size="icon" 
               className="rounded-full"
+              aria-label="Schedule comment"
             >
-              <span className="sr-only">Schedule</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-clock">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
@@ -170,8 +206,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
               size="icon" 
               className="rounded-full bg-primary text-white"
               disabled={!newComment.trim()}
+              aria-label="Send comment"
             >
-              <span className="sr-only">Send</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-send">
                 <path d="m22 2-7 20-4-9-9-4Z"/>
                 <path d="M22 2 11 13"/>
