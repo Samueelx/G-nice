@@ -1,6 +1,6 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Heart, Share2, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Share2, ArrowLeft } from 'lucide-react';
 
 interface Ticket {
   section: string;
@@ -28,9 +28,7 @@ interface EventDetails {
 }
 
 const EventDetailsPage: React.FC = () => {
-  const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
-  const [isFavorite, setIsFavorite] = React.useState(false);
 
   // Mock event data with ticket sections
   const eventDetails: EventDetails = {
