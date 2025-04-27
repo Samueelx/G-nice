@@ -1,4 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+// hooks/useWebSocket.ts
+
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import {
   connectionEstablished,
@@ -23,22 +25,26 @@ export const useWebSocket = ({
   const dispatch = useDispatch();
   const ws = useRef<WebSocket | null>(null);
   const reconnectCount = useRef(0);
+  const shouldReconnect = useRef(true); // control reconnection behavior
+  const [isConnected, setIsConnected] = useState(false); // optional: expose connection status
 
   const connect = useCallback(() => {
     try {
       ws.current = new WebSocket(url);
 
       ws.current.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('✅ WebSocket connected');
         dispatch(connectionEstablished());
         reconnectCount.current = 0;
+        setIsConnected(true);
       };
 
       ws.current.onclose = () => {
-        console.log('WebSocket disconnected');
+        console.log('🔌 WebSocket disconnected');
         dispatch(connectionLost());
-        
-        if (reconnectCount.current < reconnectAttempts) {
+        setIsConnected(false);
+
+        if (shouldReconnect.current && reconnectCount.current < reconnectAttempts) {
           setTimeout(() => {
             reconnectCount.current += 1;
             dispatch(incrementReconnectAttempts());
@@ -48,41 +54,47 @@ export const useWebSocket = ({
       };
 
       ws.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('❌ WebSocket error:', error);
         dispatch(connectionError('WebSocket connection error'));
       };
 
       ws.current.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (onMessage) {
-          onMessage(data);
+        try {
+          const data = JSON.parse(event.data);
+          if (onMessage) {
+            onMessage(data);
+          }
+        } catch (err) {
+          console.error('❌ Failed to parse WebSocket message:', err);
         }
       };
     } catch (error) {
-      console.error('WebSocket connection error:', error);
+      console.error('❌ WebSocket connection error:', error);
       dispatch(connectionError('Failed to establish WebSocket connection'));
     }
   }, [url, reconnectAttempts, reconnectInterval, dispatch, onMessage]);
 
-  /**Send message to send data to the server. */
+  /** Send message to the server */
   const sendMessage = useCallback((data: any) => {
-    /**Only send if connection is open */
     if (ws.current?.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(data));
     } else {
-      console.error('WebSocket is not connected');
+      console.error('❗ WebSocket is not connected');
     }
   }, []);
 
-  /**Manage the connection lifecycle */
+  /** Manage the WebSocket connection lifecycle */
   useEffect(() => {
-    connect();  //Connect when the component mounts
+    shouldReconnect.current = true;
+    connect();
+
     return () => {
+      shouldReconnect.current = false;
       if (ws.current) {
-        ws.current.close(); //Clean up connection when component unmounts
+        ws.current.close();
       }
     };
   }, [connect]);
 
-  return { sendMessage }; //Return function to send messages
+  return { sendMessage, isConnected };
 };
