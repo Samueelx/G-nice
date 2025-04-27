@@ -1,11 +1,12 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   connectionEstablished,
   connectionLost,
   connectionError,
   incrementReconnectAttempts,
 } from '../features/websocket/websocketSlice';
+import { RootState } from '../store/store'; // import RootState to access auth state
 
 interface UseWebSocketOptions {
   url: string;
@@ -21,10 +22,12 @@ export const useWebSocket = ({
   onMessage,
 }: UseWebSocketOptions) => {
   const dispatch = useDispatch();
+  const authState = useSelector((state: RootState) => state.auth); // 👈 Get user and token from Redux
+
   const ws = useRef<WebSocket | null>(null);
   const reconnectCount = useRef(0);
-  const shouldReconnect = useRef(true); // control reconnection behavior
-  const [isConnected, setIsConnected] = useState(false); // optional: expose connection status
+  const shouldReconnect = useRef(true);
+  const [isConnected, setIsConnected] = useState(false);
 
   const connect = useCallback(() => {
     try {
@@ -35,6 +38,19 @@ export const useWebSocket = ({
         dispatch(connectionEstablished());
         reconnectCount.current = 0;
         setIsConnected(true);
+
+        // 👇 After connection, send "USER_ONLINE" if authenticated
+        if (authState.isAuthenticated && authState.user) {
+          const onlinePayload = {
+            type: "USER_ONLINE",
+            payload: {
+              userId: authState.user.id,        // Adjust if your user object has a different field
+              username: authState.user.username, // Adjust if needed
+            },
+          };
+          ws.current?.send(JSON.stringify(onlinePayload));
+          console.log('📡 Sent USER_ONLINE:', onlinePayload);
+        }
       };
 
       ws.current.onclose = () => {
@@ -70,7 +86,7 @@ export const useWebSocket = ({
       console.error('❌ WebSocket connection error:', error);
       dispatch(connectionError('Failed to establish WebSocket connection'));
     }
-  }, [url, reconnectAttempts, reconnectInterval, dispatch, onMessage]);
+  }, [url, reconnectAttempts, reconnectInterval, dispatch, onMessage, authState]); // 👈 include authState in dependency array!
 
   /** Send message to the server */
   const sendMessage = useCallback((data: any) => {
