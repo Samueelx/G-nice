@@ -1,9 +1,24 @@
+import { useSelector } from "react-redux";
+import { RootState } from "./store/store"; // Adjust path if needed
+import { WebSocketProvider } from "./context/WebSocketProvider";
 import AppRoutes from "./routes/Routes";
 
 export default function App() {
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return (
+      <div>
+        <AppRoutes />
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <AppRoutes />
-    </div>
-  )
+    <WebSocketProvider>
+      <div>
+        <AppRoutes />
+      </div>
+    </WebSocketProvider>
+  );
 }
