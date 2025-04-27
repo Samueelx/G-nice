@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { Provider } from "react-redux";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-import { WebSocketProvider } from "./context/WebSocketProvider.ts";
+import { WebSocketProvider } from "./context/WebSocketProvider.tsx";
 import { store } from "./store/store.ts";
 import App from "./App.tsx";
 import "./index.css";
