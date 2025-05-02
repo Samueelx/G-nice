@@ -1,8 +1,15 @@
-import React, { useCallback } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Search, Users, Hash, Image, Loader2 } from 'lucide-react';
 import { AppDispatch, RootState } from '@/store/store';
-import { searchContent, setQuery, setCategory } from '@/features/search/searchSlice';
+import {
+  setQuery,
+  setCategory,
+  searchStarted,
+  searchResultsReceived,
+  searchFailed
+} from '@/features/search/searchSlice';
+import { useWebSocket } from '@/hooks/useWebsocket';
 import { Meme, SearchCategory, Topic, User } from '@/types/search';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -11,32 +18,53 @@ import {debounce} from 'lodash';
 
 const SearchInterface: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+
   const { query, activeCategory, results, isLoading, error } = useSelector(
     (state: RootState) => state.search
   );
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
+  const { sendMessage, isConnected } = useWebSocket({
+    url: 'ws://localhost:8080/ws', // change if needed
+    onMessage: (data) => {
+      if (data.type === 'SEARCH_RESULTS') {
+        dispatch(searchResultsReceived(data.payload));
+      } else if (data.type === 'SEARCH_ERROR') {
+        dispatch(searchFailed(data.payload.message || 'Search failed'));
+      }
+    }
+  });
+  const sendMessageRef = useRef(sendMessage);
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  }, [sendMessage]);
+
+  const debouncedSearch = useMemo(() => 
     debounce((searchQuery: string, category: SearchCategory) => {
-      if (searchQuery.trim()) {
-        dispatch(searchContent({ query: searchQuery, category }));
+      if (searchQuery.trim() && isConnected) {
+        dispatch(searchStarted());
+        sendMessageRef.current({
+          type: 'SEARCH',
+          payload: { query: searchQuery, category },
+        });
       }
     }, 300),
-    [dispatch]
+    [dispatch, isConnected]
   );
 
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     dispatch(setQuery(newQuery));
     debouncedSearch(newQuery, activeCategory);
   };
 
-  // Handle category change
   const handleCategoryChange = (category: SearchCategory) => {
     dispatch(setCategory(category));
-    if (query.trim()) {
-      dispatch(searchContent({ query, category }));
+    if (query.trim() && isConnected) {
+      dispatch(searchStarted());
+      sendMessage({
+        type: 'SEARCH',
+        payload: { query, category }
+      });
     }
   };
 

@@ -1,5 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { SearchState, SearchCategory } from '@/types/search';
 
 const initialState: SearchState = {
@@ -14,23 +13,6 @@ const initialState: SearchState = {
   }
 };
 
-export const searchContent = createAsyncThunk(
-  'search/searchContent',
-  async ({ query, category }: { query: string; category: SearchCategory }, { rejectWithValue }) => {
-    try {
-      const response = await axios.get(`http://localhost:8080/api/search`, {
-        params: { query, category }
-      });
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data || 'Search failed');
-      }
-      return rejectWithValue('An unexpected error occurred');
-    }
-  }
-);
-
 const searchSlice = createSlice({
   name: 'search',
   initialState,
@@ -44,24 +26,32 @@ const searchSlice = createSlice({
     clearSearch: (state) => {
       state.query = '';
       state.results = initialState.results;
+    },
+    searchStarted: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    searchResultsReceived: (
+      state,
+      action: PayloadAction<{ people: any[]; topics: any[]; memes: any[] }>
+    ) => {
+      state.isLoading = false;
+      state.results = action.payload;
+    },
+    searchFailed: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
     }
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(searchContent.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(searchContent.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.results = action.payload;
-      })
-      .addCase(searchContent.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      });
   }
 });
 
-export const { setQuery, setCategory, clearSearch } = searchSlice.actions;
+export const {
+  setQuery,
+  setCategory,
+  clearSearch,
+  searchStarted,
+  searchResultsReceived,
+  searchFailed
+} = searchSlice.actions;
+
 export default searchSlice.reducer;
