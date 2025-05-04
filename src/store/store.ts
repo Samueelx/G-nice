@@ -7,6 +7,8 @@ import passwordSetupReducer from '../features/auth/passwordSetupSlice';
 import chatsReducer from '../features/chats/chatsSlice'
 import searchReducer from '../features/search/searchSlice'
 import jokesReducer from '../features/jumbotron/jokesSlice'
+import topicReducer from '../features/topics/topicSlice'
+import { websocketMiddleware } from "@/middleware/webSocketsMiddleware";
 
 export const store: Store = configureStore({
     reducer: {
@@ -17,7 +19,8 @@ export const store: Store = configureStore({
         passwordSetup: passwordSetupReducer,
         chats: chatsReducer,
         search: searchReducer,
-        jokes: jokesReducer
+        jokes: jokesReducer,
+        topic: topicReducer
     },
 
     // Add middleware to handle async actions and provide better dev experience
@@ -29,7 +32,7 @@ export const store: Store = configureStore({
             },
             // Enable thunk middleware
             thunk: true,
-        }),
+        }).concat(websocketMiddleware),
     // Enable Redux DevTools in development
     devTools: process.env.NODE_ENV !== 'production',
 });
