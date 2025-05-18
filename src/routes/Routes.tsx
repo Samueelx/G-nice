@@ -64,7 +64,7 @@ const router = createBrowserRouter([
         element: <PublicRoute><LoginPage /></PublicRoute>
     },
     {
-        path: '/profile',
+        path: '/profile',//6
         element: <PrivateRoute><ProfilePage user={userProfile} posts={userPosts} comments={userComments} isOwnProfile={true}/></PrivateRoute>
     },
     {
@@ -76,7 +76,7 @@ const router = createBrowserRouter([
         element: <PublicRoute><PasswordSetup /></PublicRoute>
     },
     {
-        path: '/feeds',
+        path: '/feeds',//5
         element: <PrivateRoute><AppLayout><LandingPage setIsSidebarOpen={() => false}/></AppLayout></PrivateRoute>
     },
     {
@@ -92,19 +92,19 @@ const router = createBrowserRouter([
         element: <PublicRoute><ForgotPassword/></PublicRoute>
     },
     {
-        path: '/events',
+        path: '/events',//=> Upgaded
         element: <PrivateRoute><EventsPage /></PrivateRoute>
     },
     {
-        path: '/events/:id',
+        path: '/events/:id',//3
         element: <PrivateRoute><EventDetailsPage /></PrivateRoute>
     },
     {
-        path: '/notifications',
+        path: '/notifications', //=>Upgraded
         element: <PrivateRoute><NotificationsPage /></PrivateRoute>
     },
     {
-        path: '/create-post',
+        path: '/create-post',//2
         element: <PrivateRoute><CreatePost /></PrivateRoute>
     },
     {
@@ -112,11 +112,11 @@ const router = createBrowserRouter([
         element: <PrivateRoute><ChatList /></PrivateRoute>
     },
     {
-        path: '/new-chat',
+        path: '/new-chat',//1.
         element: <PrivateRoute><NewChat /></PrivateRoute>
     },
     {
-        path: '/search',
+        path: '/search', //=> Upgraded
         element: <PrivateRoute><SearchInterface /></PrivateRoute>
     },
     // {
@@ -124,7 +124,7 @@ const router = createBrowserRouter([
     //     element: <PrivateRoute><UserProfile /></PrivateRoute>
     //   },
       {
-        path: '/topics/:id',
+        path: '/topics/:id',//2
         element: <PrivateRoute><TopicPage /></PrivateRoute>
       },
     //   {
