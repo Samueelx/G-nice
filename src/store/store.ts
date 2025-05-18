@@ -8,7 +8,8 @@ import chatsReducer from '../features/chats/chatsSlice'
 import searchReducer from '../features/search/searchSlice'
 import jokesReducer from '../features/jumbotron/jokesSlice'
 import topicReducer from '../features/topics/topicSlice'
-import { websocketMiddleware } from "@/middleware/webSocketsMiddleware";
+import notificationsReducer from '../features/notifications/notificationSlice'
+import { websocketMiddleware } from "@/middleware/websocketsMiddleware";
 
 export const store: Store = configureStore({
     reducer: {
@@ -20,7 +21,8 @@ export const store: Store = configureStore({
         chats: chatsReducer,
         search: searchReducer,
         jokes: jokesReducer,
-        topic: topicReducer
+        topic: topicReducer,
+        notifications: notificationsReducer,
     },
 
     // Add middleware to handle async actions and provide better dev experience

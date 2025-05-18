@@ -1,5 +1,6 @@
 import { Middleware } from '@reduxjs/toolkit';
 import { handleTopicSocketMessage } from '@/features/topics/topicSlice';
+import { handleNotificationSocketMessage } from '@/features/notifications/notificationSlice';
 
 let socket: WebSocket | null = null;
 
@@ -19,7 +20,12 @@ export const websocketMiddleware: Middleware = (storeAPI) => (next) => (action) 
       socket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          storeAPI.dispatch(handleTopicSocketMessage(message));
+          // Route based on message type
+          if (['TOPIC_DATA', 'NEW_TOPIC_POST'].includes(message.type)) {
+            storeAPI.dispatch(handleTopicSocketMessage(message));
+          } else if (['NOTIFICATIONS_DATA', 'NEW_NOTIFICATION'].includes(message.type)) {
+            storeAPI.dispatch(handleNotificationSocketMessage(message));
+          }
         } catch (error) {
           console.error('[WebSocket] Invalid JSON:', event.data);
         }
