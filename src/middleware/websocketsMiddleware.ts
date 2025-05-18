@@ -1,4 +1,9 @@
 import { Middleware } from '@reduxjs/toolkit';
+import {
+  fetchEvents,
+  setEvents,
+  setEventsError,
+} from '@/features/events/eventsSlice';
 import { handleTopicSocketMessage } from '@/features/topics/topicSlice';
 import { handleNotificationSocketMessage } from '@/features/notifications/notificationSlice';
 
@@ -20,12 +25,24 @@ export const websocketMiddleware: Middleware = (storeAPI) => (next) => (action) 
       socket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          // Route based on message type
+
+          // Handle topic messages
           if (['TOPIC_DATA', 'NEW_TOPIC_POST'].includes(message.type)) {
             storeAPI.dispatch(handleTopicSocketMessage(message));
-          } else if (['NOTIFICATIONS_DATA', 'NEW_NOTIFICATION'].includes(message.type)) {
+          }
+
+          // Handle notification messages
+          else if (['NOTIFICATIONS_DATA', 'NEW_NOTIFICATION'].includes(message.type)) {
             storeAPI.dispatch(handleNotificationSocketMessage(message));
           }
+
+          // ✅ Handle events messages
+          else if (message.type === 'EVENTS_DATA') {
+            storeAPI.dispatch(setEvents(message.payload));
+          } else if (message.type === 'EVENTS_ERROR') {
+            storeAPI.dispatch(setEventsError(message.payload));
+          }
+
         } catch (error) {
           console.error('[WebSocket] Invalid JSON:', event.data);
         }
@@ -38,7 +55,6 @@ export const websocketMiddleware: Middleware = (storeAPI) => (next) => (action) 
       socket.onerror = (error) => {
         console.error('[WebSocket] Error:', error);
       };
-
       break;
 
     case 'ws/send':
@@ -53,6 +69,15 @@ export const websocketMiddleware: Middleware = (storeAPI) => (next) => (action) 
       if (socket) {
         socket.close();
         socket = null;
+      }
+      break;
+
+    // ✅ Handle fetchEvents action by sending request
+    case fetchEvents.type:
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'GET_EVENTS' }));
+      } else {
+        console.warn('[WebSocket] Cannot fetch events, socket not open.');
       }
       break;
 
