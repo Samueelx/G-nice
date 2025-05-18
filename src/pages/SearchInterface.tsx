@@ -1,53 +1,56 @@
-import React, { useRef, useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Search, Users, Hash, Image, Loader2 } from 'lucide-react';
-import { AppDispatch, RootState } from '@/store/store';
+import React, { useRef, useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Search, Users, Hash, Image, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { AppDispatch, RootState } from "@/store/store";
 import {
   setQuery,
   setCategory,
   searchStarted,
   searchResultsReceived,
-  searchFailed
-} from '@/features/search/searchSlice';
-import { useWebSocket } from '@/hooks/useWebsocket';
-import { Meme, SearchCategory, Topic, User } from '@/types/search';
+  searchFailed,
+} from "@/features/search/searchSlice";
+import { useWebSocket } from "@/hooks/useWebsocket";
+import { Meme, SearchCategory, Topic, User } from "@/types/search";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import {debounce} from 'lodash';
+import { debounce } from "lodash";
 
 const SearchInterface: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
 
   const { query, activeCategory, results, isLoading, error } = useSelector(
     (state: RootState) => state.search
   );
 
   const { sendMessage, isConnected } = useWebSocket({
-    url: 'ws://localhost:8080/ws', // change if needed
+    url: "ws://localhost:8080/ws", // change if needed
     onMessage: (data) => {
-      if (data.type === 'SEARCH_RESULTS') {
+      if (data.type === "SEARCH_RESULTS") {
         dispatch(searchResultsReceived(data.payload));
-      } else if (data.type === 'SEARCH_ERROR') {
-        dispatch(searchFailed(data.payload.message || 'Search failed'));
+      } else if (data.type === "SEARCH_ERROR") {
+        dispatch(searchFailed(data.payload.message || "Search failed"));
       }
-    }
+    },
   });
   const sendMessageRef = useRef(sendMessage);
   useEffect(() => {
     sendMessageRef.current = sendMessage;
   }, [sendMessage]);
 
-  const debouncedSearch = useMemo(() => 
-    debounce((searchQuery: string, category: SearchCategory) => {
-      if (searchQuery.trim() && isConnected) {
-        dispatch(searchStarted());
-        sendMessageRef.current({
-          type: 'SEARCH',
-          payload: { query: searchQuery, category },
-        });
-      }
-    }, 300),
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchQuery: string, category: SearchCategory) => {
+        if (searchQuery.trim() && isConnected) {
+          dispatch(searchStarted());
+          sendMessageRef.current({
+            type: "SEARCH",
+            payload: { query: searchQuery, category },
+          });
+        }
+      }, 300),
     [dispatch, isConnected]
   );
 
@@ -62,8 +65,8 @@ const SearchInterface: React.FC = () => {
     if (query.trim() && isConnected) {
       dispatch(searchStarted());
       sendMessage({
-        type: 'SEARCH',
-        payload: { query, category }
+        type: "SEARCH",
+        payload: { query, category },
       });
     }
   };
@@ -78,7 +81,7 @@ const SearchInterface: React.FC = () => {
           ) : (
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           )}
-          <Input 
+          <Input
             type="text"
             placeholder="Search..."
             value={query}
@@ -91,17 +94,17 @@ const SearchInterface: React.FC = () => {
 
       {/* Category Tabs */}
       <div className="flex gap-2 p-3 border-b overflow-x-auto scrollbar-hide">
-        {(['all', 'people', 'topics', 'memes'] as const).map((category) => (
+        {(["all", "people", "topics", "memes"] as const).map((category) => (
           <Button
             key={category}
-            variant={activeCategory === category ? 'default' : 'outline'}
+            variant={activeCategory === category ? "default" : "outline"}
             size="sm"
             onClick={() => handleCategoryChange(category)}
             className="flex-shrink-0"
           >
-            {category === 'people' && <Users className="w-4 h-4 mr-2" />}
-            {category === 'topics' && <Hash className="w-4 h-4 mr-2" />}
-            {category === 'memes' && <Image className="w-4 h-4 mr-2" />}
+            {category === "people" && <Users className="w-4 h-4 mr-2" />}
+            {category === "topics" && <Hash className="w-4 h-4 mr-2" />}
+            {category === "memes" && <Image className="w-4 h-4 mr-2" />}
             {category.charAt(0).toUpperCase() + category.slice(1)}
           </Button>
         ))}
@@ -110,85 +113,111 @@ const SearchInterface: React.FC = () => {
       {/* Results Sections */}
       <div className="divide-y">
         {/* People Results */}
-        {(activeCategory === 'all' || activeCategory === 'people') && results!.people.length > 0 && (
-          <div className="p-3">
-            <h2 className="text-sm font-medium text-gray-500 mb-2">People</h2>
-            <div className="space-y-3">
-              {results.people.map((person: User) => (
-                <div key={person.id} className="flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg transition-colors">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={person.avatar} />
-                    <AvatarFallback>{person.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-medium text-gray-900">{person.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {person.status === 'active' ? 'Active now' : `Last seen ${person.lastSeen}`}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Topics Results */}
-        {(activeCategory === 'all' || activeCategory === 'topics') && results.topics.length > 0 && (
-          <div className="p-3">
-            <h2 className="text-sm font-medium text-gray-500 mb-2">Topics</h2>
-            <div className="space-y-3">
-              {results.topics.map((topic: Topic) => (
-                <div key={topic.id} className="flex items-center justify-between p-2 hover:bg-purple-50 rounded-lg transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Hash className="w-5 h-5 text-purple-500" />
-                    <div>
-                      <h3 className="font-medium text-gray-900">{topic.name}</h3>
-                      <p className="text-sm text-gray-500">{topic.memberCount.toLocaleString()} members</p>
-                    </div>
-                  </div>
-                  <Button 
-                    variant={topic.isJoined ? "secondary" : "outline"}
-                    size="sm"
+        {(activeCategory === "all" || activeCategory === "people") &&
+          results!.people.length > 0 && (
+            <div className="p-3">
+              <h2 className="text-sm font-medium text-gray-500 mb-2">People</h2>
+              <div className="space-y-3">
+                {results.people.map((person: User) => (
+                  <div
+                    key={person.id}
+                    onClick={() => navigate(`/users/${person.id}`)}
+                    className="cursor-pointer flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg transition-colors"
                   >
-                    {topic.isJoined ? 'Joined' : 'Join'}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Memes Results */}
-        {(activeCategory === 'all' || activeCategory === 'memes') && results.memes.length > 0 && (
-          <div className="p-3">
-            <h2 className="text-sm font-medium text-gray-500 mb-2">Memes</h2>
-            <div className="space-y-3">
-              {results.memes.map((meme: Meme) => (
-                <div key={meme.id} className="flex items-center justify-between p-2 hover:bg-purple-50 rounded-lg transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Image className="w-6 h-6 text-purple-500" />
-                    </div>
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={person.avatar} />
+                      <AvatarFallback>{person.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
                     <div>
-                      <h3 className="font-medium text-gray-900">{meme.title}</h3>
+                      <h3 className="font-medium text-gray-900">
+                        {person.name}
+                      </h3>
                       <p className="text-sm text-gray-500">
-                        {meme.category} • {meme.likes.toLocaleString()} likes
+                        {person.status === "active"
+                          ? "Active now"
+                          : `Last seen ${person.lastSeen}`}
                       </p>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+        {/* Topics Results */}
+        {(activeCategory === "all" || activeCategory === "topics") &&
+          results.topics.length > 0 && (
+            <div className="p-3">
+              <h2 className="text-sm font-medium text-gray-500 mb-2">Topics</h2>
+              <div className="space-y-3">
+                {results.topics.map((topic: Topic) => (
+                  <div
+                    key={topic.id}
+                    onClick={() => navigate(`/topics/${topic.id}`)}
+                    className="cursor-pointer flex items-center justify-between p-2 hover:bg-purple-50 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Hash className="w-5 h-5 text-purple-500" />
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {topic.name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {topic.memberCount.toLocaleString()} members
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant={topic.isJoined ? "secondary" : "outline"}
+                      size="sm"
+                    >
+                      {topic.isJoined ? "Joined" : "Join"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        {/* Memes Results */}
+        {(activeCategory === "all" || activeCategory === "memes") &&
+          results.memes.length > 0 && (
+            <div className="p-3">
+              <h2 className="text-sm font-medium text-gray-500 mb-2">Memes</h2>
+              <div className="space-y-3">
+                {results.memes.map((meme: Meme) => (
+                  <div
+                    key={meme.id}
+                    onClick={() => navigate(`/memes/${meme.id}`)}
+                    className="cursor-pointer flex items-center justify-between p-2 hover:bg-purple-50 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <Image className="w-6 h-6 text-purple-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {meme.title}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {meme.category} • {meme.likes.toLocaleString()} likes
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
         {/* No Results State */}
-        {query && !isLoading && 
+        {query &&
+          !isLoading &&
           Object.values(results).every((arr) => arr.length === 0) && (
-          <div className="p-8 text-center text-gray-500">
-            No results found for "{query}"
-          </div>
-        )}
+            <div className="p-8 text-center text-gray-500">
+              No results found for "{query}"
+            </div>
+          )}
       </div>
     </div>
   );
