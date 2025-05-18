@@ -19,6 +19,7 @@ import CreatePost from "@/pages/CreatePost";
 import ChatList from "@/pages/ChatList";
 import NewChat from "@/pages/NewChat";
 import SearchInterface from "@/pages/SearchInterface";
+import TopicPage from "@/pages/TopicPage";
 
 const userProfile = {
     username: "knightwing",
@@ -117,7 +118,20 @@ const router = createBrowserRouter([
     {
         path: '/search',
         element: <PrivateRoute><SearchInterface /></PrivateRoute>
-    }
+    },
+    // {
+    //     path: '/users/:id',
+    //     element: <PrivateRoute><UserProfile /></PrivateRoute>
+    //   },
+      {
+        path: '/topics/:id',
+        element: <PrivateRoute><TopicPage /></PrivateRoute>
+      },
+    //   {
+    //     path: '/memes/:id',
+    //     element: <PrivateRoute><MemePage /></PrivateRoute>
+    //   }
+      
 ]);
 
 const AppRoutes: React.FC = () => {
