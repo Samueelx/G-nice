@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { Event } from '@/types/event';
+import { fetchEvents } from '@/features/events/eventsSlice';
 
 const EventsPage = () => {
   const dispatch = useAppDispatch();
@@ -15,10 +16,7 @@ const EventsPage = () => {
   useEffect(() => {
     dispatch({ type: 'ws/connect', payload: { url: 'wss://your-websocket-server-url' } });
 
-    dispatch({
-      type: 'ws/send',
-      payload: { type: 'EVENTS_FETCH' },
-    });
+    dispatch(fetchEvents());
 
     return () => {
       dispatch({ type: 'ws/disconnect' });

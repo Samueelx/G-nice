@@ -42,6 +42,16 @@ const eventsSlice = createSlice({
       state.error = action.payload;
       state.loading = false;
     },
+    eventAdded: (state, action: PayloadAction<Event>) => {
+      state.items.push(action.payload);
+    },
+    eventUpdated: (state, action: PayloadAction<Event>) => {
+      const index = state.items.findIndex(e => e.id === action.payload.id);
+      if (index !== -1) {
+        state.items[index] = action.payload;
+      }
+    },
+
   },
 });
 
