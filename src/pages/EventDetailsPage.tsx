@@ -18,7 +18,7 @@ const EventDetailsPage: React.FC = () => {
       console.warn('Events state structure is not as expected:', state.events);
       return null;
     }
-    return state.events.items.find((e) => e.id === id);
+    return state.events.items.find((e: DetailedEvent) => e.id === id);
   });
 
   // Type guard to check if event has detailed information

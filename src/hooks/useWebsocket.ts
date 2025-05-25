@@ -203,7 +203,7 @@ export const useWebSocket = ({
     prevAuthState.current = isNowAuthenticated;
   }, [authState.isAuthenticated, connect, disconnect]);
 
-  // Initial connection setup
+  // Initial connection setup and URL changes
   useEffect(() => {
     if (authState.isAuthenticated && url) {
       shouldReconnect.current = true;
@@ -213,7 +213,7 @@ export const useWebSocket = ({
     return () => {
       disconnect();
     };
-  }, [url, authState.isAuthenticated, connect, disconnect]); // Only depend on URL changes
+  }, [url, connect, disconnect, authState.isAuthenticated]); // Depend on URL and connect function
 
   // Handle page visibility changes (more reliable than beforeunload)
   useEffect(() => {
