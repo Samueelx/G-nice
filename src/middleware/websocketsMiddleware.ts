@@ -54,7 +54,7 @@ export const websocketMiddleware: Middleware = (storeAPI) => (next) => (action: 
         socket.close();
       }
       
-      token = localStorage.getItem('token'); // or 'authToken', depending on your naming
+      token = localStorage.getItem('accessTkn'); // or 'authToken', depending on your naming
       protocols = token ? [token] : undefined;
       
       // Type guard to ensure action has the correct payload structure
