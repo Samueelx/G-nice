@@ -3,6 +3,7 @@ import {
   fetchEvents,
   setEvents,
   setEventsError,
+  setEventDetails, // Add this import
 } from '@/features/events/eventsSlice';
 import { handleTopicSocketMessage } from '@/features/topics/topicSlice';
 import { handleNotificationSocketMessage } from '@/features/notifications/notificationSlice';
@@ -34,7 +35,7 @@ interface NotificationMessage {
 }
 
 interface EventsMessage {
-  type: 'EVENTS_DATA' | 'EVENTS_ERROR';
+  type: 'EVENTS_DATA' | 'EVENTS_ERROR' | 'EVENT_DETAILS_DATA'; // Add EVENT_DETAILS_DATA
   payload: any;
 }
 
@@ -68,11 +69,14 @@ export const websocketMiddleware: Middleware = (storeAPI) => (next) => (action: 
       
       socket.onopen = () => {
         console.log('[WebSocket] Connected');
+        // Optionally fetch events when connection opens
+        // socket.send(JSON.stringify({ type: 'GET_EVENTS' }));
       };
       
       socket.onmessage = (event) => {
         try {
           const message: SocketMessage = JSON.parse(event.data);
+          console.log('[WebSocket] Received message:', message); // Debug log
           
           // Handle topic messages
           if (['TOPIC_DATA', 'NEW_TOPIC_POST'].includes(message.type)) {
@@ -84,17 +88,28 @@ export const websocketMiddleware: Middleware = (storeAPI) => (next) => (action: 
           }
           // Handle events messages
           else if (message.type === 'EVENTS_DATA') {
+            console.log('[WebSocket] Setting events:', message.payload);
             storeAPI.dispatch(setEvents(message.payload));
-          } else if (message.type === 'EVENTS_ERROR') {
+          } 
+          else if (message.type === 'EVENTS_ERROR') {
+            console.log('[WebSocket] Events error:', message.payload);
             storeAPI.dispatch(setEventsError(message.payload));
           }
+          // Handle event details messages
+          else if (message.type === 'EVENT_DETAILS_DATA') {
+            console.log('[WebSocket] Setting event details:', message.payload);
+            storeAPI.dispatch(setEventDetails(message.payload));
+          }
+          else {
+            console.log('[WebSocket] Unhandled message type:', message.type);
+          }
         } catch (error) {
-          console.error('[WebSocket] Invalid JSON:', event.data);
+          console.error('[WebSocket] Invalid JSON:', event.data, error);
         }
       };
       
-      socket.onclose = () => {
-        console.log('[WebSocket] Disconnected');
+      socket.onclose = (event) => {
+        console.log('[WebSocket] Disconnected:', event.code, event.reason);
       };
       
       socket.onerror = (error) => {
@@ -106,12 +121,13 @@ export const websocketMiddleware: Middleware = (storeAPI) => (next) => (action: 
       if (socket && socket.readyState === WebSocket.OPEN) {
         // Ensure action has payload
         if ('payload' in action) {
+          console.log('[WebSocket] Sending message:', action.payload);
           socket.send(JSON.stringify(action.payload));
         } else {
           console.warn('[WebSocket] Cannot send message, no payload provided.');
         }
       } else {
-        console.warn('[WebSocket] Cannot send message, socket not open.');
+        console.warn('[WebSocket] Cannot send message, socket not open. ReadyState:', socket?.readyState);
       }
       break;
       
@@ -125,9 +141,12 @@ export const websocketMiddleware: Middleware = (storeAPI) => (next) => (action: 
     // Handle fetchEvents action by sending request
     case fetchEvents.type:
       if (socket && socket.readyState === WebSocket.OPEN) {
+        console.log('[WebSocket] Fetching events');
         socket.send(JSON.stringify({ type: 'GET_EVENTS' }));
       } else {
-        console.warn('[WebSocket] Cannot fetch events, socket not open.');
+        console.warn('[WebSocket] Cannot fetch events, socket not open. ReadyState:', socket?.readyState);
+        // Optionally dispatch loading state
+        storeAPI.dispatch(fetchEvents());
       }
       break;
       

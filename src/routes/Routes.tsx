@@ -96,7 +96,7 @@ const router = createBrowserRouter([
         element: <PrivateRoute><EventsPage /></PrivateRoute>
     },
     {
-        path: '/events/:id',//3
+        path: '/events/:id',//upgraded
         element: <PrivateRoute><EventDetailsPage /></PrivateRoute>
     },
     {

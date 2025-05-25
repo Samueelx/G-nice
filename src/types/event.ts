@@ -13,3 +13,34 @@ export interface Event {
   categories?: string[]; // Optional, e.g., ["Food", "Music", "Tech"]
   isMine?: boolean; // Optional, to flag if it's user's own event
 }
+
+export interface Ticket {
+  section: string;
+  phase: string;
+  amount: number;
+  status: string;
+  purchaseUrl: string;
+}
+
+
+export interface EventWithTickets extends Event {
+  tickets: Ticket[];
+}
+
+export interface EventDetails {
+  id: string;
+  title: string;
+  performers: string[];
+  location: string;
+  date: {
+    day: number;
+    month: string;
+    weekday: string;
+    startTime: string;
+    endTime: string;
+  };
+  tickets: Ticket[];
+  imageUrl: string;
+  about: string;
+  organizer: string;
+}
