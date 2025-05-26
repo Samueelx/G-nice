@@ -11,7 +11,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const dispatch = useDispatch();
 
   const { sendMessage } = useWebSocket({
-    url: 'ws://localhost:8080/Memefest-SNAPSHOT-01/wsocket',
+    url: 'ws://localhost:8080/Memefest-SNAPSHOT-01/feeds',
     onMessage: (data) => {
       switch (data.type) {
         case 'EVENTS_LIST':
