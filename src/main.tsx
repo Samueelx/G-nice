@@ -19,7 +19,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <Provider store={store}>
-        <WebSocketProvider>
+        <WebSocketProvider url="ws://localhost:8080/memefest-snapshot-01/feeds"
+        enablePresence={true}>
         <App />
         </WebSocketProvider>
       </Provider>
