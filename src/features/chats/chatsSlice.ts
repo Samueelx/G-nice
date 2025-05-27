@@ -14,6 +14,7 @@ export interface Chat {
   unreadCount?: number;
 }
 
+
 interface User {
   id: string;
   username: string;
@@ -24,9 +25,8 @@ interface ChatsState {
   chats: Chat[];
   searchResults: User[];
   isLoading: boolean;
-  isSearching: boolean;
+  isSearching: boolean; // Add this line
   error: string | null;
-  searchError: string | null;
   isConnected: boolean;
   connectionError: string | null;
 }
@@ -36,9 +36,8 @@ const initialState: ChatsState = {
   chats: [],
   searchResults: [],
   isLoading: false,
-  isSearching: false,
+  isSearching: false, // Add this line
   error: null,
-  searchError: null,
   isConnected: false,
   connectionError: null,
 };
@@ -52,18 +51,6 @@ export const fetchChats = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch chats');
-    }
-  }
-);
-
-export const searchUsers = createAsyncThunk(
-  'chats/searchUsers',
-  async (searchTerm: string, { rejectWithValue }) => {
-    try {
-      const response = await instance.get(`/api/users/search?username=${searchTerm}`);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to search users');
     }
   }
 );
@@ -96,6 +83,9 @@ const chatsSlice = createSlice({
       state.connectionError = action.payload;
       state.isConnected = false;
     },
+    setSearchLoading: (state, action: PayloadAction<boolean>) => {
+      state.isSearching = action.payload;
+    },
 
     // Real-time chat updates from WebSocket
     addNewChat: (state, action: PayloadAction<Chat>) => {
@@ -122,7 +112,6 @@ const chatsSlice = createSlice({
       }
     },
 
-    // Handle incoming messages from WebSocket
     handleIncomingMessage: (
       state,
       action: PayloadAction<{
@@ -140,12 +129,10 @@ const chatsSlice = createSlice({
         chat.lastMessage = message;
         chat.timestamp = timestamp;
         
-        // Increment unread count if message is from another user
         if (senderId !== currentUserId) {
           chat.unreadCount = (chat.unreadCount || 0) + 1;
         }
 
-        // Move chat to top
         state.chats = [
           chat,
           ...state.chats.filter((c) => c.id !== chatId),
@@ -153,7 +140,6 @@ const chatsSlice = createSlice({
       }
     },
 
-    // Mark messages as read
     markChatAsRead: (state, action: PayloadAction<string>) => {
       const chat = state.chats.find((c) => c.id === action.payload);
       if (chat) {
@@ -171,7 +157,6 @@ const chatsSlice = createSlice({
       }
     },
 
-    // Handle multiple users' online status
     updateMultipleOnlineStatus: (
       state,
       action: PayloadAction<Array<{ userId: string; isOnline: boolean }>>
@@ -186,7 +171,10 @@ const chatsSlice = createSlice({
 
     clearSearchResults: (state) => {
       state.searchResults = [];
-      state.searchError = null;
+    },
+
+    setSearchResults: (state, action: PayloadAction<User[]>) => {
+      state.searchResults = action.payload;
     },
 
     setChats: (state, action: PayloadAction<Chat[]>) => {
@@ -205,12 +193,10 @@ const chatsSlice = createSlice({
       state.error = null;
     },
 
-    // Reset state on logout
     resetChatsState: () => initialState,
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Chats
       .addCase(fetchChats.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -224,23 +210,7 @@ const chatsSlice = createSlice({
         state.error = action.payload as string;
       })
 
-      // Search Users
-      .addCase(searchUsers.pending, (state) => {
-        state.isSearching = true;
-        state.searchError = null;
-      })
-      .addCase(searchUsers.fulfilled, (state, action: PayloadAction<User[]>) => {
-        state.isSearching = false;
-        state.searchResults = action.payload;
-      })
-      .addCase(searchUsers.rejected, (state, action) => {
-        state.isSearching = false;
-        state.searchError = action.payload as string;
-      })
-
-      // Create Chat
       .addCase(createChat.fulfilled, (state, action: PayloadAction<Chat>) => {
-        // Add the new chat to the top of the list if it doesn't exist
         if (!state.chats.find(chat => chat.id === action.payload.id)) {
           state.chats.unshift(action.payload);
         }
@@ -259,6 +229,8 @@ export const {
   setOnlineStatus,
   updateMultipleOnlineStatus,
   clearSearchResults,
+  setSearchResults,
+  setSearchLoading,
   setChats,
   setChatsError,
   setChatsLoading,
@@ -271,10 +243,10 @@ export const selectChatById = (state: { chats: ChatsState }, chatId: string) =>
   state.chats.chats.find((chat) => chat.id === chatId);
 export const selectSearchResults = (state: { chats: ChatsState }) => state.chats.searchResults;
 export const selectChatsLoading = (state: { chats: ChatsState }) => state.chats.isLoading;
-export const selectSearchLoading = (state: { chats: ChatsState }) => state.chats.isSearching;
 export const selectConnectionStatus = (state: { chats: ChatsState }) => state.chats.isConnected;
 export const selectConnectionError = (state: { chats: ChatsState }) => state.chats.connectionError;
 export const selectUnreadChatsCount = (state: { chats: ChatsState }) => 
   state.chats.chats.reduce((count, chat) => count + (chat.unreadCount || 0), 0);
 
 export default chatsSlice.reducer;
+export const selectSearchLoading = (state: { chats: ChatsState }) => state.chats.isSearching;
