@@ -26,7 +26,7 @@ const SearchInterface: React.FC = () => {
   );
 
   const { sendMessage, isConnected } = useWebSocket({
-    url: "ws://localhost:8080/ws", // change if needed
+    url: "ws://localhost:8080/memefest-snapshot-01/feeds", // change if needed
     onMessage: (data) => {
       if (data.type === "SEARCH_RESULTS") {
         dispatch(searchResultsReceived(data.payload));
