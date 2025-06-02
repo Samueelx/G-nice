@@ -19,7 +19,7 @@ interface UseWebSocketOptions {
   reconnectAttempts?: number;
   reconnectInterval?: number;
   onMessage?: (data: any) => void;
-  enablePresence?: boolean; // Option to disable presence tracking
+  enablePresence?: boolean;
 }
 
 export const useWebSocket = ({
@@ -36,17 +36,14 @@ export const useWebSocket = ({
   const shouldReconnect = useRef(true);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
-  
-  // Track previous auth state to detect changes
   const prevAuthState = useRef(authState.isAuthenticated);
   const hasUserPresenceBeenSent = useRef(false);
 
-  // Type guard for authenticated user
   const isAuthenticatedUser = (user: unknown): user is AuthenticatedUser => {
-    return user !== null && 
-           typeof user === 'object' && 
-           'id' in (user as any) && 
-           'username' in (user as any);
+    return user !== null &&
+      typeof user === 'object' &&
+      'id' in (user as any) &&
+      'username' in (user as any);
   };
 
   const sendUserPresence = useCallback((type: 'USER_ONLINE' | 'USER_OFFLINE') => {
@@ -63,31 +60,22 @@ export const useWebSocket = ({
           timestamp: new Date().toISOString(),
         },
       };
-      
+
       try {
         ws.current.send(JSON.stringify(presencePayload));
         console.log(`📡 Sent ${type}:`, presencePayload);
-        
-        if (type === 'USER_ONLINE') {
-          hasUserPresenceBeenSent.current = true;
-        } else {
-          hasUserPresenceBeenSent.current = false;
-        }
+        hasUserPresenceBeenSent.current = type === 'USER_ONLINE';
       } catch (error) {
         console.error(`❌ Failed to send ${type}:`, error);
       }
     }
   }, [authState.isAuthenticated, authState.user, enablePresence]);
 
-  const connect = useCallback(() => {
-    if (!url) {
-      console.log('No WebSocket URL provided, skipping connection');
-      return;
-    }
-
-    // Don't connect if not authenticated (optional: remove this check if you want anonymous connections)
-    if (!authState.isAuthenticated) {
-      console.log('User not authenticated, skipping WebSocket connection');
+  // Stable connect function using useRef
+  const connectRef = useRef<() => void>();
+  connectRef.current = () => {
+    if (!url || !authState.isAuthenticated) {
+      console.log('🔌 Skipping WebSocket connection (missing URL or auth)');
       return;
     }
 
@@ -101,29 +89,22 @@ export const useWebSocket = ({
         reconnectCount.current = 0;
         setIsConnected(true);
         setConnectionStatus('connected');
-
-        // Send USER_ONLINE when connected
         sendUserPresence('USER_ONLINE');
       };
 
       ws.current.onclose = (event) => {
         console.log('🔌 WebSocket disconnected', { code: event.code, reason: event.reason });
-        
         dispatch(connectionLost());
         setIsConnected(false);
         setConnectionStatus('disconnected');
         hasUserPresenceBeenSent.current = false;
 
-        // Reconnect logic
-        if (shouldReconnect.current && 
-            reconnectCount.current < reconnectAttempts && 
-            authState.isAuthenticated) {
-          
-          console.log(`🔄 Attempting reconnect ${reconnectCount.current + 1}/${reconnectAttempts}`);
+        if (shouldReconnect.current && reconnectCount.current < reconnectAttempts && authState.isAuthenticated) {
+          console.log(`🔄 Reconnecting ${reconnectCount.current + 1}/${reconnectAttempts}`);
           setTimeout(() => {
             reconnectCount.current += 1;
             dispatch(incrementReconnectAttempts());
-            connect();
+            connectRef.current?.();
           }, reconnectInterval);
         }
       };
@@ -137,9 +118,7 @@ export const useWebSocket = ({
       ws.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (onMessage) {
-            onMessage(data);
-          }
+          if (onMessage) onMessage(data);
         } catch (err) {
           console.error('❌ Failed to parse WebSocket message:', err);
         }
@@ -149,7 +128,7 @@ export const useWebSocket = ({
       dispatch(connectionError('Failed to establish WebSocket connection'));
       setConnectionStatus('disconnected');
     }
-  }, [url, reconnectAttempts, reconnectInterval, dispatch, onMessage, authState.isAuthenticated, sendUserPresence]);
+  };
 
   const sendMessage = useCallback((data: any) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -166,22 +145,22 @@ export const useWebSocket = ({
     }
   }, []);
 
-  const disconnect = useCallback(() => {
+  const disconnectRef = useRef<() => void>();
+  disconnectRef.current = () => {
     shouldReconnect.current = false;
-    
-    // Send USER_OFFLINE before disconnecting
+
     if (hasUserPresenceBeenSent.current) {
       sendUserPresence('USER_OFFLINE');
     }
-    
+
     if (ws.current) {
       ws.current.close(1000, 'User initiated disconnect');
       ws.current = null;
     }
-    
+
     setIsConnected(false);
     setConnectionStatus('disconnected');
-  }, [sendUserPresence]);
+  };
 
   // Handle authentication state changes
   useEffect(() => {
@@ -189,40 +168,31 @@ export const useWebSocket = ({
     const isNowAuthenticated = authState.isAuthenticated;
 
     if (!wasAuthenticated && isNowAuthenticated) {
-      // User just logged in - establish connection
       console.log('🔐 User authenticated, establishing WebSocket connection');
       shouldReconnect.current = true;
       reconnectCount.current = 0;
-      connect();
+      connectRef.current?.();
     } else if (wasAuthenticated && !isNowAuthenticated) {
-      // User just logged out - disconnect
       console.log('🔓 User logged out, disconnecting WebSocket');
-      disconnect();
+      disconnectRef.current?.();
     }
 
     prevAuthState.current = isNowAuthenticated;
-  }, [authState.isAuthenticated, connect, disconnect]);
+  }, [authState.isAuthenticated]);
 
-  // Initial connection setup and URL changes
+  // Cleanup on unmount only
   useEffect(() => {
-    if (authState.isAuthenticated && url) {
-      shouldReconnect.current = true;
-      connect();
-    }
-
     return () => {
-      disconnect();
+      disconnectRef.current?.();
     };
-  }, [url, connect, disconnect, authState.isAuthenticated]); // Depend on URL and connect function
+  }, []);
 
-  // Handle page visibility changes (more reliable than beforeunload)
+  // Handle visibility changes
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && hasUserPresenceBeenSent.current) {
-        // Page is hidden, send offline status
         sendUserPresence('USER_OFFLINE');
       } else if (!document.hidden && isConnected && authState.isAuthenticated) {
-        // Page is visible again, send online status
         sendUserPresence('USER_ONLINE');
       }
     };
@@ -233,11 +203,10 @@ export const useWebSocket = ({
     };
   }, [sendUserPresence, isConnected, authState.isAuthenticated]);
 
-  // Handle window/tab close - keep this as fallback
+  // Handle tab close
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (hasUserPresenceBeenSent.current) {
-        // Use sendBeacon for more reliable delivery
         const offlinePayload = {
           type: "USER_OFFLINE",
           payload: {
@@ -247,7 +216,6 @@ export const useWebSocket = ({
           },
         };
 
-        // Try sendBeacon first (more reliable), fallback to WebSocket
         if (navigator.sendBeacon) {
           const blob = new Blob([JSON.stringify(offlinePayload)], { type: 'application/json' });
           navigator.sendBeacon(`${url.replace('ws://', 'http://').replace('wss://', 'https://')}/offline`, blob);
@@ -263,12 +231,12 @@ export const useWebSocket = ({
     };
   }, [authState.user, url, sendUserPresence]);
 
-  return { 
-    sendMessage, 
-    isConnected, 
+  return {
+    sendMessage,
+    isConnected,
     connectionStatus,
-    disconnect,
-    reconnect: connect,
-    reconnectCount: reconnectCount.current 
+    disconnect: () => disconnectRef.current?.(),
+    reconnect: () => connectRef.current?.(),
+    reconnectCount: reconnectCount.current,
   };
 };
