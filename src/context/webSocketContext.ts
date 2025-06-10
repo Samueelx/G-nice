@@ -1,14 +1,14 @@
-// webSocketContext.ts (UPDATED - extend your existing interface)
 import { createContext, useContext } from "react";
 
 interface WebSocketContextType {
-  sendMessage: (data: any) => boolean; // Updated return type
-  isConnected: boolean; // NEW
-  connectionStatus: 'disconnected' | 'connecting' | 'connected'; // NEW
-  disconnect: () => void; // NEW
-  reconnect: () => void; // NEW
+  sendMessage: (data: any) => boolean;
+  isConnected: boolean;
+  connectionStatus: 'disconnected' | 'connecting' | 'connected';
+  disconnect: () => void;
+  reconnect: () => void;
 }
 
+// Fix: Provide default value or make it possibly undefined
 export const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
 
 export const useWebSocketContext = () => {
@@ -18,4 +18,3 @@ export const useWebSocketContext = () => {
   }
   return context;
 };
-

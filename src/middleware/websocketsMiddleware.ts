@@ -15,8 +15,6 @@ import {
 } from '@/features/chats/handleChatSocketMessages';
 import {
   fetchChats,
-  // setChats,
-  // setChatsError,
   setChatsLoading,
   setConnectionStatus,
   setConnectionError,
@@ -35,7 +33,11 @@ interface WebSocketDisconnectAction extends Action {
 interface WebSocketReconnectAction extends Action {
   type: 'ws/reconnect';
 }
-type WebSocketAction = WebSocketConnectAction | WebSocketSendAction | WebSocketDisconnectAction | WebSocketReconnectAction;
+type WebSocketAction =
+  | WebSocketConnectAction
+  | WebSocketSendAction
+  | WebSocketDisconnectAction
+  | WebSocketReconnectAction;
 
 // Message types
 interface TopicMessage {
@@ -52,15 +54,14 @@ interface EventsMessage {
 }
 type SocketMessage = TopicMessage | NotificationMessage | EventsMessage | ChatSocketMessage;
 
-// WebSocket state
 let socket: WebSocket | null = null;
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 5;
 let reconnectTimeout: NodeJS.Timeout | null = null;
 let currentUserId: string | undefined = undefined;
-let websocketUrl: string | undefined = undefined;
+let currentUser: { id: string; username: string } | undefined = undefined;
+let websocketUrl = '';
 
-// Chat message types for easier maintenance
 const CHAT_MESSAGE_TYPES = [
   'CHATS_LIST',
   'CHATS_ERROR',
@@ -72,10 +73,28 @@ const CHAT_MESSAGE_TYPES = [
   'USER_OFFLINE',
   'USERS_STATUS',
   'CONNECTION_STATUS',
-  'CONNECTION_ERROR'
+  'CONNECTION_ERROR',
 ];
 
-// Reconnection logic
+const sendPresence = (type: 'USER_ONLINE' | 'USER_OFFLINE') => {
+  if (socket?.readyState === WebSocket.OPEN && currentUser) {
+    const payload = {
+      type,
+      payload: {
+        userId: currentUser.id,
+        username: currentUser.username,
+        timestamp: new Date().toISOString(),
+      },
+    };
+    try {
+      socket.send(JSON.stringify(payload));
+      console.log(`[WebSocket] Sent presence: ${type}`, payload);
+    } catch (err) {
+      console.error('[WebSocket] Failed to send presence:', err);
+    }
+  }
+};
+
 const attemptReconnect = (storeAPI: any) => {
   if (reconnectAttempts < maxReconnectAttempts && websocketUrl) {
     reconnectAttempts++;
@@ -83,201 +102,228 @@ const attemptReconnect = (storeAPI: any) => {
 
     reconnectTimeout = setTimeout(() => {
       storeAPI.dispatch({ type: 'ws/connect', payload: { url: websocketUrl, userId: currentUserId } });
-    }, Math.pow(2, reconnectAttempts) * 1000); // Exponential backoff
+    }, Math.pow(2, reconnectAttempts) * 1000);
   } else {
     console.error('[WebSocket] Max reconnection attempts reached');
     storeAPI.dispatch(setConnectionError('Connection failed after multiple attempts'));
   }
 };
 
-export const websocketMiddleware: Middleware = (storeAPI) => (next) => (action: unknown) => {
-  if (!isAction(action)) return next(action);
+export const websocketMiddleware: Middleware = (storeAPI) => {
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      const state = storeAPI.getState();
+      if (!currentUser) return;
 
-  let protocols: string[] | undefined;
-  let token: string | null;
-
-  switch (action.type) {
-    case 'ws/connect':
-      // Clear any existing reconnection timeout
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-        reconnectTimeout = null;
+      if (document.hidden) {
+        sendPresence('USER_OFFLINE');
+      } else if (socket?.readyState === WebSocket.OPEN && state.auth?.isAuthenticated) {
+        sendPresence('USER_ONLINE');
       }
+    });
+  }
 
-      if (socket !== null) {
-        socket.close();
-        socket = null;
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', () => {
+      if (currentUser) {
+        const offlinePayload = {
+          type: 'USER_OFFLINE',
+          payload: {
+            userId: currentUser.id,
+            username: currentUser.username,
+            timestamp: new Date().toISOString(),
+          },
+        };
+
+        const url = websocketUrl.replace(/^ws/, 'http') + '/offline';
+        const blob = new Blob([JSON.stringify(offlinePayload)], { type: 'application/json' });
+
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(url, blob);
+        } else {
+          sendPresence('USER_OFFLINE');
+        }
       }
+    });
+  }
 
-      token = localStorage.getItem('accessTkn');
-      protocols = token ? [token] : undefined;
+  return (next) => (action: unknown) => {
+    if (!isAction(action)) return next(action);
 
-      if ('payload' in action && typeof action.payload === 'object' && action.payload && 'url' in action.payload) {
-        const connectAction = action as WebSocketConnectAction;
-        websocketUrl = connectAction.payload.url;
-        currentUserId = connectAction.payload.userId;
+    switch (action.type) {
+      case 'ws/connect': {
+        if (reconnectTimeout) {
+          clearTimeout(reconnectTimeout);
+          reconnectTimeout = null;
+        }
 
-        socket = new WebSocket(connectAction.payload.url, protocols);
-      } else {
-        console.error('Invalid action payload: url is required for ws/connect');
-        storeAPI.dispatch(setConnectionError('Invalid connection parameters'));
+        if (socket !== null) {
+          socket.close();
+          socket = null;
+        }
+
+        const token = localStorage.getItem('accessTkn');
+        const protocols = token ? [token] : undefined;
+
+        if ('payload' in action && typeof action.payload === 'object' && action.payload && 'url' in action.payload) {
+          const { url, userId } = action.payload as { url: string; userId?: string };
+          websocketUrl = url;
+          currentUserId = userId;
+
+          const auth = storeAPI.getState().auth;
+          if (auth?.isAuthenticated && auth.user?.id && auth.user?.username) {
+            currentUser = { id: auth.user.id, username: auth.user.username };
+          }
+
+          socket = new WebSocket(websocketUrl, protocols);
+        } else {
+          console.error('Invalid action payload: url is required for ws/connect');
+          storeAPI.dispatch(setConnectionError('Invalid connection parameters'));
+          break;
+        }
+
+        socket.onopen = () => {
+          console.log('[WebSocket] Connected');
+          reconnectAttempts = 0;
+          storeAPI.dispatch(setConnectionStatus(true));
+
+          sendPresence('USER_ONLINE');
+          socket?.send(JSON.stringify({ type: 'GET_CHATS' }));
+          socket?.send(JSON.stringify({ type: 'GET_USERS_STATUS' }));
+        };
+
+        socket.onmessage = (event) => {
+          try {
+            const message: SocketMessage = JSON.parse(event.data);
+            console.log('[WebSocket] Received message:', message);
+
+            if (['TOPIC_DATA', 'NEW_TOPIC_POST'].includes(message.type)) {
+              storeAPI.dispatch(handleTopicSocketMessage(message));
+            } else if (['NOTIFICATIONS_DATA', 'NEW_NOTIFICATION'].includes(message.type)) {
+              storeAPI.dispatch(handleNotificationSocketMessage(message));
+            } else if (message.type === 'EVENTS_DATA') {
+              storeAPI.dispatch(setEvents(message.payload));
+            } else if (message.type === 'EVENTS_ERROR') {
+              storeAPI.dispatch(setEventsError(message.payload));
+            } else if (message.type === 'EVENT_DETAILS_DATA') {
+              storeAPI.dispatch(setEventDetails(message.payload));
+            } else if (CHAT_MESSAGE_TYPES.includes(message.type)) {
+              safeHandleChatSocketMessage(message as ChatSocketMessage, storeAPI.dispatch, currentUserId);
+            } else {
+              console.log('[WebSocket] Unhandled message type:', message.type);
+            }
+          } catch (error) {
+            console.error('[WebSocket] Invalid JSON:', event.data, error);
+          }
+        };
+
+        socket.onclose = (event) => {
+          console.log('[WebSocket] Disconnected:', event.code, event.reason);
+          storeAPI.dispatch(setConnectionStatus(false));
+          sendPresence('USER_OFFLINE');
+
+          if (event.code !== 1000 && event.code !== 1001) {
+            attemptReconnect(storeAPI);
+          }
+        };
+
+        socket.onerror = (error) => {
+          console.error('[WebSocket] Error:', error);
+          storeAPI.dispatch(setConnectionError('WebSocket connection error'));
+        };
         break;
       }
 
-      socket.onopen = () => {
-        console.log('[WebSocket] Connected');
-        reconnectAttempts = 0; // Reset reconnection attempts
-        storeAPI.dispatch(setConnectionStatus(true));
-
-        // Request initial data after connection
-        if (socket?.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify({ type: 'GET_CHATS' }));
-          socket.send(JSON.stringify({ type: 'GET_USERS_STATUS' }));
-        }
-      };
-
-      socket.onmessage = (event) => {
-        try {
-          const message: SocketMessage = JSON.parse(event.data);
-          console.log('[WebSocket] Received message:', message);
-
-          // Handle topic messages
-          if (['TOPIC_DATA', 'NEW_TOPIC_POST'].includes(message.type)) {
-            storeAPI.dispatch(handleTopicSocketMessage(message));
+      case 'ws/send': {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          if ('payload' in action) {
+            console.log('[WebSocket] Sending message:', action.payload);
+            socket.send(JSON.stringify(action.payload));
+          } else {
+            console.warn('[WebSocket] Cannot send message, no payload provided.');
           }
-
-          // Handle notification messages
-          else if (['NOTIFICATIONS_DATA', 'NEW_NOTIFICATION'].includes(message.type)) {
-            storeAPI.dispatch(handleNotificationSocketMessage(message));
-          }
-
-          // Handle event messages
-          else if (message.type === 'EVENTS_DATA') {
-            storeAPI.dispatch(setEvents(message.payload));
-          } else if (message.type === 'EVENTS_ERROR') {
-            storeAPI.dispatch(setEventsError(message.payload));
-          } else if (message.type === 'EVENT_DETAILS_DATA') {
-            storeAPI.dispatch(setEventDetails(message.payload));
-          }
-
-          // Handle chat messages with enhanced handler
-          else if (CHAT_MESSAGE_TYPES.includes(message.type)) {
-            safeHandleChatSocketMessage(message as ChatSocketMessage, storeAPI.dispatch, currentUserId);
-          }
-
-          else {
-            console.log('[WebSocket] Unhandled message type:', message.type);
-          }
-        } catch (error) {
-          console.error('[WebSocket] Invalid JSON:', event.data, error);
-        }
-      };
-
-      socket.onclose = (event) => {
-        console.log('[WebSocket] Disconnected:', event.code, event.reason);
-        storeAPI.dispatch(setConnectionStatus(false));
-
-        // Only attempt reconnection if it wasn't a manual disconnect
-        if (event.code !== 1000 && event.code !== 1001) {
-          attemptReconnect(storeAPI);
-        }
-      };
-
-      socket.onerror = (error) => {
-        console.error('[WebSocket] Error:', error);
-        storeAPI.dispatch(setConnectionError('WebSocket connection error'));
-      };
-      break;
-
-    case 'ws/send':
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        if ('payload' in action) {
-          console.log('[WebSocket] Sending message:', action.payload);
-          socket.send(JSON.stringify(action.payload));
         } else {
-          console.warn('[WebSocket] Cannot send message, no payload provided.');
+          console.warn('[WebSocket] Cannot send message, socket not open. ReadyState:', socket?.readyState);
+          if (socket?.readyState === WebSocket.CLOSED && websocketUrl) {
+            storeAPI.dispatch({ type: 'ws/connect', payload: { url: websocketUrl, userId: currentUserId } });
+          }
         }
-      } else {
-        console.warn('[WebSocket] Cannot send message, socket not open. ReadyState:', socket?.readyState);
-        // Attempt to reconnect if socket is closed
-        if (socket?.readyState === WebSocket.CLOSED && websocketUrl) {
+        break;
+      }
+
+      case 'ws/disconnect': {
+        if (reconnectTimeout) {
+          clearTimeout(reconnectTimeout);
+          reconnectTimeout = null;
+        }
+
+        if (socket) {
+          socket.close(1000, 'Manual disconnect');
+          socket = null;
+        }
+
+        reconnectAttempts = 0;
+        currentUserId = undefined;
+        websocketUrl = '';
+        currentUser = undefined;
+        storeAPI.dispatch(setConnectionStatus(false));
+        break;
+      }
+
+      case 'ws/reconnect': {
+        if (websocketUrl) {
           storeAPI.dispatch({ type: 'ws/connect', payload: { url: websocketUrl, userId: currentUserId } });
         }
-      }
-      break;
-
-    case 'ws/disconnect':
-      // Clear reconnection timeout
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-        reconnectTimeout = null;
+        break;
       }
 
-      if (socket) {
-        socket.close(1000, 'Manual disconnect'); // Normal closure
-        socket = null;
+      case fetchChats.pending.type: {
+        if (socket?.readyState === WebSocket.OPEN) {
+          storeAPI.dispatch(setChatsLoading());
+          socket.send(JSON.stringify({ type: 'GET_CHATS' }));
+        } else {
+          storeAPI.dispatch(fetchChats());
+          console.warn('[WebSocket] Cannot fetch chats, socket not open.');
+        }
+        break;
       }
 
-      // Reset state
-      reconnectAttempts = 0;
-      currentUserId = undefined;
-      websocketUrl = undefined;
-      storeAPI.dispatch(setConnectionStatus(false));
-      break;
-
-    case 'ws/reconnect':
-      if (websocketUrl) {
-        storeAPI.dispatch({ type: 'ws/connect', payload: { url: websocketUrl, userId: currentUserId } });
+      case fetchEvents.type: {
+        if (socket?.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: 'GET_EVENTS' }));
+        } else {
+          storeAPI.dispatch(fetchEvents());
+          console.warn('[WebSocket] Cannot fetch events, socket not open.');
+        }
+        break;
       }
-      break;
 
-    case 'events/fetchEvents':
-      if (socket?.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'GET_EVENTS' }));
-      } else {
-        storeAPI.dispatch(fetchEvents()); // Still dispatch to set loading state
-        console.warn('[WebSocket] Cannot fetch events, socket not open.');
-      }
-      break;
+      default:
+        break;
+    }
 
-
-    case fetchChats.pending.type:
-      if (socket?.readyState === WebSocket.OPEN) {
-        storeAPI.dispatch(setChatsLoading());
-        socket.send(JSON.stringify({ type: 'GET_CHATS' }));
-      } else {
-        storeAPI.dispatch(fetchChats());
-        console.warn('[WebSocket] Cannot fetch chats, socket not open.');
-      }
-      break;
-
-    default:
-      break;
-  }
-
-  return next(action);
+    return next(action);
+  };
 };
 
-// Action creators for easier usage
 export const connectWebSocket = (url: string, userId?: string) => ({
   type: 'ws/connect' as const,
-  payload: { url, userId }
+  payload: { url, userId },
 });
 
 export const sendWebSocketMessage = (message: any) => ({
   type: 'ws/send' as const,
-  payload: message
+  payload: message,
 });
 
 export const disconnectWebSocket = () => ({
-  type: 'ws/disconnect' as const
+  type: 'ws/disconnect' as const,
 });
 
 export const reconnectWebSocket = () => ({
-  type: 'ws/reconnect' as const
+  type: 'ws/reconnect' as const,
 });
 
-// Helper to send chat messages
 export const sendChatMessage = (chatId: string, message: string, recipientId: string) =>
   sendWebSocketMessage({
     type: 'SEND_MESSAGE',
@@ -285,13 +331,12 @@ export const sendChatMessage = (chatId: string, message: string, recipientId: st
       chatId,
       message,
       recipientId,
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   });
 
-// Helper to mark chat as read
 export const markChatAsRead = (chatId: string) =>
   sendWebSocketMessage({
     type: 'MARK_CHAT_READ',
-    payload: { chatId }
+    payload: { chatId },
   });

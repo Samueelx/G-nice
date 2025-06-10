@@ -8,7 +8,7 @@ import {
   selectNotificationsLoading,
 } from '@/features/notifications/notificationSlice';
 import { Notification } from '@/types/notification';
-import { AppDispatch } from '@/store'; // Add this import for TypeScript dispatch
+import { AppDispatch } from '@/store/store'; // Add this import for TypeScript dispatch
 
 // Define types for notification details
 interface FileDetails {
