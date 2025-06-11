@@ -32,6 +32,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
     maxReconnectAttempts: 10,
   });
 
+  const sendRandomTestData = () => {
+  if (isConnected) {
+    const randomId = Math.floor(Math.random() * 100000);
+    const testPayload = {
+      type: 'test_message',
+      payload: {
+        id: randomId,
+        message: `Hello from client - ${randomId}`,
+        timestamp: Date.now(),
+      }
+    };
+    console.log("Sending test data:", testPayload);
+    send(testPayload);
+  } else {
+    console.warn("WebSocket not connected");
+  }
+};
+
+
   // Handle incoming WebSocket messages
   useEffect(() => {
     messages.forEach((message) => {
@@ -97,6 +116,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
       });
     }
   }, [isConnected, send]);
+  
+  useEffect(() => {
+  if (!isConnected) return;
+
+  const interval = setInterval(() => {
+    sendRandomTestData();
+  }, 2000); // every 5 seconds
+
+  return () => clearInterval(interval);
+}, [isConnected, sendRandomTestData]);
+
 
   // Handle post interactions via WebSocket
   const handlePostInteraction = (postId: string, action: string, data?: any) => {
