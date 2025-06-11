@@ -47,7 +47,9 @@ export class WebSocketService {
 
     try {
       // Include auth token in URL or headers
-      const wsUrl = `${this.config.url}${this.config.url.includes('?') ? '&' : '?'}token=${this.config.token}`;
+    //   const wsUrl = `${this.config.url}${this.config.url.includes('?') ? '&' : '?'}token=${this.config.token}`;
+        const wsUrl = `${this.config.url}`;
+
       
       this.ws = new WebSocket(wsUrl, this.config.protocols);
 
