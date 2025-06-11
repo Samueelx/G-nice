@@ -3,7 +3,6 @@ import ReactDOM from "react-dom/client";
 import { Provider } from "react-redux";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-import { WebSocketProvider } from "./context/WebSocketProvider.tsx";
 import { store } from "./store/store.ts";
 import App from "./App.tsx";
 import "./index.css";
@@ -19,10 +18,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <Provider store={store}>
-        <WebSocketProvider url="ws://localhost:8080/memefest-snapshot-01/feeds"
-        enablePresence={true}>
         <App />
-        </WebSocketProvider>
       </Provider>
     </GoogleOAuthProvider>
   </React.StrictMode>

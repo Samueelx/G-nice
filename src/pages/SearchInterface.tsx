@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Search, Users, Hash, Image, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +10,6 @@ import {
   searchResultsReceived,
   searchFailed,
 } from "@/features/search/searchSlice";
-import { useWebSocket } from "@/hooks/useWebsocket";
 import { Meme, SearchCategory, Topic, User } from "@/types/search";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -25,33 +24,16 @@ const SearchInterface: React.FC = () => {
     (state: RootState) => state.search
   );
 
-  const { sendMessage, isConnected } = useWebSocket({
-    url: "ws://localhost:8080/memefest-snapshot-01/feeds", // change if needed
-    onMessage: (data) => {
-      if (data.type === "SEARCH_RESULTS") {
-        dispatch(searchResultsReceived(data.payload));
-      } else if (data.type === "SEARCH_ERROR") {
-        dispatch(searchFailed(data.payload.message || "Search failed"));
-      }
-    },
-  });
-  const sendMessageRef = useRef(sendMessage);
-  useEffect(() => {
-    sendMessageRef.current = sendMessage;
-  }, [sendMessage]);
-
   const debouncedSearch = useMemo(
     () =>
       debounce((searchQuery: string, category: SearchCategory) => {
-        if (searchQuery.trim() && isConnected) {
+        if (searchQuery.trim()) {
           dispatch(searchStarted());
-          sendMessageRef.current({
-            type: "SEARCH",
-            payload: { query: searchQuery, category },
-          });
+          // TODO: Replace with HTTP API call or SSE implementation
+          // Example: performSearch(searchQuery, category);
         }
       }, 300),
-    [dispatch, isConnected]
+    [dispatch]
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,12 +44,10 @@ const SearchInterface: React.FC = () => {
 
   const handleCategoryChange = (category: SearchCategory) => {
     dispatch(setCategory(category));
-    if (query.trim() && isConnected) {
+    if (query.trim()) {
       dispatch(searchStarted());
-      sendMessage({
-        type: "SEARCH",
-        payload: { query, category },
-      });
+      // TODO: Replace with HTTP API call or SSE implementation
+      // Example: performSearch(query, category);
     }
   };
 

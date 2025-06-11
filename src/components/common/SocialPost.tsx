@@ -1,138 +1,190 @@
-import { useState } from 'react';
-import { MoreVertical, Heart, MessageCircle, Share2 } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Heart, MessageCircle, Share, MoreHorizontal, HeartIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
-type PostImage = {
-  url: string;
-  alt: string;
-};
+interface SocialPostProps {
+  id?: string;
+  author?: string;
+  avatar?: string;
+  timestamp?: string;
+  content?: string;
+  image?: string;
+  likes?: number;
+  comments?: number;
+  shares?: number;
+  isLiked?: boolean;
+  onInteraction?: (action: string, data?: any) => void;
+}
 
-type UserTag = {
-  username: string;
-  displayName: string;
-};
+const SocialPost: React.FC<SocialPostProps> = ({
+  id,
+  author = "Anonymous",
+  avatar = "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
+  timestamp = "now",
+  content = "",
+  image,
+  likes = 0,
+  comments = 0,
+  shares = 0,
+  isLiked = false,
+  onInteraction
+}) => {
+  const [currentLikes, setCurrentLikes] = useState(likes);
+  const [currentIsLiked, setCurrentIsLiked] = useState(isLiked);
+  const [currentComments, setCurrentComments] = useState(comments);
+  const [currentShares, setCurrentShares] = useState(shares);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-type PostProps = {
-  author: {
-    name: string;
-    avatar: string;
-    username: string;
+  const handleLike = async () => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    const newIsLiked = !currentIsLiked;
+    const newLikesCount = newIsLiked ? currentLikes + 1 : currentLikes - 1;
+    
+    // Optimistic update
+    setCurrentIsLiked(newIsLiked);
+    setCurrentLikes(newLikesCount);
+    
+    // Send WebSocket message
+    if (onInteraction) {
+      onInteraction(newIsLiked ? 'like' : 'unlike', {
+        postId: id,
+        newLikesCount,
+        isLiked: newIsLiked
+      });
+    }
+    
+    setTimeout(() => setIsProcessing(false), 500);
   };
-  content: string;
-  images?: PostImage[];
-  timestamp: string;
-  likes: number;
-  comments: number;
-  taggedUsers?: UserTag[];
-};
 
-const SocialPost = ({
-  author,
-  content,
-  images = [],
-  timestamp,
-  likes,
-  comments,
-  taggedUsers = [],
-}: PostProps) => {
-  const [isLiked, setIsLiked] = useState(false);
+  const handleComment = () => {
+    if (onInteraction) {
+      onInteraction('comment_open', { postId: id });
+    }
+    // Here you would typically open a comment modal or navigate to post detail
+  };
+
+  const handleShare = () => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    const newSharesCount = currentShares + 1;
+    
+    // Optimistic update
+    setCurrentShares(newSharesCount);
+    
+    if (onInteraction) {
+      onInteraction('share', {
+        postId: id,
+        newSharesCount
+      });
+    }
+    
+    setTimeout(() => setIsProcessing(false), 500);
+  };
 
   return (
-    <Card className="w-full bg-white/80 backdrop-blur-sm border border-purple-100 hover:border-purple-200 transition-all duration-300 hover:shadow-lg">
-      <CardHeader className="p-4">
-        <div className="flex items-center justify-between">
+    <Card className="w-full bg-white shadow-sm hover:shadow-md transition-shadow duration-200 border border-purple-100">
+      <CardContent className="p-4">
+        {/* Post Header */}
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-75 blur transition duration-200" />
-              <Avatar className="relative w-10 h-10 border-2 border-white">
-                <AvatarImage src={author.avatar} alt={author.name} />
-                <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
-              </Avatar>
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-purple-200">
+              <img
+                className="w-full h-full object-cover"
+                src={avatar}
+                alt={`${author}'s avatar`}
+              />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">{author.name}</h3>
-              <p className="text-sm text-purple-600">{timestamp}</p>
+              <h3 className="font-semibold text-gray-900 text-sm">{author}</h3>
+              <p className="text-xs text-gray-500">{timestamp}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-700">
-            <MoreVertical className="w-5 h-5" />
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <MoreHorizontal className="h-4 w-4 text-gray-500" />
           </Button>
         </div>
-      </CardHeader>
 
-      <CardContent className="p-4 pt-0">
-        {/* Content section */}
-        <div className="mb-4">
-          <p className="text-gray-800 text-base whitespace-pre-line">
-            {content}
-            {taggedUsers.length > 0 && (
-              <span className="text-purple-500 font-medium">
-                {taggedUsers.map((user, index) => (
-                  <span key={user.username}>
-                    {' '}
-                    @{user.displayName}
-                    {index < taggedUsers.length - 1 ? ',' : ''}
-                  </span>
-                ))}
-              </span>
-            )}
-          </p>
-        </div>
-
-        {/* Images grid */}
-        {images.length > 0 && (
-          <div className={`grid gap-2 mb-4 ${
-            images.length === 1 ? 'grid-cols-1' : 
-            images.length === 2 ? 'grid-cols-2' :
-            'grid-cols-2 md:grid-cols-3'
-          }`}>
-            {images.map((image, index) => (
-              <div key={index} className="relative group rounded-lg overflow-hidden">
-                <img
-                  src={image.url}
-                  alt={image.alt}
-                  className="w-full aspect-square object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-            ))}
+        {/* Post Content */}
+        {content && (
+          <div className="mb-3">
+            <p className="text-gray-800 text-sm leading-relaxed">{content}</p>
           </div>
         )}
-      </CardContent>
 
-      <CardFooter className="p-4 pt-0">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`flex items-center gap-1.5 ${
-                isLiked ? 'text-pink-500 hover:text-pink-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setIsLiked(!isLiked)}
-            >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-              <span className="text-sm font-medium">{likes}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700"
-            >
-              <MessageCircle className="w-5 h-5" />
-              <span className="text-sm font-medium">{comments}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700"
-            >
-              <Share2 className="w-5 h-5" />
-            </Button>
+        {/* Post Image */}
+        {image && (
+          <div className="mb-3 rounded-lg overflow-hidden">
+            <img
+              className="w-full h-auto object-cover"
+              src={image}
+              alt="Post content"
+            />
           </div>
+        )}
+
+        {/* Engagement Stats */}
+        <div className="flex items-center justify-between text-xs text-gray-500 mb-3 pt-2 border-t border-gray-100">
+          <div className="flex items-center gap-4">
+            {currentLikes > 0 && (
+              <span className="flex items-center gap-1">
+                <HeartIcon className="w-3 h-3 fill-red-500 text-red-500" />
+                {currentLikes}
+              </span>
+            )}
+            {currentComments > 0 && (
+              <span>{currentComments} comment{currentComments !== 1 ? 's' : ''}</span>
+            )}
+          </div>
+          {currentShares > 0 && (
+            <span>{currentShares} share{currentShares !== 1 ? 's' : ''}</span>
+          )}
         </div>
-      </CardFooter>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`flex items-center gap-2 hover:bg-red-50 transition-colors ${
+              currentIsLiked ? 'text-red-600' : 'text-gray-600'
+            }`}
+            onClick={handleLike}
+            disabled={isProcessing}
+          >
+            <Heart 
+              className={`h-4 w-4 transition-all duration-200 ${
+                currentIsLiked ? 'fill-red-600 text-red-600 scale-110' : ''
+              }`} 
+            />
+            <span className="text-sm">Like</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+            onClick={handleComment}
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-sm">Comment</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-2 text-gray-600 hover:bg-green-50 hover:text-green-600 transition-colors"
+            onClick={handleShare}
+            disabled={isProcessing}
+          >
+            <Share className="h-4 w-4" />
+            <span className="text-sm">Share</span>
+          </Button>
+        </div>
+      </CardContent>
     </Card>
   );
 };

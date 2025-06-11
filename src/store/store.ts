@@ -9,7 +9,7 @@ import searchReducer from '../features/search/searchSlice'
 import jokesReducer from '../features/jumbotron/jokesSlice'
 import topicReducer from '../features/topics/topicSlice'
 import notificationsReducer from '../features/notifications/notificationSlice'
-import { websocketMiddleware } from "@/middleware/websocketsMiddleware";
+import websocketReducer from '../features/websocket/websocketSlice';
 
 export const store: Store = configureStore({
     reducer: {
@@ -23,6 +23,7 @@ export const store: Store = configureStore({
         jokes: jokesReducer,
         topic: topicReducer,
         notifications: notificationsReducer,
+        websocket: websocketReducer,
     },
 
     // Add middleware to handle async actions and provide better dev experience
@@ -30,11 +31,15 @@ export const store: Store = configureStore({
         getDefaultMiddleware({
             serializableCheck: {
                 // Ignore these action types in serializableCheck
-                ignoredActions: ['your-ignored-actions-here'],
+                ignoredActions: ['websocket/addMessage'],
+                // Ignore these field paths in all actions
+                ignoredActionsPaths: ['payload.timestamp'],
+                // Ignore these paths in the state
+                ignoredPaths: ['websocket.messages'],
             },
             // Enable thunk middleware
             thunk: true,
-        }).concat(websocketMiddleware),
+        }).concat(),
     // Enable Redux DevTools in development
     devTools: process.env.NODE_ENV !== 'production',
 });

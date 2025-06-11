@@ -14,13 +14,7 @@ const EventsPage = () => {
   const carouselRef = useRef(null);
 
   useEffect(() => {
-    dispatch({ type: 'ws/connect', payload: { url: 'ws://localhost:8080/memefest-snapshot-01/feeds' } });
-
     dispatch(fetchEvents());
-
-    return () => {
-      dispatch({ type: 'ws/disconnect' });
-    };
   }, [dispatch]);
 
   const handleEventClick = (eventId: number) => {

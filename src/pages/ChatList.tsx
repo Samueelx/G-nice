@@ -18,7 +18,6 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import BackNavigationTemplate from "@/components/templates/BackNavigationTemplate";
-import { connectWebSocket, disconnectWebSocket } from "@/middleware/websocketsMiddleware";
 
 const ChatList = () => {
   const dispatch = useAppDispatch();

@@ -1,6 +1,5 @@
 import { useSelector } from "react-redux";
 import { RootState } from "./store/store"; // Adjust path if needed
-import { WebSocketProvider } from "./context/WebSocketProvider";
 import AppRoutes from "./routes/Routes";
 
 export default function App() {
@@ -16,10 +15,8 @@ export default function App() {
   }
 
   return (
-    <WebSocketProvider>
       <div>
         <AppRoutes />
       </div>
-    </WebSocketProvider>
   );
 }
