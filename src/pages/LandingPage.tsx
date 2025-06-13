@@ -1,28 +1,25 @@
 import React, { useEffect, useState } from "react";
-import SocialPost from "@/components/common/SocialPost";
-import data from "@/data.json";
-import JokeJumbotron from "@/components/templates/JokeJumbotron";
 import { WebSocketStatusComponent } from "@/components/WebSocketStatus";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { Menu, Wifi, WifiOff } from "lucide-react";
 
 // WebSocket configuration
-const WS_URL = 'ws://localhost:8080/Memefest-SNAPSHOT-01/feeds';
+const WS_URL = 'ws://127.0.0.1:8090';
 
 interface LandingPageProps {
   setIsSidebarOpen: (isOpen: boolean) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
-  const [posts, setPosts] = useState(data); // Make posts state-managed for real-time updates
   const [showConnectionStatus, setShowConnectionStatus] = useState(false);
+  const [messageCount, setMessageCount] = useState(0);
+  const [lastMessage, setLastMessage] = useState<any>(null);
 
   // Initialize WebSocket connection
   const {
     messages,
     send,
     isConnected,
-    // status,
     error
   } = useWebSocket({
     url: WS_URL,
@@ -32,134 +29,46 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
     maxReconnectAttempts: 10,
   });
 
-  const sendRandomTestData = () => {
-  if (isConnected) {
-    const randomId = Math.floor(Math.random() * 100000);
-    const testPayload = {
-      type: 'test_message',
-      payload: {
-        id: randomId,
-        message: `Hello from client - ${randomId}`,
-        timestamp: Date.now(),
-      }
-    };
-    console.log("Sending test data:", testPayload);
-    send(testPayload);
-  } else {
-    console.warn("WebSocket not connected");
-  }
-};
+  // Debug logs
+  console.log('LandingPage render - messages length:', messages?.length, 'isConnected:', isConnected);
 
-
-  // Handle incoming WebSocket messages
+  // Test WebSocket connection on mount
   useEffect(() => {
-    messages.forEach((message) => {
-      console.log('Received WebSocket message:', message);
-      
-      switch (message.type) {
-        case 'new_post':
-          // Add new post to the beginning of the feed
-          setPosts(prevPosts => [message.payload, ...prevPosts]);
-          break;
-          
-        case 'post_update':
-          // Update existing post (likes, comments, etc.)
-          setPosts(prevPosts => 
-            prevPosts.map(post => 
-              post.id === message.payload.id 
-                ? { ...post, ...message.payload }
-                : post
-            )
-          );
-          break;
-          
-        case 'post_delete':
-          // Remove deleted post
-          setPosts(prevPosts => 
-            prevPosts.filter(post => post.id !== message.payload.postId)
-          );
-          break;
-          
-        case 'feed_refresh':
-          // Complete feed refresh
-          if (message.payload.posts) {
-            setPosts(message.payload.posts);
-          }
-          break;
-          
-        case 'user_activity':
-          // Handle user activity updates (online status, etc.)
-          console.log('User activity:', message.payload);
-          break;
-          
-        case 'notification':
-          // Handle real-time notifications
-          console.log('Notification received:', message.payload);
-          // You can integrate with a toast notification system here
-          break;
-          
-        default:
-          console.log('Unknown message type:', message.type);
-      }
-    });
-  }, [messages]);
-
-  // Send user activity when component mounts
-  useEffect(() => {
-    if (isConnected) {
+    if (isConnected && send) {
+      console.log('Sending test message...');
       send({
-        type: 'user_activity',
+        type: 'test_connection',
         payload: {
-          action: 'view_feed',
+          message: 'Hello from client',
           timestamp: Date.now(),
         }
       });
     }
   }, [isConnected, send]);
-  
+
+  // Just log messages without processing them
   useEffect(() => {
-  if (!isConnected) return;
-
-  const interval = setInterval(() => {
-    sendRandomTestData();
-  }, 2000); // every 5 seconds
-
-  return () => clearInterval(interval);
-}, [isConnected, sendRandomTestData]);
-
-
-  // Handle post interactions via WebSocket
-  const handlePostInteraction = (postId: string, action: string, data?: any) => {
-    if (isConnected) {
-      send({
-        type: 'post_interaction',
-        payload: {
-          postId,
-          action, // 'like', 'unlike', 'comment', 'share', etc.
-          data,
-          timestamp: Date.now(),
-        }
-      });
+    console.log('Messages effect triggered. Messages array:', messages);
+    if (messages && messages.length > 0) {
+      setMessageCount(messages.length);
+      setLastMessage(messages[messages.length - 1]);
     }
-  };
+  }, [messages?.length, messages]); // Only depend on length
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 overflow-x-hidden">
-      {/* Mobile-optimized header */}
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50">
+      {/* Minimal header */}
       <header className="sticky top-0 z-10 backdrop-blur-sm bg-white/80 border-b border-purple-100">
-        {/* Main header content */}
         <div className="p-3">
           <nav className="w-full">
             <div className="flex items-center justify-between gap-2">
-              {/* Menu trigger for mobile */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="p-2 hover:bg-purple-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="p-2 hover:bg-purple-100 rounded-full transition-colors"
               >
                 <Menu className="w-6 h-6 text-purple-600" />
               </button>
               
-              {/* Center Logo - Simplified for mobile */}
               <div className="flex items-center gap-2">
                 <img
                   className="w-8 h-8 transition-transform duration-200 hover:rotate-12"
@@ -167,41 +76,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
                   alt="G Icon"
                 />
                 <h1 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-transparent bg-clip-text">
-                  Gnice
+                  Gnice - WebSocket Test
                 </h1>
               </div>
               
-              {/* Connection status and profile */}
-              <div className="flex items-center gap-2">
-                {/* WebSocket connection indicator */}
-                <button
-                  onClick={() => setShowConnectionStatus(!showConnectionStatus)}
-                  className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
-                  title={isConnected ? 'Connected to live feed' : 'Disconnected from live feed'}
-                >
-                  {isConnected ? (
-                    <Wifi className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <WifiOff className="w-4 h-4 text-red-500" />
-                  )}
-                </button>
-                
-                {/* Profile for mobile */}
-                <div className="relative">
-                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-200">
-                    <img
-                      className="w-full h-full object-cover"
-                      src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                      alt="Profile"
-                    />
-                  </div>
-                </div>
-              </div>
+              <button
+                onClick={() => setShowConnectionStatus(!showConnectionStatus)}
+                className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
+                title={isConnected ? 'Connected' : 'Disconnected'}
+              >
+                {isConnected ? (
+                  <Wifi className="w-4 h-4 text-green-600" />
+                ) : (
+                  <WifiOff className="w-4 h-4 text-red-500" />
+                )}
+              </button>
             </div>
           </nav>
         </div>
         
-        {/* WebSocket status detail (collapsible) */}
         {showConnectionStatus && (
           <div className="border-t border-purple-100 bg-white/90 p-3">
             <WebSocketStatusComponent 
@@ -213,61 +106,64 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
         )}
       </header>
 
-      {/* Main Content */}
+      {/* Main Content - Just WebSocket Testing */}
       <main className="w-full px-3 py-4">
-        {/* Jumbotron - Made responsive */}
-        <div className="mb-6 max-w-2xl mx-auto">
-          <JokeJumbotron />
-        </div>
-
-        {/* Real-time feed indicator */}
-        {isConnected && (
-          <div className="max-w-2xl mx-auto mb-4">
-            <div className="flex items-center justify-center gap-2 text-sm text-green-600 bg-green-50 rounded-lg py-2 px-4 border border-green-200">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span>Live feed active</span>
-            </div>
+        <div className="max-w-2xl mx-auto space-y-4">
+          {/* Connection Status */}
+          <div className={`p-4 rounded-lg border ${
+            isConnected 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            <h2 className="font-semibold mb-2">WebSocket Status</h2>
+            <p>Connection: {isConnected ? 'Connected ✅' : 'Disconnected ❌'}</p>
+            {error && <p>Error: {error}</p>}
           </div>
-        )}
 
-        {/* Connection error indicator */}
-        {error && (
-          <div className="max-w-2xl mx-auto mb-4">
-            <div className="flex items-center justify-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg py-2 px-4 border border-red-200">
-              <WifiOff className="w-4 h-4" />
-              <span>Live feed disconnected: {error}</span>
-            </div>
+          {/* Message Stats */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h2 className="font-semibold mb-2">Message Statistics</h2>
+            <p>Total messages received: {messageCount}</p>
+            <p>Messages array length: {messages?.length || 0}</p>
           </div>
-        )}
 
-        {/* Posts Grid - Single column on mobile, centered on desktop */}
-        <div className="grid gap-4 grid-cols-1 max-w-2xl mx-auto">
-          {posts.map((post, index) => (
-            <SocialPost 
-              key={post.id || index} 
-              {...post}
-              // Pass WebSocket interaction handler to posts if SocialPost supports it
-              onInteraction={(action: string, data?: any) => 
-                handlePostInteraction(post.id || index.toString(), action, data)
-              }
-            />
-          ))}
-        </div>
+          {/* Last Message */}
+          {lastMessage && (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h2 className="font-semibold mb-2">Last Message Received</h2>
+              <pre className="text-sm bg-white p-2 rounded border overflow-auto">
+                {JSON.stringify(lastMessage, null, 2)}
+              </pre>
+            </div>
+          )}
 
-        {/* Empty state when no posts */}
-        {posts.length === 0 && (
-          <div className="max-w-2xl mx-auto text-center py-12">
-            <div className="text-gray-500">
-              <h3 className="text-lg font-medium mb-2">No posts yet</h3>
-              <p className="text-sm">
-                {isConnected 
-                  ? "Waiting for new posts to arrive..." 
-                  : "Connect to the live feed to see real-time updates"
+          {/* Test Controls */}
+          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <h2 className="font-semibold mb-2">Test Controls</h2>
+            <button
+              onClick={() => {
+                if (isConnected && send) {
+                  send({
+                    type: 'ping',
+                    payload: { timestamp: Date.now() }
+                  });
                 }
-              </p>
-            </div>
+              }}
+              disabled={!isConnected}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+            >
+              Send Ping
+            </button>
           </div>
-        )}
+
+          {/* Debug Info */}
+          <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
+            <h2 className="font-semibold mb-2">Debug Info</h2>
+            <p className="text-sm text-gray-600">
+              Check the browser console for detailed logs about re-renders and message processing.
+            </p>
+          </div>
+        </div>
       </main>
     </div>
   );
