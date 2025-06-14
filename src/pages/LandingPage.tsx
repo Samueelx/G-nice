@@ -2,11 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import SocialPost from "@/components/common/SocialPost";
 import data from "@/data.json";
 import JokeJumbotron from "@/components/templates/JokeJumbotron";
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { useWebSocketContext } from "@/context/useWebSocketContext"; // Updated import
 import { Menu, Wifi, WifiOff, Bell, BellOff } from "lucide-react";
-
-// WebSocket configuration
-const WS_URL = 'ws://localhost:8090';
 
 interface LandingPageProps {
   setIsSidebarOpen: (isOpen: boolean) => void;
@@ -18,40 +15,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
   const [newPostsCount, setNewPostsCount] = useState(0);
   const [notifications, setNotifications] = useState(true);
 
-  // Initialize WebSocket connection
+  // Use WebSocket context instead of useWebSocket hook
   const {
     messages,
-    send,
     isConnected,
     error,
-    status
-  } = useWebSocket({
-    url: WS_URL,
-    enabled: true,
-    heartbeatInterval: 30000,
-    reconnectInterval: 5000,
-    maxReconnectAttempts: 10,
-  });
-
-  // Send initial connection message
-  useEffect(() => {
-    if (isConnected && send) {
-      console.log("WebSocket Connected - Subscribing to posts feed");
-      send({
-        type: 'subscribe_posts',
-        payload: {
-          userId: 'current_user', // Replace with actual user ID
-          timestamp: Date.now(),
-        }
-      });
-    }
-  }, [isConnected, send]);
+    status,
+    sendPostInteraction,
+    sendMessage
+  } = useWebSocketContext();
 
   // Process incoming WebSocket messages
   useEffect(() => {
     if (messages && messages.length > 0) {
       const latestMessage = messages[messages.length - 1];
-      console.log('Processing WebSocket message:', latestMessage);
+      console.log('Processing WebSocket message in LandingPage:', latestMessage);
 
       switch (latestMessage.type) {
         case 'new_post':
@@ -127,20 +105,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
     setNewPostsCount(0);
   }, []);
 
-  // Send interaction to server
+  // Handle post interactions - now using context method
   const handlePostInteraction = useCallback((postId: string, action: string, data?: any) => {
-    if (isConnected && send) {
-      send({
-        type: 'post_interaction',
-        payload: {
-          postId,
-          action,
-          data,
-          timestamp: Date.now()
-        }
+    sendPostInteraction(postId, action, data);
+  }, [sendPostInteraction]);
+
+  // Send additional subscription when this component mounts (optional)
+  useEffect(() => {
+    if (isConnected) {
+      console.log("LandingPage: Ensuring posts subscription");
+      sendMessage('subscribe_posts', {
+        userId: 'current_user',
+        feed_type: 'main_feed'
       });
     }
-  }, [isConnected, send]);
+  }, [isConnected, sendMessage]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 overflow-x-hidden">
