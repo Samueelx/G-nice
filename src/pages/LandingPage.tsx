@@ -4,7 +4,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { Menu, Wifi, WifiOff } from "lucide-react";
 
 // WebSocket configuration
-const WS_URL = 'ws://127.0.0.1:8090';
+const WS_URL = 'ws://localhost:8090';
 
 interface LandingPageProps {
   setIsSidebarOpen: (isOpen: boolean) => void;
@@ -32,8 +32,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
   // Debug logs
   console.log('LandingPage render - messages length:', messages?.length, 'isConnected:', isConnected);
 
+
   // Test WebSocket connection on mount
   useEffect(() => {
+    if(isConnected){
+      console.log("Connected")
+    }
     if (isConnected && send) {
       console.log('Sending test message...');
       send({
