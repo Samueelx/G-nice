@@ -17,18 +17,18 @@ export interface WebSocketContextType {
   isReconnecting: boolean;
   lastHeartbeat: number | null;
   reconnectAttempts: number;
-  
+
   // WebSocket methods
   send: (message: any) => boolean;
   clearMessages: () => void;
   connect: () => void;
   disconnect: () => void;
-  
+
   // Helper methods for common operations
   subscribeToFeed: (userId?: string) => void;
   sendPostInteraction: (postId: string, action: string, data?: any) => void;
   sendMessage: (type: string, payload: any) => void;
-  
+
   // Utility methods
   getMessagesByType: (messageType: string) => any[];
   getLatestMessage: (messageType?: string) => any | null;
@@ -42,7 +42,7 @@ interface WebSocketProviderProps {
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }) => {
   const { isAuthenticated, token } = useAppSelector((state: RootState) => state.auth);
-  
+
   // Initialize WebSocket connection
   const {
     status,
@@ -75,7 +75,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   useEffect(() => {
     if (isConnected && isAuthenticated) {
       console.log("🌍 WebSocket Provider: Connected - Setting up subscriptions");
-      
+
       // Subscribe to posts feed
       send({
         type: 'subscribe_posts',
@@ -99,6 +99,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         type: 'subscribe_chats',
         payload: {
           userId: 'current_user', // Replace with actual user ID from auth state
+          timestamp: Date.now(),
+        }
+      });
+
+      // In WebSocketProvider.tsx, add this to the useEffect where you set up subscriptions:
+      send({
+        type: 'subscribe_events',
+        payload: {
+          userId: 'current_user',
           timestamp: Date.now(),
         }
       });
@@ -185,18 +194,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     isReconnecting,
     lastHeartbeat,
     reconnectAttempts,
-    
+
     // Methods
     send,
     clearMessages,
     connect,
     disconnect,
-    
+
     // Helper methods
     subscribeToFeed,
     sendPostInteraction,
     sendMessage,
-    
+
     // Utility methods
     getMessagesByType,
     getLatestMessage,

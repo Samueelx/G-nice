@@ -3,21 +3,143 @@ import { Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
-import { Event } from '@/types/event';
-import { fetchEvents } from '@/features/events/eventsSlice';
+import { fetchEvents, eventAdded, eventUpdated, setEventsError, Event } from '@/features/events/eventsSlice';
+import { useWebSocketContext } from '@/context/useWebSocketContext';
+
+// WebSocket Event Message Interface
+interface WebSocketEventMessage {
+  name: string;
+  EventId: number;
+  EventTitle: string;
+  EventDescription: string;
+  EventPin: string;
+  EventVenue: string;
+  EventDate: string;
+  Posters: Array<{
+    ImageId: number;
+    ImagePath: string;
+    ImageTitle: string;
+    IsCanceled: boolean;
+  }>;
+  Clips: Array<{
+    ClipID: number;
+    ClipPath: string;
+    ClipTitle: string;
+    Canceled: boolean;
+  }>;
+  Posts: Array<any>;
+  User: {
+    UserId: number;
+    Email: string;
+    Username: string;
+    Contacts: number;
+    Verified: boolean;
+    LastName: string;
+    FirstName: string;
+    Posts: Array<any>;
+    Cancel: boolean;
+    TopicsFollowing: Array<any>;
+    CategoriesFollowing: Array<any>;
+    UserSecurity: Array<any>;
+  };
+  CanceledImages: Array<any>;
+  CanceledClips: Array<any>;
+  IsCanceled: boolean;
+}
 
 const EventsPage = () => {
   const dispatch = useAppDispatch();
   const { items: events = [] } = useAppSelector((state) => state.events || { items: [] });
+  const { messages, isConnected, sendMessage } = useWebSocketContext();
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef(null);
 
+  // Function to transform WebSocket event message to your Event interface
+  const transformWebSocketEvent = (wsEvent: WebSocketEventMessage): Event => {
+    // Parse the date string (assuming format DD/MM/YYYY)
+    const [day, month] = wsEvent.EventDate.split('/');
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
+                       'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const monthName = monthNames[parseInt(month) - 1] || 'JAN';
+    
+    // Get the first poster image or use a default
+    const imageUrl = wsEvent.Posters && wsEvent.Posters.length > 0 
+      ? wsEvent.Posters[0].ImagePath 
+      : '/default-event-image.jpg';
+
+    return {
+      id: wsEvent.EventId.toString(),
+      title: wsEvent.EventTitle,
+      location: wsEvent.EventVenue,
+      time: '7:00 PM', // Default time since it's not in WebSocket message
+      date: {
+        day: parseInt(day),
+        month: monthName,
+      },
+      price: 25.00, // Default price since it's not in WebSocket message
+      imageUrl: imageUrl,
+      description: wsEvent.EventDescription,
+    };
+  };
+
   useEffect(() => {
+    // Initial fetch of events
     dispatch(fetchEvents());
   }, [dispatch]);
 
-  const handleEventClick = (eventId: number) => {
+  // Subscribe to events when WebSocket connects
+  useEffect(() => {
+    if (isConnected) {
+      console.log('🎟️ EventsPage: Subscribing to events feed');
+      sendMessage('subscribe_events', {
+        userId: 'current_user', // Replace with actual user ID from auth state
+        timestamp: Date.now(),
+      });
+    }
+  }, [isConnected, sendMessage]);
+
+  // Process WebSocket messages for events
+  useEffect(() => {
+    if (!messages || messages.length === 0) return;
+
+    // Process the latest message
+    const latestMessage = messages[messages.length - 1];
+    
+    if (latestMessage && latestMessage.name === 'EVENT') {
+      try {
+        const wsEvent: WebSocketEventMessage = latestMessage;
+        
+        // Skip if event is canceled
+        if (wsEvent.IsCanceled) {
+          console.log('Event canceled:', wsEvent.EventId);
+          // TODO: You might want to dispatch an action to remove the event from state
+          return;
+        }
+
+        // Transform the WebSocket event to your Event format
+        const transformedEvent = transformWebSocketEvent(wsEvent);
+        
+        // Check if event already exists in current events
+        const existingEvent = events.find(e => e.id === transformedEvent.id);
+        
+        if (existingEvent) {
+          // Update existing event
+          dispatch(eventUpdated(transformedEvent));
+          console.log('Event updated:', transformedEvent.title);
+        } else {
+          // Add new event
+          dispatch(eventAdded(transformedEvent));
+          console.log('New event added:', transformedEvent.title);
+        }
+      } catch (error) {
+        console.error('Error processing WebSocket event message:', error);
+        dispatch(setEventsError('Failed to process real-time event update'));
+      }
+    }
+  }, [messages, events, dispatch]);
+
+  const handleEventClick = (eventId: string) => {
     navigate(`/events/${eventId}`);
   };
 
@@ -100,7 +222,7 @@ const EventsPage = () => {
                       </div>
                       <div className="flex space-x-4">
                         <button
-                          onClick={() => handleEventClick(parseInt(event.id))}
+                          onClick={() => handleEventClick(event.id)}
                           className="bg-[#B43E8F] hover:bg-[#9a3277] text-white font-bold py-2 px-4 rounded inline-block min-w-32 text-center"
                         >
                           GET TICKETS
@@ -170,7 +292,7 @@ const EventsPage = () => {
               <div
                 key={event.id}
                 className="relative bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleEventClick(parseInt(event.id))}
+                onClick={() => handleEventClick(event.id)}
               >
                 <div className="relative">
                   <img src={event.imageUrl || ''} alt={event.title || ''} className="w-full h-48 object-cover" />

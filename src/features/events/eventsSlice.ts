@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface Ticket {
   section: string;
@@ -53,7 +53,7 @@ const initialState: EventsState = {
 };
 
 const eventsSlice = createSlice({
-  name: 'events',
+  name: "events",
   initialState,
   reducers: {
     fetchEvents: (state) => {
@@ -72,14 +72,17 @@ const eventsSlice = createSlice({
       state.items.push(action.payload);
     },
     eventUpdated: (state, action: PayloadAction<Event>) => {
-      const index = state.items.findIndex(e => e.id === action.payload.id);
+      const index = state.items.findIndex((e) => e.id === action.payload.id);
       if (index !== -1) {
         state.items[index] = action.payload;
       }
     },
+    eventRemoved: (state, action: PayloadAction<string>) => {
+      state.items = state.items.filter((e) => e.id !== action.payload);
+    },
     // New action to update event with detailed information
     setEventDetails: (state, action: PayloadAction<DetailedEvent>) => {
-      const index = state.items.findIndex(e => e.id === action.payload.id);
+      const index = state.items.findIndex((e) => e.id === action.payload.id);
       if (index !== -1) {
         // Merge the detailed information with existing event
         state.items[index] = { ...state.items[index], ...action.payload };
@@ -91,13 +94,13 @@ const eventsSlice = createSlice({
   },
 });
 
-export const { 
-  fetchEvents, 
-  setEvents, 
-  setEventsError, 
-  eventAdded, 
-  eventUpdated, 
-  setEventDetails 
+export const {
+  fetchEvents,
+  setEvents,
+  setEventsError,
+  eventAdded,
+  eventUpdated,
+  setEventDetails,
 } = eventsSlice.actions;
 
 export default eventsSlice.reducer;
