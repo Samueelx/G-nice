@@ -1,11 +1,45 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
-// Types
+// Updated types to match new backend format
+interface User {
+  UserId: number;
+  Username: string;
+  Contacts: number;
+  Cancel: boolean;
+  Verified: boolean;
+}
+
 interface Post {
+  PostId: number;
+  Comment: string;
+  Created: string;
+  Upvotes: number;
+  Downvotes: number;
+  Cancel: boolean;
+  User: User;
+  // Media fields
+  ImageUrl?: string;
+  VideoUrl?: string;
+  ImageData?: string; // base64 data for upload
+  VideoData?: string; // base64 data for upload
+}
+
+interface EditableType {
+  EditableType: string;
+}
+
+interface PostResponse {
+  EditableType: EditableType;
+  Posts: Post[];
+}
+
+// Legacy interface for backwards compatibility in component
+interface LegacyPost {
   id: string;
   title: string;
   body: string;
   imageUrl?: string;
+  videoUrl?: string;
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -17,11 +51,12 @@ interface CreatePostData {
   title: string;
   body: string;
   image?: File;
+  video?: File;
 }
 
 interface PostsState {
-  posts: Post[];
-  userPosts: Post[];
+  posts: LegacyPost[];
+  userPosts: LegacyPost[];
   isLoading: boolean;
   error: string | null;
 }
@@ -43,26 +78,55 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-// Define the expected return type for createPost
-interface CreatePostReturn {
+// Helper function to format current date in the required format
+const formatCurrentDate = (): string => {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  
+  return `${day}-${month}-${year}-${hours}:${minutes}:${seconds}`;
+};
+
+// Helper function to convert new format to legacy format for component compatibility
+const convertPostToLegacy = (post: Post): LegacyPost => {
+  return {
+    id: post.PostId.toString(),
+    title: '', // Title is now part of Comment, you might want to extract first line
+    body: post.Comment,
+    imageUrl: post.ImageUrl,
+    videoUrl: post.VideoUrl,
+    userId: post.User.UserId.toString(),
+    createdAt: post.Created,
+    updatedAt: post.Created,
+    likes: post.Upvotes,
+    comments: 0, // You might need to track this separately
+  };
+};
+
+// Define the expected return type for async thunks
+interface AsyncThunkReturn {
   pending: boolean;
 }
 
-// WebSocket-based createPost thunk
+// Updated WebSocket-based createPost thunk
 export const createPost = createAsyncThunk<
-  CreatePostReturn,
-  { postData: CreatePostData; sendMessage: (type: string, payload: any) => void },
+  AsyncThunkReturn,
+  { 
+    postData: CreatePostData; 
+    sendMessage: (type: string, payload: any) => void;
+    currentUser?: User; // You should pass this from your user context/state
+  },
   { rejectValue: string }
 >(
   "posts/createPost",
-  async ({ postData, sendMessage }, { rejectWithValue }) => {
+  async ({ postData, sendMessage, currentUser }, { rejectWithValue }) => {
     try {
-      let imageData: {
-        data: string;
-        name: string;
-        type: string;
-        size: number;
-      } | null = null;
+      let imageBase64: string | undefined;
+      let videoBase64: string | undefined;
       
       // Convert image to base64 if present
       if (postData.image) {
@@ -70,25 +134,46 @@ export const createPost = createAsyncThunk<
         if (postData.image.size > 5 * 1024 * 1024) {
           throw new Error('Image size should be less than 5MB');
         }
-        
-        imageData = {
-          data: await fileToBase64(postData.image),
-          name: postData.image.name,
-          type: postData.image.type,
-          size: postData.image.size
-        };
+        imageBase64 = await fileToBase64(postData.image);
       }
 
-      // Send post creation message via WebSocket
-      sendMessage('create_post', {
-        title: postData.title,
-        body: postData.body,
-        image: imageData,
-        timestamp: Date.now()
-      });
+      // Convert video to base64 if present
+      if (postData.video) {
+        // Validate video size (50MB limit)
+        if (postData.video.size > 50 * 1024 * 1024) {
+          throw new Error('Video size should be less than 50MB');
+        }
+        videoBase64 = await fileToBase64(postData.video);
+      }
 
-      // Return a placeholder that will be replaced when WebSocket responds
-      // The actual post data will come through WebSocket messages
+      // Create the post data in the new format
+      const newFormatData: PostResponse = {
+        EditableType: {
+          EditableType: "POST"
+        },
+        Posts: [{
+          PostId: 0, // Server will assign real ID
+          Comment: `${postData.title}\n\n${postData.body}`, // Combine title and body
+          Created: formatCurrentDate(),
+          Upvotes: 0,
+          Downvotes: 0,
+          Cancel: false,
+          User: currentUser || {
+            UserId: 0,
+            Username: "anonymous",
+            Contacts: 0,
+            Cancel: false,
+            Verified: false
+          },
+          // Include media data if present
+          ...(imageBase64 && { ImageData: imageBase64 }),
+          ...(videoBase64 && { VideoData: videoBase64 })
+        }]
+      };
+
+      // Send post creation message via WebSocket with new format
+      sendMessage('create_post', newFormatData);
+
       return { pending: true };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to create post";
@@ -97,9 +182,9 @@ export const createPost = createAsyncThunk<
   }
 );
 
-// Keep the existing fetch thunks but update them for WebSocket
+// Updated fetch thunks to handle new format
 export const fetchPosts = createAsyncThunk<
-  CreatePostReturn,
+  AsyncThunkReturn,
   { sendMessage: (type: string, payload: any) => void },
   { rejectValue: string }
 >(
@@ -107,6 +192,9 @@ export const fetchPosts = createAsyncThunk<
   async ({ sendMessage }, { rejectWithValue }) => {
     try {
       sendMessage('fetch_posts', {
+        EditableType: {
+          EditableType: "GET_POSTS"
+        },
         timestamp: Date.now()
       });
       return { pending: true };
@@ -118,7 +206,7 @@ export const fetchPosts = createAsyncThunk<
 );
 
 export const fetchUserPosts = createAsyncThunk<
-  CreatePostReturn,
+  AsyncThunkReturn,
   { userId: string; sendMessage: (type: string, payload: any) => void },
   { rejectValue: string }
 >(
@@ -126,6 +214,9 @@ export const fetchUserPosts = createAsyncThunk<
   async ({ userId, sendMessage }, { rejectWithValue }) => {
     try {
       sendMessage('fetch_user_posts', {
+        EditableType: {
+          EditableType: "GET_USER_POSTS"
+        },
         userId,
         timestamp: Date.now()
       });
@@ -136,6 +227,27 @@ export const fetchUserPosts = createAsyncThunk<
     }
   }
 );
+
+// Type guard functions for better type safety
+const isPostResponse = (payload: unknown): payload is PostResponse => {
+  return typeof payload === 'object' && 
+         payload !== null && 
+         'EditableType' in payload && 
+         'Posts' in payload;
+};
+
+const isLegacyPost = (payload: unknown): payload is LegacyPost => {
+  return typeof payload === 'object' && 
+         payload !== null && 
+         'id' in payload && 
+         'title' in payload && 
+         'body' in payload;
+};
+
+const isLegacyPostArray = (payload: unknown): payload is LegacyPost[] => {
+  return Array.isArray(payload) && 
+         (payload.length === 0 || isLegacyPost(payload[0]));
+};
 
 // Slice
 const postsSlice = createSlice({
@@ -151,42 +263,79 @@ const postsSlice = createSlice({
       state.error = null;
       state.isLoading = false;
     },
-    // New reducers for handling WebSocket responses
-    handlePostCreated: (state, action: PayloadAction<Post>) => {
+    // Updated reducers for handling WebSocket responses with new format
+    handlePostCreated: (state, action: PayloadAction<PostResponse | LegacyPost>) => {
       state.isLoading = false;
       state.error = null;
-      // Add the new post to the beginning of both arrays
-      state.posts.unshift(action.payload);
-      state.userPosts.unshift(action.payload);
+      
+      // Handle both old and new formats
+      if (isPostResponse(action.payload)) {
+        // New format
+        const newPosts = action.payload.Posts.map(convertPostToLegacy);
+        state.posts.unshift(...newPosts);
+        state.userPosts.unshift(...newPosts);
+      } else if (isLegacyPost(action.payload)) {
+        // Legacy format
+        state.posts.unshift(action.payload);
+        state.userPosts.unshift(action.payload);
+      }
     },
     handlePostCreationError: (state, action: PayloadAction<string>) => {
       state.isLoading = false;
       state.error = action.payload;
     },
-    handlePostsFetched: (state, action: PayloadAction<Post[]>) => {
+    handlePostsFetched: (state, action: PayloadAction<PostResponse | LegacyPost[]>) => {
       state.isLoading = false;
       state.error = null;
-      state.posts = action.payload;
+      
+      // Handle both old and new formats
+      if (isLegacyPostArray(action.payload)) {
+        // Legacy format
+        state.posts = action.payload;
+      } else if (isPostResponse(action.payload)) {
+        // New format
+        state.posts = action.payload.Posts.map(convertPostToLegacy);
+      }
     },
-    handleUserPostsFetched: (state, action: PayloadAction<Post[]>) => {
+    handleUserPostsFetched: (state, action: PayloadAction<PostResponse | LegacyPost[]>) => {
       state.isLoading = false;
       state.error = null;
-      state.userPosts = action.payload;
+      
+      // Handle both old and new formats
+      if (isLegacyPostArray(action.payload)) {
+        // Legacy format
+        state.userPosts = action.payload;
+      } else if (isPostResponse(action.payload)) {
+        // New format
+        state.userPosts = action.payload.Posts.map(convertPostToLegacy);
+      }
     },
     handlePostsError: (state, action: PayloadAction<string>) => {
       state.isLoading = false;
       state.error = action.payload;
     },
     // Handle real-time post updates from other users
-    handleNewPostReceived: (state, action: PayloadAction<Post>) => {
-      // Only add if it's not already in the posts array
-      const exists = state.posts.some(post => post.id === action.payload.id);
-      if (!exists) {
-        state.posts.unshift(action.payload);
+    handleNewPostReceived: (state, action: PayloadAction<PostResponse | LegacyPost>) => {
+      // Handle both old and new formats
+      if (isPostResponse(action.payload)) {
+        // New format
+        const newPosts = action.payload.Posts.map(convertPostToLegacy);
+        newPosts.forEach(post => {
+          const exists = state.posts.some(existingPost => existingPost.id === post.id);
+          if (!exists) {
+            state.posts.unshift(post);
+          }
+        });
+      } else if (isLegacyPost(action.payload)) {
+        // Legacy format
+        const exists = state.posts.some(post => post.id === action.payload.id);
+        if (!exists) {
+          state.posts.unshift(action.payload);
+        }
       }
     },
     // Handle post updates (likes, comments, etc.)
-    handlePostUpdated: (state, action: PayloadAction<Partial<Post> & { id: string }>) => {
+    handlePostUpdated: (state, action: PayloadAction<Partial<LegacyPost> & { id: string }>) => {
       const { id, ...updates } = action.payload;
       
       // Update in posts array
@@ -209,9 +358,8 @@ const postsSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(createPost.fulfilled, (state) => {
+      .addCase(createPost.fulfilled, () => {
         // Don't change loading state here - wait for WebSocket response
-        // The loading state will be cleared in handlePostCreated or handlePostCreationError
       })
       .addCase(createPost.rejected, (state, action) => {
         state.isLoading = false;
@@ -223,7 +371,7 @@ const postsSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchPosts.fulfilled, (state) => {
+      .addCase(fetchPosts.fulfilled, () => {
         // Loading state will be cleared in handlePostsFetched or handlePostsError
       })
       .addCase(fetchPosts.rejected, (state, action) => {
@@ -236,7 +384,7 @@ const postsSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchUserPosts.fulfilled, (state) => {
+      .addCase(fetchUserPosts.fulfilled, () => {
         // Loading state will be cleared in handleUserPostsFetched or handlePostsError
       })
       .addCase(fetchUserPosts.rejected, (state, action) => {
