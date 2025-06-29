@@ -3,6 +3,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { useAppSelector } from '@/hooks/hooks';
 import { RootState } from '@/store/store';
 import { WebSocketStatus } from '@/features/websocket/websocketSlice';
+import { getWebSocketService } from '@/services/websocketService';
 
 // WebSocket configuration
 const WS_URL = 'ws://localhost:8090';
@@ -28,6 +29,9 @@ export interface WebSocketContextType {
   subscribeToFeed: (userId?: string) => void;
   sendPostInteraction: (postId: string, action: string, data?: any) => void;
   sendMessage: (type: string, payload: any) => void;
+  
+  // NEW: Method specifically for creating posts
+  createPost: (postData: any) => void;
 
   // Utility methods
   getMessagesByType: (messageType: string) => any[];
@@ -45,23 +49,24 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
   // Initialize WebSocket connection
   const {
-    status,
-    error,
-    messages,
-    isConnected,
-    isConnecting,
-    lastHeartbeat,
-    send,
-    clearMessages,
-    connect,
-    disconnect
-  } = useWebSocket({
-    url: WS_URL,
-    enabled: isAuthenticated, // Only enable if user is authenticated
-    heartbeatInterval: 30000,
-    reconnectInterval: 5000,
-    maxReconnectAttempts: 10,
-  });
+  status,
+  error,
+  messages,
+  isConnected,
+  isConnecting,
+  lastHeartbeat,
+  send,
+  sendRaw, // NEW: Get the sendRaw method
+  clearMessages,
+  connect,
+  disconnect
+} = useWebSocket({
+  url: WS_URL,
+  enabled: isAuthenticated,
+  heartbeatInterval: 30000,
+  reconnectInterval: 5000,
+  maxReconnectAttempts: 10,
+});
 
   console.log("Authenticated?", isAuthenticated, token);
 
@@ -157,6 +162,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }
   }, [isConnected, send]);
 
+// Update the createPost method to use sendRaw:
+const createPost = useCallback((postData: any) => {
+  if (isConnected) {
+    // Use sendRaw to send the post data without WebSocket metadata
+    console.log('📝 Creating post with raw data:', postData);
+    return sendRaw(postData);
+  } else {
+    console.warn('❌ Cannot create post: WebSocket not connected');
+    return false;
+  }
+}, [isConnected, sendRaw]);
+
   // Log connection status changes
   useEffect(() => {
     console.log(`🔌 WebSocket Provider: Status changed to ${status}`);
@@ -205,6 +222,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     subscribeToFeed,
     sendPostInteraction,
     sendMessage,
+    createPost, // NEW: Add the createPost method
 
     // Utility methods
     getMessagesByType,
@@ -217,4 +235,3 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     </WebSocketContext.Provider>
   );
 };
-

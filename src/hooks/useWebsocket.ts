@@ -20,6 +20,7 @@ interface UseWebSocketReturn {
   connect: () => void;
   disconnect: () => void;
   send: (message: any) => boolean;
+  sendRaw: (message: any) => boolean; // NEW: Added sendRaw method
   clearMessages: () => void;
   isConnected: boolean;
   isConnecting: boolean;
@@ -112,6 +113,21 @@ export const useWebSocket = (options: UseWebSocketOptions): UseWebSocketReturn =
     return false;
   }, [websocketState.status]);
 
+  // NEW: Send raw message without WebSocket metadata
+  const sendRaw = useCallback((message: any): boolean => {
+    const service = getWebSocketService() || serviceRef.current;
+    if (service && websocketState.status === WebSocketStatus.CONNECTED) {
+      console.log('📤 Sending raw WebSocket message:', message);
+      return service.sendRaw(message);
+    }
+    
+    console.warn('❌ Cannot send raw message: WebSocket not connected', {
+      serviceExists: !!service,
+      status: websocketState.status
+    });
+    return false;
+  }, [websocketState.status]);
+
   const clearMessages = useCallback(() => {
     console.log('🧹 Clearing WebSocket messages');
     dispatch(resetWebSocket());
@@ -143,7 +159,7 @@ export const useWebSocket = (options: UseWebSocketOptions): UseWebSocketReturn =
 
       return () => clearTimeout(timer);
     }
-  }, [options.enabled, isAuthenticated, token, connect]);
+  }, [options.enabled, isAuthenticated, token, connect, websocketState.status]);
 
   // Cleanup on unmount or when disabled
   useEffect(() => {
@@ -171,6 +187,7 @@ export const useWebSocket = (options: UseWebSocketOptions): UseWebSocketReturn =
     connect,
     disconnect,
     send,
+    sendRaw, // NEW: Return the sendRaw method
     clearMessages,
     isConnected: websocketState.status === WebSocketStatus.CONNECTED,
     isConnecting: websocketState.status === WebSocketStatus.CONNECTING,

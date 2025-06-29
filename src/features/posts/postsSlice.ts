@@ -48,7 +48,7 @@ interface LegacyPost {
 }
 
 interface CreatePostData {
-  title: string;
+  title?: string;
   body: string;
   image?: File;
   video?: File;
@@ -117,13 +117,13 @@ export const createPost = createAsyncThunk<
   AsyncThunkReturn,
   { 
     postData: CreatePostData; 
-    sendMessage: (payload: any) => void; // Remove type parameter since we're sending raw payload
-    currentUser?: User; // You should pass this from your user context/state
+    createPost: (payload: any) => void; // Changed from sendMessage to createPost
+    currentUser?: User;
   },
   { rejectValue: string }
 >(
   "posts/createPost",
-  async ({ postData, sendMessage, currentUser }, { rejectWithValue }) => {
+  async ({ postData, createPost: createPostWS, currentUser }, { rejectWithValue }) => {
     try {
       let imageBase64: string | undefined;
       let videoBase64: string | undefined;
@@ -146,34 +146,47 @@ export const createPost = createAsyncThunk<
         videoBase64 = await fileToBase64(postData.video);
       }
 
-      // Create the post data in the new format
-      const newFormatData: PostResponse = {
+      // Create the post object that will go inside the Posts array
+      const postObject: Post = {
+        PostId: 0, // Server will assign real ID
+        Comment: postData.body, // Just use body as comment - remove title concatenation
+        Created: formatCurrentDate(),
+        Upvotes: 0,
+        Downvotes: 0,
+        Cancel: false,
+        User: currentUser || {
+          UserId: 0,
+          Username: "anonymous",
+          Contacts: 0,
+          Cancel: false,
+          Verified: false
+        }
+      };
+
+      // Add media data if present
+      if (imageBase64) {
+        postObject.ImageData = imageBase64;
+      }
+      if (videoBase64) {
+        postObject.VideoData = videoBase64;
+      }
+
+      // Create the final payload matching the exact expected format
+      const payload = {
         EditableType: {
           EditableType: "POST"
         },
-        Posts: [{
-          PostId: 0, // Server will assign real ID
-          Comment: `${postData.title}\n\n${postData.body}`, // Combine title and body
-          Created: formatCurrentDate(),
-          Upvotes: 0,
-          Downvotes: 0,
-          Cancel: false,
-          User: currentUser || {
-            UserId: 0,
-            Username: "anonymous",
-            Contacts: 0,
-            Cancel: false,
-            Verified: false
-          },
-          // Include media data if present
-          ...(imageBase64 && { ImageData: imageBase64 }),
-          ...(videoBase64 && { VideoData: videoBase64 })
-        }]
+        Posts: [postObject]
       };
 
-      // Send post creation message via WebSocket with new format
-      // Send just the raw payload data that the server expects
-      sendMessage(newFormatData);
+      console.log('Sending post payload:', JSON.stringify(payload, null, 2));
+
+      // Send post creation message via WebSocket
+      // Option 2: If using sendMessage, call it correctly:
+      // sendMessage('create_post', payload);
+      
+      // Option 1: Use the createPost method (recommended)
+      createPostWS(payload);
 
       return { pending: true };
     } catch (error: unknown) {
@@ -186,18 +199,20 @@ export const createPost = createAsyncThunk<
 // Updated fetch thunks to handle new format
 export const fetchPosts = createAsyncThunk<
   AsyncThunkReturn,
-  { sendMessage: (payload: any) => void }, // Remove type parameter
+  { sendMessage: (payload: any) => void },
   { rejectValue: string }
 >(
   "posts/fetchPosts",
   async ({ sendMessage }, { rejectWithValue }) => {
     try {
-      sendMessage({
+      const payload = {
         EditableType: {
           EditableType: "GET_POSTS"
         },
         timestamp: Date.now()
-      });
+      };
+      
+      sendMessage(payload);
       return { pending: true };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to fetch posts";
@@ -208,19 +223,21 @@ export const fetchPosts = createAsyncThunk<
 
 export const fetchUserPosts = createAsyncThunk<
   AsyncThunkReturn,
-  { userId: string; sendMessage: (payload: any) => void }, // Remove type parameter
+  { userId: string; sendMessage: (payload: any) => void },
   { rejectValue: string }
 >(
   "posts/fetchUserPosts",
   async ({ userId, sendMessage }, { rejectWithValue }) => {
     try {
-      sendMessage({
+      const payload = {
         EditableType: {
           EditableType: "GET_USER_POSTS"
         },
         userId,
         timestamp: Date.now()
-      });
+      };
+      
+      sendMessage(payload);
       return { pending: true };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to fetch user posts";

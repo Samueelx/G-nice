@@ -137,6 +137,21 @@ export class WebSocketService {
     return false;
   }
 
+  // NEW: Send raw message without adding WebSocket metadata
+  sendRaw(message: any): boolean {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      try {
+        this.ws.send(JSON.stringify(message));
+        return true;
+      } catch (error) {
+        console.error('Error sending raw WebSocket message:', error);
+        this.dispatch(setError('Failed to send raw message'));
+        return false;
+      }
+    }
+    return false;
+  }
+
   private handleOpen(): void {
     const elapsed = Date.now() - this.connectionStartTime;
     console.log('=== WebSocket Connection Opened ===');

@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Image, Video, Link, X, Upload } from 'lucide-react';
 import { createPost } from '@/features/posts/postsSlice';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
@@ -13,7 +12,7 @@ import { useWebSocketPostsHandler } from '@/features/posts/useWebSocketPostsHand
 const CreatePost = () => {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
-  const { sendMessage, isConnected } = useWebSocketContext();
+  const { createPost: createPostWS, isConnected } = useWebSocketContext(); // Changed from sendMessage to createPost
   const isLoading = useAppSelector((state) => state.posts.isLoading);
   const error = useAppSelector((state) => state.posts.error);
   
@@ -23,7 +22,6 @@ const CreatePost = () => {
   // Initialize WebSocket posts handler
   useWebSocketPostsHandler();
   
-  const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [video, setVideo] = useState<File | null>(null);
@@ -118,7 +116,16 @@ const CreatePost = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !body.trim()) return;
+    
+    // Only check if body has content - removed title requirement
+    if (!body.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter some content for your post.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     // Check WebSocket connection
     if (!isConnected) {
@@ -135,31 +142,43 @@ const CreatePost = () => {
       // Get it from your user context/state
       const currentUser = {
         UserId: 1, // Replace with actual user ID
-        Username: "currentuser", // Replace with actual username
+        Username: "lando", // Replace with actual username
         Contacts: 0,
         Cancel: false,
         Verified: false
       };
 
       await dispatch(createPost({ 
-        postData: { title, body, image, video }, 
-        sendMessage,
+        postData: { 
+          body, // Removed title field completely
+          image, 
+          video 
+        }, 
+        createPost: createPostWS, // Changed from sendMessage to createPost
         currentUser
       })).unwrap();
       
       // Clear form on successful dispatch
-      setTitle('');
       setBody('');
       setImage(null);
       setVideo(null);
       setImagePreview(null);
       setVideoPreview(null);
       
+      // Clear file inputs
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
+      if (videoInputRef.current) {
+        videoInputRef.current.value = '';
+      }
+      
       toast({
         title: 'Sending...',
         description: 'Your post is being created.',
       });
     } catch (error) {
+      console.error('Create post error:', error);
       toast({
         title: 'Error',
         description: error as string,
@@ -204,14 +223,6 @@ const CreatePost = () => {
     <Card className="max-w-2xl mx-auto">
       <form onSubmit={handleSubmit}>
         <CardHeader className="space-y-4">
-          <Input
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-lg font-semibold"
-            maxLength={300}
-            disabled={isLoading || !isConnected}
-          />
           {!isConnected && (
             <div className="text-sm text-red-500 flex items-center gap-2">
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
@@ -225,7 +236,7 @@ const CreatePost = () => {
             placeholder="What's on your mind?"
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            className="min-h-[150px]"
+            className="min-h-[200px] text-lg"
             maxLength={40000}
             disabled={isLoading || !isConnected}
           />
@@ -356,7 +367,7 @@ const CreatePost = () => {
          
           <Button
             type="submit"
-            disabled={isLoading || !isConnected || !title.trim() || !body.trim()}
+            disabled={isLoading || !isConnected || !body.trim()}
             className="px-6"
           >
             {isLoading ? 'Creating...' : 'Post'}
