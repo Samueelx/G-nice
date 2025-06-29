@@ -172,6 +172,7 @@ export const createPost = createAsyncThunk<
       };
 
       // Send post creation message via WebSocket with new format
+      // Send just the payload data without envelope
       sendMessage('create_post', newFormatData);
 
       return { pending: true };
