@@ -117,7 +117,7 @@ export const createPost = createAsyncThunk<
   AsyncThunkReturn,
   { 
     postData: CreatePostData; 
-    sendMessage: (type: string, payload: any) => void;
+    sendMessage: (payload: any) => void; // Remove type parameter since we're sending raw payload
     currentUser?: User; // You should pass this from your user context/state
   },
   { rejectValue: string }
@@ -172,8 +172,8 @@ export const createPost = createAsyncThunk<
       };
 
       // Send post creation message via WebSocket with new format
-      // Send just the payload data without envelope
-      sendMessage('create_post', newFormatData);
+      // Send just the raw payload data that the server expects
+      sendMessage(newFormatData);
 
       return { pending: true };
     } catch (error: unknown) {
@@ -186,13 +186,13 @@ export const createPost = createAsyncThunk<
 // Updated fetch thunks to handle new format
 export const fetchPosts = createAsyncThunk<
   AsyncThunkReturn,
-  { sendMessage: (type: string, payload: any) => void },
+  { sendMessage: (payload: any) => void }, // Remove type parameter
   { rejectValue: string }
 >(
   "posts/fetchPosts",
   async ({ sendMessage }, { rejectWithValue }) => {
     try {
-      sendMessage('fetch_posts', {
+      sendMessage({
         EditableType: {
           EditableType: "GET_POSTS"
         },
@@ -208,13 +208,13 @@ export const fetchPosts = createAsyncThunk<
 
 export const fetchUserPosts = createAsyncThunk<
   AsyncThunkReturn,
-  { userId: string; sendMessage: (type: string, payload: any) => void },
+  { userId: string; sendMessage: (payload: any) => void }, // Remove type parameter
   { rejectValue: string }
 >(
   "posts/fetchUserPosts",
   async ({ userId, sendMessage }, { rejectWithValue }) => {
     try {
-      sendMessage('fetch_user_posts', {
+      sendMessage({
         EditableType: {
           EditableType: "GET_USER_POSTS"
         },
