@@ -4,9 +4,16 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 interface User {
   UserId: number;
   Username: string;
+  Email?: string | null;
   Contacts: number;
-  Cancel: boolean;
+  FirstName?: string | null;
+  LastName?: string | null;
+  UserSecurity?: any | null;
   Verified: boolean;
+  Posts?: any[] | null;
+  CategoriesFollowing?: any[] | null;
+  TopicsFollowing?: any[] | null;
+  Cancel: boolean;
 }
 
 interface Post {
@@ -28,6 +35,16 @@ interface EditableType {
   EditableType: string;
 }
 
+// Updated interface to match actual server response
+interface ServerPostResponse {
+  Posts: Post[];
+  ResultCode: number;
+  ResultMessage: string;
+  ResultId: number;
+  EditableType: number; // Server sends number, not string
+}
+
+// Legacy interface for backwards compatibility
 interface PostResponse {
   EditableType: EditableType;
   Posts: Post[];
@@ -117,7 +134,7 @@ export const createPost = createAsyncThunk<
   AsyncThunkReturn,
   { 
     postData: CreatePostData; 
-    createPost: (payload: any) => void; // Changed from sendMessage to createPost
+    createPost: (payload: any) => void;
     currentUser?: User;
   },
   { rejectValue: string }
@@ -149,7 +166,7 @@ export const createPost = createAsyncThunk<
       // Create the post object that will go inside the Posts array
       const postObject: Post = {
         PostId: 0, // Server will assign real ID
-        Comment: postData.body, // Just use body as comment - remove title concatenation
+        Comment: postData.body,
         Created: formatCurrentDate(),
         Upvotes: 0,
         Downvotes: 0,
@@ -182,10 +199,6 @@ export const createPost = createAsyncThunk<
       console.log('Sending post payload:', JSON.stringify(payload, null, 2));
 
       // Send post creation message via WebSocket
-      // Option 2: If using sendMessage, call it correctly:
-      // sendMessage('create_post', payload);
-      
-      // Option 1: Use the createPost method (recommended)
       createPostWS(payload);
 
       return { pending: true };
@@ -246,12 +259,21 @@ export const fetchUserPosts = createAsyncThunk<
   }
 );
 
-// Type guard functions for better type safety
+// Updated type guard functions for better type safety
+const isServerPostResponse = (payload: unknown): payload is ServerPostResponse => {
+  return typeof payload === 'object' && 
+         payload !== null && 
+         'ResultCode' in payload && 
+         'Posts' in payload &&
+         'ResultMessage' in payload;
+};
+
 const isPostResponse = (payload: unknown): payload is PostResponse => {
   return typeof payload === 'object' && 
          payload !== null && 
          'EditableType' in payload && 
-         'Posts' in payload;
+         'Posts' in payload &&
+         typeof (payload as any).EditableType === 'object';
 };
 
 const isLegacyPost = (payload: unknown): payload is LegacyPost => {
@@ -282,18 +304,24 @@ const postsSlice = createSlice({
       state.isLoading = false;
     },
     // Updated reducers for handling WebSocket responses with new format
-    handlePostCreated: (state, action: PayloadAction<PostResponse | LegacyPost>) => {
+    handlePostCreated: (state, action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost>) => {
       state.isLoading = false;
       state.error = null;
       
-      // Handle both old and new formats
-      if (isPostResponse(action.payload)) {
-        // New format
+      // Handle server response format (new)
+      if (isServerPostResponse(action.payload)) {
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
         state.posts.unshift(...newPosts);
         state.userPosts.unshift(...newPosts);
-      } else if (isLegacyPost(action.payload)) {
-        // Legacy format
+      }
+      // Handle old PostResponse format
+      else if (isPostResponse(action.payload)) {
+        const newPosts = action.payload.Posts.map(convertPostToLegacy);
+        state.posts.unshift(...newPosts);
+        state.userPosts.unshift(...newPosts);
+      }
+      // Handle legacy format
+      else if (isLegacyPost(action.payload)) {
         state.posts.unshift(action.payload);
         state.userPosts.unshift(action.payload);
       }
@@ -302,29 +330,37 @@ const postsSlice = createSlice({
       state.isLoading = false;
       state.error = action.payload;
     },
-    handlePostsFetched: (state, action: PayloadAction<PostResponse | LegacyPost[]>) => {
+    handlePostsFetched: (state, action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost[]>) => {
       state.isLoading = false;
       state.error = null;
       
-      // Handle both old and new formats
+      // Handle legacy array format
       if (isLegacyPostArray(action.payload)) {
-        // Legacy format
         state.posts = action.payload;
-      } else if (isPostResponse(action.payload)) {
-        // New format
+      }
+      // Handle server response format (new)
+      else if (isServerPostResponse(action.payload)) {
+        state.posts = action.payload.Posts.map(convertPostToLegacy);
+      }
+      // Handle old PostResponse format
+      else if (isPostResponse(action.payload)) {
         state.posts = action.payload.Posts.map(convertPostToLegacy);
       }
     },
-    handleUserPostsFetched: (state, action: PayloadAction<PostResponse | LegacyPost[]>) => {
+    handleUserPostsFetched: (state, action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost[]>) => {
       state.isLoading = false;
       state.error = null;
       
-      // Handle both old and new formats
+      // Handle legacy array format
       if (isLegacyPostArray(action.payload)) {
-        // Legacy format
         state.userPosts = action.payload;
-      } else if (isPostResponse(action.payload)) {
-        // New format
+      }
+      // Handle server response format (new)
+      else if (isServerPostResponse(action.payload)) {
+        state.userPosts = action.payload.Posts.map(convertPostToLegacy);
+      }
+      // Handle old PostResponse format
+      else if (isPostResponse(action.payload)) {
         state.userPosts = action.payload.Posts.map(convertPostToLegacy);
       }
     },
@@ -333,10 +369,9 @@ const postsSlice = createSlice({
       state.error = action.payload;
     },
     // Handle real-time post updates from other users
-    handleNewPostReceived: (state, action: PayloadAction<PostResponse | LegacyPost>) => {
-      // Handle both old and new formats
-      if (isPostResponse(action.payload)) {
-        // New format
+    handleNewPostReceived: (state, action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost>) => {
+      // Handle server response format (new)
+      if (isServerPostResponse(action.payload)) {
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
         newPosts.forEach(post => {
           const exists = state.posts.some(existingPost => existingPost.id === post.id);
@@ -344,8 +379,19 @@ const postsSlice = createSlice({
             state.posts.unshift(post);
           }
         });
-      } else if (isLegacyPost(action.payload)) {
-        // Legacy format
+      }
+      // Handle old PostResponse format
+      else if (isPostResponse(action.payload)) {
+        const newPosts = action.payload.Posts.map(convertPostToLegacy);
+        newPosts.forEach(post => {
+          const exists = state.posts.some(existingPost => existingPost.id === post.id);
+          if (!exists) {
+            state.posts.unshift(post);
+          }
+        });
+      }
+      // Handle legacy format
+      else if (isLegacyPost(action.payload)) {
         const exists = state.posts.some(post => post.id === action.payload.id);
         if (!exists) {
           state.posts.unshift(action.payload);

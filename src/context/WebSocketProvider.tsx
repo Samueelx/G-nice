@@ -3,7 +3,6 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { useAppSelector } from '@/hooks/hooks';
 import { RootState } from '@/store/store';
 import { WebSocketStatus } from '@/features/websocket/websocketSlice';
-import { getWebSocketService } from '@/services/websocketService';
 
 // WebSocket configuration
 const WS_URL = 'ws://localhost:8090';
@@ -30,8 +29,8 @@ export interface WebSocketContextType {
   sendPostInteraction: (postId: string, action: string, data?: any) => void;
   sendMessage: (type: string, payload: any) => void;
   
-  // NEW: Method specifically for creating posts
-  createPost: (postData: any) => void;
+  // Method specifically for creating posts
+  createPost: (postData: any) => boolean;
 
   // Utility methods
   getMessagesByType: (messageType: string) => any[];
@@ -45,28 +44,28 @@ interface WebSocketProviderProps {
 }
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }) => {
-  const { isAuthenticated, token } = useAppSelector((state: RootState) => state.auth);
+  const { isAuthenticated, token, user } = useAppSelector((state: RootState) => state.auth);
 
   // Initialize WebSocket connection
   const {
-  status,
-  error,
-  messages,
-  isConnected,
-  isConnecting,
-  lastHeartbeat,
-  send,
-  sendRaw, // NEW: Get the sendRaw method
-  clearMessages,
-  connect,
-  disconnect
-} = useWebSocket({
-  url: WS_URL,
-  enabled: isAuthenticated,
-  heartbeatInterval: 30000,
-  reconnectInterval: 5000,
-  maxReconnectAttempts: 10,
-});
+    status,
+    error,
+    messages,
+    isConnected,
+    isConnecting,
+    lastHeartbeat,
+    send,
+    sendRaw, // Make sure your useWebSocket hook exports this
+    clearMessages,
+    connect,
+    disconnect
+  } = useWebSocket({
+    url: WS_URL,
+    enabled: isAuthenticated,
+    heartbeatInterval: 30000,
+    reconnectInterval: 5000,
+    maxReconnectAttempts: 10,
+  });
 
   console.log("Authenticated?", isAuthenticated, token);
 
@@ -76,16 +75,19 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   // Computed values
   const isReconnecting = status === WebSocketStatus.RECONNECTING;
 
+  // Get current user ID from auth state
+  const currentUserId = user?.id || user?.userId || 'anonymous';
+
   // Send initial connection and subscription when WebSocket connects
   useEffect(() => {
-    if (isConnected && isAuthenticated) {
+    if (isConnected && isAuthenticated && currentUserId !== 'anonymous') {
       console.log("🌍 WebSocket Provider: Connected - Setting up subscriptions");
 
       // Subscribe to posts feed
       send({
         type: 'subscribe_posts',
         payload: {
-          userId: 'current_user', // Replace with actual user ID from auth state
+          userId: currentUserId,
           timestamp: Date.now(),
         }
       });
@@ -94,7 +96,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       send({
         type: 'subscribe_notifications',
         payload: {
-          userId: 'current_user', // Replace with actual user ID from auth state
+          userId: currentUserId,
           timestamp: Date.now(),
         }
       });
@@ -103,23 +105,23 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       send({
         type: 'subscribe_chats',
         payload: {
-          userId: 'current_user', // Replace with actual user ID from auth state
+          userId: currentUserId,
           timestamp: Date.now(),
         }
       });
 
-      // In WebSocketProvider.tsx, add this to the useEffect where you set up subscriptions:
+      // Subscribe to events
       send({
         type: 'subscribe_events',
         payload: {
-          userId: 'current_user',
+          userId: currentUserId,
           timestamp: Date.now(),
         }
       });
 
-      console.log("✅ WebSocket Provider: All subscriptions sent");
+      console.log("✅ WebSocket Provider: All subscriptions sent for user:", currentUserId);
     }
-  }, [isConnected, isAuthenticated, send]);
+  }, [isConnected, isAuthenticated, currentUserId, send]);
 
   // Helper method to subscribe to specific feeds
   const subscribeToFeed = useCallback((userId?: string) => {
@@ -127,12 +129,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       send({
         type: 'subscribe_posts',
         payload: {
-          userId: userId || 'current_user',
+          userId: userId || currentUserId,
           timestamp: Date.now(),
         }
       });
     }
-  }, [isConnected, send]);
+  }, [isConnected, send, currentUserId]);
 
   // Helper method for post interactions
   const sendPostInteraction = useCallback((postId: string, action: string, data?: any) => {
@@ -162,17 +164,23 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }
   }, [isConnected, send]);
 
-// Update the createPost method to use sendRaw:
-const createPost = useCallback((postData: any) => {
-  if (isConnected) {
-    // Use sendRaw to send the post data without WebSocket metadata
-    console.log('📝 Creating post with raw data:', postData);
-    return sendRaw(postData);
-  } else {
-    console.warn('❌ Cannot create post: WebSocket not connected');
-    return false;
-  }
-}, [isConnected, sendRaw]);
+  // Specific method for creating posts - uses sendRaw to avoid WebSocket metadata
+  const createPost = useCallback((postData: any): boolean => {
+    if (isConnected) {
+      console.log('📝 Creating post with raw data:', postData);
+      
+      // Validate that sendRaw exists (fallback to send if not available)
+      if (sendRaw) {
+        return sendRaw(postData);
+      } else {
+        console.warn('⚠️ sendRaw not available, falling back to regular send');
+        return send(postData);
+      }
+    } else {
+      console.warn('❌ Cannot create post: WebSocket not connected');
+      return false;
+    }
+  }, [isConnected, sendRaw, send]);
 
   // Log connection status changes
   useEffect(() => {
@@ -222,7 +230,7 @@ const createPost = useCallback((postData: any) => {
     subscribeToFeed,
     sendPostInteraction,
     sendMessage,
-    createPost, // NEW: Add the createPost method
+    createPost,
 
     // Utility methods
     getMessagesByType,
