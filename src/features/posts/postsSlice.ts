@@ -91,20 +91,20 @@ const fileToBase64 = (file: File): Promise<string> => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
+    reader.onerror = (error) => reject(error);
   });
 };
 
 // Helper function to format current date in the required format
 const formatCurrentDate = (): string => {
   const now = new Date();
-  const day = String(now.getDate()).padStart(2, '0');
-  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
   const year = now.getFullYear();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const seconds = String(now.getSeconds()).padStart(2, "0");
+
   return `${day}-${month}-${year}-${hours}:${minutes}:${seconds}`;
 };
 
@@ -112,7 +112,7 @@ const formatCurrentDate = (): string => {
 const convertPostToLegacy = (post: Post): LegacyPost => {
   return {
     id: post.PostId.toString(),
-    title: '', // Title is now part of Comment, you might want to extract first line
+    title: "", // Title is now part of Comment, you might want to extract first line
     body: post.Comment,
     imageUrl: post.ImageUrl,
     videoUrl: post.VideoUrl,
@@ -132,24 +132,27 @@ interface AsyncThunkReturn {
 // Updated WebSocket-based createPost thunk
 export const createPost = createAsyncThunk<
   AsyncThunkReturn,
-  { 
-    postData: CreatePostData; 
+  {
+    postData: CreatePostData;
     createPost: (payload: any) => void;
     currentUser?: User;
   },
   { rejectValue: string }
 >(
   "posts/createPost",
-  async ({ postData, createPost: createPostWS, currentUser }, { rejectWithValue }) => {
+  async (
+    { postData, createPost: createPostWS, currentUser },
+    { rejectWithValue }
+  ) => {
     try {
       let imageBase64: string | undefined;
       let videoBase64: string | undefined;
-      
+
       // Convert image to base64 if present
       if (postData.image) {
         // Validate image size (5MB limit)
         if (postData.image.size > 5 * 1024 * 1024) {
-          throw new Error('Image size should be less than 5MB');
+          throw new Error("Image size should be less than 5MB");
         }
         imageBase64 = await fileToBase64(postData.image);
       }
@@ -158,7 +161,7 @@ export const createPost = createAsyncThunk<
       if (postData.video) {
         // Validate video size (50MB limit)
         if (postData.video.size > 50 * 1024 * 1024) {
-          throw new Error('Video size should be less than 50MB');
+          throw new Error("Video size should be less than 50MB");
         }
         videoBase64 = await fileToBase64(postData.video);
       }
@@ -176,8 +179,8 @@ export const createPost = createAsyncThunk<
           Username: "anonymous",
           Contacts: 0,
           Cancel: false,
-          Verified: false
-        }
+          Verified: false,
+        },
       };
 
       // Add media data if present
@@ -191,19 +194,20 @@ export const createPost = createAsyncThunk<
       // Create the final payload matching the exact expected format
       const payload = {
         EditableType: {
-          EditableType: "POST"
+          EditableType: "POST",
         },
-        Posts: [postObject]
+        Posts: [postObject],
       };
 
-      console.log('Sending post payload:', JSON.stringify(payload, null, 2));
+      console.log("Sending post payload:", JSON.stringify(payload, null, 2));
 
       // Send post creation message via WebSocket
       createPostWS(payload);
 
       return { pending: true };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create post";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create post";
       return rejectWithValue(errorMessage);
     }
   }
@@ -214,25 +218,23 @@ export const fetchPosts = createAsyncThunk<
   AsyncThunkReturn,
   { sendMessage: (payload: any) => void },
   { rejectValue: string }
->(
-  "posts/fetchPosts",
-  async ({ sendMessage }, { rejectWithValue }) => {
-    try {
-      const payload = {
-        EditableType: {
-          EditableType: "GET_POSTS"
-        },
-        timestamp: Date.now()
-      };
-      
-      sendMessage(payload);
-      return { pending: true };
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to fetch posts";
-      return rejectWithValue(errorMessage);
-    }
+>("posts/fetchPosts", async ({ sendMessage }, { rejectWithValue }) => {
+  try {
+    const payload = {
+      EditableType: {
+        EditableType: "GET_POSTS",
+      },
+      timestamp: Date.now(),
+    };
+
+    sendMessage(payload);
+    return { pending: true };
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to fetch posts";
+    return rejectWithValue(errorMessage);
   }
-);
+});
 
 export const fetchUserPosts = createAsyncThunk<
   AsyncThunkReturn,
@@ -244,49 +246,59 @@ export const fetchUserPosts = createAsyncThunk<
     try {
       const payload = {
         EditableType: {
-          EditableType: "GET_USER_POSTS"
+          EditableType: "GET_USER_POSTS",
         },
         userId,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-      
+
       sendMessage(payload);
       return { pending: true };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to fetch user posts";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch user posts";
       return rejectWithValue(errorMessage);
     }
   }
 );
 
 // Updated type guard functions for better type safety
-const isServerPostResponse = (payload: unknown): payload is ServerPostResponse => {
-  return typeof payload === 'object' && 
-         payload !== null && 
-         'ResultCode' in payload && 
-         'Posts' in payload &&
-         'ResultMessage' in payload;
+const isServerPostResponse = (
+  payload: unknown
+): payload is ServerPostResponse => {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "ResultCode" in payload &&
+    "Posts" in payload &&
+    "ResultMessage" in payload
+  );
 };
 
 const isPostResponse = (payload: unknown): payload is PostResponse => {
-  return typeof payload === 'object' && 
-         payload !== null && 
-         'EditableType' in payload && 
-         'Posts' in payload &&
-         typeof (payload as any).EditableType === 'object';
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "EditableType" in payload &&
+    "Posts" in payload &&
+    typeof (payload as any).EditableType === "object"
+  );
 };
 
 const isLegacyPost = (payload: unknown): payload is LegacyPost => {
-  return typeof payload === 'object' && 
-         payload !== null && 
-         'id' in payload && 
-         'title' in payload && 
-         'body' in payload;
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "id" in payload &&
+    "title" in payload &&
+    "body" in payload
+  );
 };
 
 const isLegacyPostArray = (payload: unknown): payload is LegacyPost[] => {
-  return Array.isArray(payload) && 
-         (payload.length === 0 || isLegacyPost(payload[0]));
+  return (
+    Array.isArray(payload) && (payload.length === 0 || isLegacyPost(payload[0]))
+  );
 };
 
 // Slice
@@ -304,10 +316,16 @@ const postsSlice = createSlice({
       state.isLoading = false;
     },
     // Updated reducers for handling WebSocket responses with new format
-    handlePostCreated: (state, action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost>) => {
+    // Update the handlePostCreated reducer in postsSlice.ts
+
+    handlePostCreated: (
+      state,
+      action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost>
+    ) => {
+      // This is the key fix - set loading to false when post is created
       state.isLoading = false;
       state.error = null;
-      
+
       // Handle server response format (new)
       if (isServerPostResponse(action.payload)) {
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
@@ -330,10 +348,13 @@ const postsSlice = createSlice({
       state.isLoading = false;
       state.error = action.payload;
     },
-    handlePostsFetched: (state, action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost[]>) => {
+    handlePostsFetched: (
+      state,
+      action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost[]>
+    ) => {
       state.isLoading = false;
       state.error = null;
-      
+
       // Handle legacy array format
       if (isLegacyPostArray(action.payload)) {
         state.posts = action.payload;
@@ -347,10 +368,13 @@ const postsSlice = createSlice({
         state.posts = action.payload.Posts.map(convertPostToLegacy);
       }
     },
-    handleUserPostsFetched: (state, action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost[]>) => {
+    handleUserPostsFetched: (
+      state,
+      action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost[]>
+    ) => {
       state.isLoading = false;
       state.error = null;
-      
+
       // Handle legacy array format
       if (isLegacyPostArray(action.payload)) {
         state.userPosts = action.payload;
@@ -369,12 +393,17 @@ const postsSlice = createSlice({
       state.error = action.payload;
     },
     // Handle real-time post updates from other users
-    handleNewPostReceived: (state, action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost>) => {
+    handleNewPostReceived: (
+      state,
+      action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost>
+    ) => {
       // Handle server response format (new)
       if (isServerPostResponse(action.payload)) {
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
-        newPosts.forEach(post => {
-          const exists = state.posts.some(existingPost => existingPost.id === post.id);
+        newPosts.forEach((post) => {
+          const exists = state.posts.some(
+            (existingPost) => existingPost.id === post.id
+          );
           if (!exists) {
             state.posts.unshift(post);
           }
@@ -383,8 +412,10 @@ const postsSlice = createSlice({
       // Handle old PostResponse format
       else if (isPostResponse(action.payload)) {
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
-        newPosts.forEach(post => {
-          const exists = state.posts.some(existingPost => existingPost.id === post.id);
+        newPosts.forEach((post) => {
+          const exists = state.posts.some(
+            (existingPost) => existingPost.id === post.id
+          );
           if (!exists) {
             state.posts.unshift(post);
           }
@@ -392,28 +423,36 @@ const postsSlice = createSlice({
       }
       // Handle legacy format
       else if (isLegacyPost(action.payload)) {
-        const exists = state.posts.some(post => post.id === action.payload.id);
+        const exists = state.posts.some(
+          (post) => post.id === action.payload.id
+        );
         if (!exists) {
           state.posts.unshift(action.payload);
         }
       }
     },
     // Handle post updates (likes, comments, etc.)
-    handlePostUpdated: (state, action: PayloadAction<Partial<LegacyPost> & { id: string }>) => {
+    handlePostUpdated: (
+      state,
+      action: PayloadAction<Partial<LegacyPost> & { id: string }>
+    ) => {
       const { id, ...updates } = action.payload;
-      
+
       // Update in posts array
-      const postIndex = state.posts.findIndex(post => post.id === id);
+      const postIndex = state.posts.findIndex((post) => post.id === id);
       if (postIndex !== -1) {
         state.posts[postIndex] = { ...state.posts[postIndex], ...updates };
       }
-      
+
       // Update in userPosts array
-      const userPostIndex = state.userPosts.findIndex(post => post.id === id);
+      const userPostIndex = state.userPosts.findIndex((post) => post.id === id);
       if (userPostIndex !== -1) {
-        state.userPosts[userPostIndex] = { ...state.userPosts[userPostIndex], ...updates };
+        state.userPosts[userPostIndex] = {
+          ...state.userPosts[userPostIndex],
+          ...updates,
+        };
       }
-    }
+    },
   },
   extraReducers: (builder) => {
     // Create Post (WebSocket-based)
@@ -429,8 +468,8 @@ const postsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      
-    // Fetch Posts (WebSocket-based)
+
+      // Fetch Posts (WebSocket-based)
       .addCase(fetchPosts.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -442,8 +481,8 @@ const postsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      
-    // Fetch User Posts (WebSocket-based)
+
+      // Fetch User Posts (WebSocket-based)
       .addCase(fetchUserPosts.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -458,8 +497,8 @@ const postsSlice = createSlice({
   },
 });
 
-export const { 
-  clearError, 
+export const {
+  clearError,
   resetPosts,
   handlePostCreated,
   handlePostCreationError,
@@ -467,7 +506,7 @@ export const {
   handleUserPostsFetched,
   handlePostsError,
   handleNewPostReceived,
-  handlePostUpdated
+  handlePostUpdated,
 } = postsSlice.actions;
 
 export default postsSlice.reducer;

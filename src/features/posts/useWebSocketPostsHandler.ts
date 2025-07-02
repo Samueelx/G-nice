@@ -87,14 +87,14 @@ const processMessage = (message: any, dispatch: any) => {
     
     if (isSuccess) {
       if (message.Posts && message.Posts.length > 0) {
-        // Determine operation type based on context
-        const isCreation = message.Posts.length === 1 && 
-                          (message.ResultMessage === 'success' || message.ResultMessage.includes('created'));
-        
-        if (isCreation) {
+        // Check EditableType to determine the operation
+        // Based on your server response, EditableType: 1 seems to be for POST creation
+        if (message.EditableType === 1) {
+          // This is a post creation response
           dispatch(handlePostCreated(message));
           console.log('✅ Post created successfully:', message.Posts[0]);
         } else {
+          // This is likely a fetch posts response
           dispatch(handlePostsFetched(message));
           console.log('✅ Posts fetched successfully:', message.Posts.length, 'posts');
         }
@@ -103,7 +103,12 @@ const processMessage = (message: any, dispatch: any) => {
       }
     } else {
       const errorMessage = message.ResultMessage || 'Server error occurred';
-      dispatch(handlePostCreationError(errorMessage));
+      // For post creation errors, use the specific error handler
+      if (message.EditableType === 1) {
+        dispatch(handlePostCreationError(errorMessage));
+      } else {
+        dispatch(handlePostsError(errorMessage));
+      }
       console.error('❌ Server error:', errorMessage, 'Code:', message.ResultCode);
     }
     return;

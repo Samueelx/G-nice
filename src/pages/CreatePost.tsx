@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Add this import
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,11 +12,11 @@ import { useWebSocketPostsHandler } from '@/features/posts/useWebSocketPostsHand
 
 const CreatePost = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate(); // Add navigation hook
   const { toast } = useToast();
   const { createPost: createPostWS, isConnected } = useWebSocketContext();
   const isLoading = useAppSelector((state) => state.posts.isLoading);
-  const error = useAppSelector((state) => state.posts.error);
-  
+  const error = useAppSelector((state) => state.posts.error);  
   // Initialize WebSocket posts handler
   useWebSocketPostsHandler();
   
@@ -24,8 +25,32 @@ const CreatePost = () => {
   const [video, setVideo] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Track submission state
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  // Track successful post creation and navigate
+  useEffect(() => {
+    // If we were submitting and now we're not loading, it means the operation completed
+    if (isSubmitting && !isLoading && !error) {
+      // Post was created successfully
+      toast({
+        title: 'Success!',
+        description: 'Your post has been created successfully.',
+        variant: 'default',
+      });
+      
+      // Navigate to feeds page after a short delay to show the success message
+      setTimeout(() => {
+        navigate('/feeds');
+      }, 1000);
+      
+      setIsSubmitting(false);
+    } else if (isSubmitting && !isLoading && error) {
+      // There was an error, stop submitting state
+      setIsSubmitting(false);
+    }
+  }, [isSubmitting, isLoading, error, navigate, toast]);
 
   const handleImageClick = () => {
     imageInputRef.current?.click();
@@ -132,6 +157,8 @@ const CreatePost = () => {
       return;
     }
 
+    setIsSubmitting(true); // Set submitting state
+
     try {
       const currentUser = {
         UserId: 1, // Replace with actual user ID
@@ -172,6 +199,7 @@ const CreatePost = () => {
       });
     } catch (error) {
       console.error('Create post error:', error);
+      setIsSubmitting(false); // Reset submitting state on error
       toast({
         title: 'Error',
         description: error as string,
@@ -181,7 +209,7 @@ const CreatePost = () => {
   };
 
   // Show error toast when error state changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (error) {
       toast({
         title: 'Error',
