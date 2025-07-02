@@ -12,12 +12,9 @@ import { useWebSocketPostsHandler } from '@/features/posts/useWebSocketPostsHand
 const CreatePost = () => {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
-  const { createPost: createPostWS, isConnected } = useWebSocketContext(); // Changed from sendMessage to createPost
+  const { createPost: createPostWS, isConnected } = useWebSocketContext();
   const isLoading = useAppSelector((state) => state.posts.isLoading);
   const error = useAppSelector((state) => state.posts.error);
-  
-  // You'll need to get current user from your user context/state
-  // const currentUser = useAppSelector((state) => state.user.currentUser);
   
   // Initialize WebSocket posts handler
   useWebSocketPostsHandler();
@@ -117,7 +114,6 @@ const CreatePost = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Only check if body has content - removed title requirement
     if (!body.trim()) {
       toast({
         title: 'Error',
@@ -127,7 +123,6 @@ const CreatePost = () => {
       return;
     }
 
-    // Check WebSocket connection
     if (!isConnected) {
       toast({
         title: 'Connection Error',
@@ -138,8 +133,6 @@ const CreatePost = () => {
     }
 
     try {
-      // You'll need to pass the current user data here
-      // Get it from your user context/state
       const currentUser = {
         UserId: 1, // Replace with actual user ID
         Username: "lando", // Replace with actual username
@@ -150,11 +143,11 @@ const CreatePost = () => {
 
       await dispatch(createPost({ 
         postData: { 
-          body, // Removed title field completely
+          body,
           image, 
           video 
         }, 
-        createPost: createPostWS, // Changed from sendMessage to createPost
+        createPost: createPostWS,
         currentUser
       })).unwrap();
       
