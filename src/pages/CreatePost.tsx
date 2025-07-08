@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Add this import
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,11 +12,13 @@ import { useWebSocketPostsHandler } from '@/features/posts/useWebSocketPostsHand
 
 const CreatePost = () => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate(); // Add navigation hook
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { createPost: createPostWS, isConnected } = useWebSocketContext();
   const isLoading = useAppSelector((state) => state.posts.isLoading);
-  const error = useAppSelector((state) => state.posts.error);  
+  const error = useAppSelector((state) => state.posts.error);
+  const posts = useAppSelector((state) => state.posts.posts); // Track posts for success detection
+  
   // Initialize WebSocket posts handler
   useWebSocketPostsHandler();
   
@@ -25,32 +27,53 @@ const CreatePost = () => {
   const [video, setVideo] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Track submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastPostCount, setLastPostCount] = useState(0);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  // Track successful post creation and navigate
+  // Initialize post count on mount
   useEffect(() => {
-    // If we were submitting and now we're not loading, it means the operation completed
-    if (isSubmitting && !isLoading && !error) {
-      // Post was created successfully
-      toast({
-        title: 'Success!',
-        description: 'Your post has been created successfully.',
-        variant: 'default',
-      });
-      
-      // Navigate to feeds page after a short delay to show the success message
-      setTimeout(() => {
-        navigate('/feeds');
-      }, 1000);
-      
-      setIsSubmitting(false);
-    } else if (isSubmitting && !isLoading && error) {
-      // There was an error, stop submitting state
-      setIsSubmitting(false);
+    setLastPostCount(posts.length);
+  }, []);
+
+  // Track successful post creation using both loading state and post count
+  useEffect(() => {
+    console.log('🔍 CreatePost useEffect - isSubmitting:', isSubmitting, 'isLoading:', isLoading, 'error:', error, 'posts.length:', posts.length, 'lastPostCount:', lastPostCount);
+    
+    if (isSubmitting) {
+      // Check if loading is done and we have a new post (success case)
+      if (!isLoading && posts.length > lastPostCount) {
+        console.log('✅ Post created successfully - navigating to feeds');
+        
+        toast({
+          title: 'Success!',
+          description: 'Your post has been created successfully.',
+          variant: 'default',
+        });
+        
+        // Reset states
+        setIsSubmitting(false);
+        setLastPostCount(posts.length);
+        
+        // Navigate to feeds page after a short delay
+        setTimeout(() => {
+          navigate('/feeds');
+        }, 1000);
+      }
+      // Check if loading is done and we have an error
+      else if (!isLoading && error) {
+        console.log('❌ Post creation failed with error:', error);
+        setIsSubmitting(false);
+        
+        toast({
+          title: 'Error',
+          description: error,
+          variant: 'destructive',
+        });
+      }
     }
-  }, [isSubmitting, isLoading, error, navigate, toast]);
+  }, [isSubmitting, isLoading, error, posts.length, lastPostCount, navigate, toast]);
 
   const handleImageClick = () => {
     imageInputRef.current?.click();
@@ -157,7 +180,9 @@ const CreatePost = () => {
       return;
     }
 
-    setIsSubmitting(true); // Set submitting state
+    console.log('📤 Starting post creation...');
+    setIsSubmitting(true);
+    setLastPostCount(posts.length); // Remember current post count
 
     try {
       const currentUser = {
@@ -168,6 +193,7 @@ const CreatePost = () => {
         Verified: false
       };
 
+      console.log('📤 Dispatching createPost...');
       await dispatch(createPost({ 
         postData: { 
           body,
@@ -177,6 +203,8 @@ const CreatePost = () => {
         createPost: createPostWS,
         currentUser
       })).unwrap();
+      
+      console.log('📤 createPost dispatch completed');
       
       // Clear form on successful dispatch
       setBody('');
@@ -199,7 +227,7 @@ const CreatePost = () => {
       });
     } catch (error) {
       console.error('Create post error:', error);
-      setIsSubmitting(false); // Reset submitting state on error
+      setIsSubmitting(false);
       toast({
         title: 'Error',
         description: error as string,
@@ -207,17 +235,6 @@ const CreatePost = () => {
       });
     }
   };
-
-  // Show error toast when error state changes
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: 'Error',
-        description: error,
-        variant: 'destructive',
-      });
-    }
-  }, [error, toast]);
 
   // Get media preview info for display
   const getMediaInfo = () => {
@@ -240,6 +257,10 @@ const CreatePost = () => {
 
   const mediaInfo = getMediaInfo();
 
+  // Use isSubmitting for the button state instead of isLoading
+  const isButtonDisabled = isSubmitting || !isConnected || !body.trim();
+  const buttonText = isSubmitting ? 'Creating...' : 'Post';
+
   return (
     <Card className="max-w-2xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -250,6 +271,10 @@ const CreatePost = () => {
               Not connected to server
             </div>
           )}
+          {/* Debug info - remove in production */}
+          <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+            Debug: isSubmitting={isSubmitting.toString()}, isLoading={isLoading.toString()}, postsCount={posts.length}, error={error || 'none'}
+          </div>
         </CardHeader>
        
         <CardContent className="space-y-4">
@@ -259,7 +284,7 @@ const CreatePost = () => {
             onChange={(e) => setBody(e.target.value)}
             className="min-h-[200px] text-lg"
             maxLength={40000}
-            disabled={isLoading || !isConnected}
+            disabled={isSubmitting || !isConnected}
           />
 
           {/* Image Preview */}
@@ -276,7 +301,7 @@ const CreatePost = () => {
                 size="icon"
                 className="absolute top-2 right-2"
                 onClick={removeImage}
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -302,7 +327,7 @@ const CreatePost = () => {
                 size="icon"
                 className="absolute top-2 right-2"
                 onClick={removeVideo}
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -334,7 +359,7 @@ const CreatePost = () => {
               className="hidden"
               accept="image/*"
               onChange={handleImageChange}
-              disabled={isLoading || !isConnected}
+              disabled={isSubmitting || !isConnected}
             />
             <Button
               type="button"
@@ -344,7 +369,7 @@ const CreatePost = () => {
                 image ? 'text-blue-500 hover:text-blue-600' : ''
               }`}
               onClick={handleImageClick}
-              disabled={isLoading || !isConnected}
+              disabled={isSubmitting || !isConnected}
               title="Add image"
             >
               <Image className="w-5 h-5" />
@@ -357,7 +382,7 @@ const CreatePost = () => {
               className="hidden"
               accept="video/*"
               onChange={handleVideoChange}
-              disabled={isLoading || !isConnected}
+              disabled={isSubmitting || !isConnected}
             />
             <Button
               type="button"
@@ -367,7 +392,7 @@ const CreatePost = () => {
                 video ? 'text-blue-500 hover:text-blue-600' : ''
               }`}
               onClick={handleVideoClick}
-              disabled={isLoading || !isConnected}
+              disabled={isSubmitting || !isConnected}
               title="Add video"
             >
               <Video className="w-5 h-5" />
@@ -379,7 +404,7 @@ const CreatePost = () => {
               variant="ghost"
               size="icon"
               className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
-              disabled={isLoading || !isConnected}
+              disabled={isSubmitting || !isConnected}
               title="Add link (coming soon)"
             >
               <Link className="w-5 h-5" />
@@ -388,10 +413,10 @@ const CreatePost = () => {
          
           <Button
             type="submit"
-            disabled={isLoading || !isConnected || !body.trim()}
+            disabled={isButtonDisabled}
             className="px-6"
           >
-            {isLoading ? 'Creating...' : 'Post'}
+            {buttonText}
           </Button>
         </CardFooter>
       </form>

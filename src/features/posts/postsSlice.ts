@@ -318,32 +318,49 @@ const postsSlice = createSlice({
     // Updated reducers for handling WebSocket responses with new format
     // Update the handlePostCreated reducer in postsSlice.ts
 
-    handlePostCreated: (
-      state,
-      action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost>
-    ) => {
-      // This is the key fix - set loading to false when post is created
-      state.isLoading = false;
-      state.error = null;
+    // Add this debugging to your handlePostCreated reducer in postsSlice.ts
 
-      // Handle server response format (new)
-      if (isServerPostResponse(action.payload)) {
-        const newPosts = action.payload.Posts.map(convertPostToLegacy);
-        state.posts.unshift(...newPosts);
-        state.userPosts.unshift(...newPosts);
-      }
-      // Handle old PostResponse format
-      else if (isPostResponse(action.payload)) {
-        const newPosts = action.payload.Posts.map(convertPostToLegacy);
-        state.posts.unshift(...newPosts);
-        state.userPosts.unshift(...newPosts);
-      }
-      // Handle legacy format
-      else if (isLegacyPost(action.payload)) {
-        state.posts.unshift(action.payload);
-        state.userPosts.unshift(action.payload);
-      }
-    },
+handlePostCreated: (
+  state,
+  action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost>
+) => {
+  console.log('🔥 handlePostCreated called with payload:', action.payload);
+  console.log('🔥 Current loading state before update:', state.isLoading);
+  
+  // This is the key fix - set loading to false when post is created
+  state.isLoading = false;
+  state.error = null;
+
+  console.log('🔥 Loading state after update:', state.isLoading);
+
+  // Handle server response format (new)
+  if (isServerPostResponse(action.payload)) {
+    console.log('🔥 Processing server response format');
+    const newPosts = action.payload.Posts.map(convertPostToLegacy);
+    state.posts.unshift(...newPosts);
+    state.userPosts.unshift(...newPosts);
+    console.log('🔥 Added posts to state:', newPosts);
+  }
+  // Handle old PostResponse format
+  else if (isPostResponse(action.payload)) {
+    console.log('🔥 Processing old PostResponse format');
+    const newPosts = action.payload.Posts.map(convertPostToLegacy);
+    state.posts.unshift(...newPosts);
+    state.userPosts.unshift(...newPosts);
+  }
+  // Handle legacy format
+  else if (isLegacyPost(action.payload)) {
+    console.log('🔥 Processing legacy format');
+    state.posts.unshift(action.payload);
+    state.userPosts.unshift(action.payload);
+  }
+  
+  console.log('🔥 Final state:', { 
+    isLoading: state.isLoading, 
+    postsCount: state.posts.length,
+    error: state.error 
+  });
+},
     handlePostCreationError: (state, action: PayloadAction<string>) => {
       state.isLoading = false;
       state.error = action.payload;
