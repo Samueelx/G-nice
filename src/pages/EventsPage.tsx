@@ -1,58 +1,64 @@
-import BackNavigationTemplate from '@/components/templates/BackNavigationTemplate';
-import { Circle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { fetchEvents, eventAdded, eventUpdated, setEventsError, setEvents, Event } from '@/features/events/eventsSlice';
 import { useWebSocketContext } from '@/context/useWebSocketContext';
+import BackNavigationTemplate from '@/components/templates/BackNavigationTemplate';
 
-// WebSocket Event Message Interface
-interface WebSocketEventMessage {
-  name: string;
-  EventId: number;
+// Server response structure (from your actual server response)
+interface ServerEvent {
+  EventID: number;
   EventTitle: string;
   EventDescription: string;
-  EventPin: string;
-  EventVenue: string;
-  EventDate: string;
-  Posters: Array<{
-    ImageId: number;
-    ImagePath: string;
-    ImageTitle: string;
-    IsCanceled: boolean;
-  }>;
-  Clips: Array<{
-    ClipID: number;
-    ClipPath: string;
-    ClipTitle: string;
-    Canceled: boolean;
-  }>;
+  EventPin: string | null;
+  EventDate: string; // Format: "23-05-2025:12:00:00"
+  DatePosted: string;
+  Clips: Array<any>;
+  Posters: Array<any>;
   Posts: Array<any>;
-  User: {
-    UserId: number;
-    Email: string;
+  CanceledImages: any;
+  CanceledClips: any;
+  EventVenue: string;
+  PostedBy: {
     Username: string;
+    Email: string | null;
+    UserId: number;
+    UserSecurity: any;
     Contacts: number;
+    FirstName: string | null;
+    LastName: string | null;
     Verified: boolean;
-    LastName: string;
-    FirstName: string;
-    Posts: Array<any>;
+    Posts: any;
+    CategoriesFollowing: any;
+    TopicsFollowing: any;
     Cancel: boolean;
-    TopicsFollowing: Array<any>;
-    CategoriesFollowing: Array<any>;
-    UserSecurity: Array<any>;
   };
-  CanceledImages: Array<any>;
-  CanceledClips: Array<any>;
+  canceled: boolean;
+  postedBy: {
+    Username: string;
+    Email: string | null;
+    UserId: number;
+    UserSecurity: any;
+    Contacts: number;
+    FirstName: string | null;
+    LastName: string | null;
+    Verified: boolean;
+    Posts: any;
+    CategoriesFollowing: any;
+    TopicsFollowing: any;
+    Cancel: boolean;
+  };
   IsCanceled: boolean;
 }
 
-// Expected response structure from backend
+// Expected server response structure
 interface EventsResponse {
-  SearchType: {
-    SearchType: string;
-  };
-  Events: WebSocketEventMessage[];
+  Events: ServerEvent[];
+  ResultCode: number;
+  ResultMessage: string;
+  ResultId: number;
+  Searchable: number;
 }
 
 const EventsPage = () => {
@@ -62,34 +68,55 @@ const EventsPage = () => {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasRequestedEvents, setHasRequestedEvents] = useState(false);
-  const carouselRef = useRef(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Function to transform WebSocket event message to your Event interface
-  const transformWebSocketEvent = (wsEvent: WebSocketEventMessage): Event => {
-    // Parse the date string (assuming format DD/MM/YYYY)
-    const [day, month] = wsEvent.EventDate.split('/');
-    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
-                       'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    const monthName = monthNames[parseInt(month) - 1] || 'JAN';
-    
-    // Get the first poster image or use a default
-    const imageUrl = wsEvent.Posters && wsEvent.Posters.length > 0 
-      ? wsEvent.Posters[0].ImagePath 
-      : '/default-event-image.jpg';
-
-    return {
-      id: wsEvent.EventId.toString(),
-      title: wsEvent.EventTitle,
-      location: wsEvent.EventVenue,
-      time: '7:00 PM', // Default time since it's not in WebSocket message
-      date: {
+  // Function to parse date string from server format "23-05-2025:12:00:00"
+  const parseEventDate = (dateString: string) => {
+    try {
+      const [datePart, timePart] = dateString.split(':');
+      const [day, month] = datePart.split('-');
+      const [hour, minute] = timePart.split(':').slice(0, 2);
+      
+      const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
+                         'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const monthName = monthNames[parseInt(month) - 1] || 'JAN';
+      
+      // Create time string
+      const timeString = `${hour}:${minute}`;
+      
+      return {
         day: parseInt(day),
         month: monthName,
-      },
-      price: 25.00, // Default price since it's not in WebSocket message
-      imageUrl: imageUrl,
-      description: wsEvent.EventDescription,
-    };
+        time: timeString
+      };
+    } catch (error) {
+      console.error('Error parsing date:', dateString, error);
+      return {
+        day: 1,
+        month: 'JAN',
+        time: '12:00'
+      };
+    }
+  };
+
+
+  // Function to check if a message is an events response
+  const isEventsResponse = (message: any): message is EventsResponse => {
+    return message && 
+           typeof message === 'object' && 
+           'Events' in message && 
+           'ResultCode' in message && 
+           'ResultMessage' in message &&
+           Array.isArray(message.Events);
+  };
+
+  // Function to check if a message is a single event update
+  const isSingleEventUpdate = (message: any): message is ServerEvent => {
+    return message && 
+           typeof message === 'object' && 
+           'EventID' in message && 
+           'EventTitle' in message &&
+           'EventDate' in message;
   };
 
   // Request events from server when component mounts and WebSocket connects
@@ -105,7 +132,6 @@ const EventsPage = () => {
         }
       };
       
-      // Use createPost method since it sends raw data without wrapping
       const success = createPost(eventSearchMessage);
       
       if (success) {
@@ -126,66 +152,86 @@ const EventsPage = () => {
   }, [isConnected]);
 
   // Process WebSocket messages for events
+  // Process WebSocket messages for events
   useEffect(() => {
     if (!messages || messages.length === 0) return;
 
-    // Process the latest message
+    // Move transformServerEvent inside useEffect to avoid dependency issues
+    const transformServerEvent = (serverEvent: ServerEvent): Event => {
+      const dateInfo = parseEventDate(serverEvent.EventDate);
+      
+      // Get image from posters array or use default
+      const imageUrl = serverEvent.Posters && serverEvent.Posters.length > 0 
+        ? serverEvent.Posters[0].ImagePath || '/default-event-image.jpg'
+        : '/default-event-image.jpg';
+
+      return {
+        id: serverEvent.EventID.toString(),
+        title: serverEvent.EventTitle,
+        location: serverEvent.EventVenue,
+        time: dateInfo.time,
+        date: {
+          day: dateInfo.day,
+          month: dateInfo.month,
+        },
+        price: 25.00, // Default price since not provided by server
+        imageUrl: imageUrl,
+        description: serverEvent.EventDescription || 'Join us for this exciting event!',
+      };
+    };
+
     const latestMessage = messages[messages.length - 1];
-    
+    console.log('🔍 EventsPage: Processing message:', latestMessage);
+
     // Handle events response from server
-    if (latestMessage && latestMessage.SearchType?.SearchType === 'EVENT') {
+    if (isEventsResponse(latestMessage)) {
       try {
-        const eventsResponse = latestMessage as EventsResponse;
+        console.log('🎉 EventsPage: Received events response from server');
         
-        if (eventsResponse.Events && Array.isArray(eventsResponse.Events)) {
-          // Transform all events to your Event format
-          const transformedEvents = eventsResponse.Events
-            .filter(wsEvent => !wsEvent.IsCanceled) // Filter out canceled events
-            .map(transformWebSocketEvent);
+        if (latestMessage.ResultCode === 0 && latestMessage.ResultMessage === 'Success') {
+          // Transform all events to frontend format
+          const transformedEvents = latestMessage.Events
+            .filter(serverEvent => !serverEvent.IsCanceled && !serverEvent.canceled) // Filter out canceled events
+            .map(transformServerEvent);
           
-          // Update the events state
           dispatch(setEvents(transformedEvents));
-          console.log(`✅ EventsPage: Received ${transformedEvents.length} events from server`);
+          console.log(`✅ EventsPage: Successfully processed ${transformedEvents.length} events`);
         } else {
-          console.warn('⚠️ EventsPage: No events found in response');
-          dispatch(setEvents([]));
+          console.error('❌ EventsPage: Server returned error:', latestMessage.ResultMessage);
+          dispatch(setEventsError(latestMessage.ResultMessage || 'Failed to fetch events'));
         }
       } catch (error) {
         console.error('❌ EventsPage: Error processing events response:', error);
         dispatch(setEventsError('Failed to process events response'));
       }
     }
-    
-    // Handle individual event updates (real-time)
-    else if (latestMessage && latestMessage.name === 'EVENT') {
+    // Handle single event updates (real-time updates)
+    else if (isSingleEventUpdate(latestMessage)) {
       try {
-        const wsEvent: WebSocketEventMessage = latestMessage;
+        console.log('🔄 EventsPage: Received single event update');
         
         // Skip if event is canceled
-        if (wsEvent.IsCanceled) {
-          console.log('Event canceled:', wsEvent.EventId);
-          // TODO: You might want to dispatch an action to remove the event from state
+        if (latestMessage.IsCanceled || latestMessage.canceled) {
+          console.log('🚫 EventsPage: Skipping canceled event:', latestMessage.EventID);
+          // TODO: You might want to remove the event from state if it was previously added
           return;
         }
 
-        // Transform the WebSocket event to your Event format
-        const transformedEvent = transformWebSocketEvent(wsEvent);
+        const transformedEvent = transformServerEvent(latestMessage);
         
-        // Check if event already exists in current events
-        const existingEvent = events.find(e => e.id === transformedEvent.id);
+        // Check if event already exists
+        const existingEvent = events.find((e: Event) => e.id === transformedEvent.id);
         
         if (existingEvent) {
-          // Update existing event
           dispatch(eventUpdated(transformedEvent));
-          console.log('Event updated:', transformedEvent.title);
+          console.log('✅ EventsPage: Updated existing event:', transformedEvent.title);
         } else {
-          // Add new event
           dispatch(eventAdded(transformedEvent));
-          console.log('New event added:', transformedEvent.title);
+          console.log('✅ EventsPage: Added new event:', transformedEvent.title);
         }
       } catch (error) {
-        console.error('Error processing WebSocket event message:', error);
-        dispatch(setEventsError('Failed to process real-time event update'));
+        console.error('❌ EventsPage: Error processing single event update:', error);
+        dispatch(setEventsError('Failed to process event update'));
       }
     }
   }, [messages, events, dispatch]);
@@ -204,7 +250,7 @@ const EventsPage = () => {
     setCurrentIndex((current) => (current === events.length - 1 ? 0 : current + 1));
   };
 
-  // Show loading state
+  // Show loading state or no events message
   if (loading || (!events || events.length === 0)) {
     return (
       <BackNavigationTemplate title="Events">
@@ -334,15 +380,15 @@ const EventsPage = () => {
             <div className="flex gap-3 justify-center overflow-x-auto pb-2">
               <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#B43E8F] text-white whitespace-nowrap">
                 <Circle className="w-4 h-4" />
-                <span>Mine</span>
+                <span>All</span>
               </button>
               <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">
                 <Circle className="w-4 h-4" />
-                <span>Food</span>
+                <span>Music</span>
               </button>
               <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">
                 <Circle className="w-4 h-4" />
-                <span>Concerts</span>
+                <span>Sports</span>
               </button>
             </div>
           </div>
@@ -363,8 +409,8 @@ const EventsPage = () => {
                 <div className="p-4">
                   <h3 className="font-semibold text-lg text-gray-900 mb-1">{event.title || ''}</h3>
                   <div className="flex justify-between items-center">
-                    <div className="text-[#B43E8F]">
-                      {event.location || ''} - {event.time || ''}
+                    <div className="text-[#B43E8F] text-sm">
+                      {event.location || ''} • {event.time || ''}
                     </div>
                     <div className="font-bold text-[#B43E8F]">${(event.price || 0).toFixed(2)}</div>
                   </div>
