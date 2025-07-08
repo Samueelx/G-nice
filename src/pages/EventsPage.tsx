@@ -3,7 +3,7 @@ import { Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
-import { fetchEvents, eventAdded, eventUpdated, setEventsError, Event } from '@/features/events/eventsSlice';
+import { fetchEvents, eventAdded, eventUpdated, setEventsError, setEvents, Event } from '@/features/events/eventsSlice';
 import { useWebSocketContext } from '@/context/useWebSocketContext';
 
 // WebSocket Event Message Interface
@@ -47,12 +47,21 @@ interface WebSocketEventMessage {
   IsCanceled: boolean;
 }
 
+// Expected response structure from backend
+interface EventsResponse {
+  SearchType: {
+    SearchType: string;
+  };
+  Events: WebSocketEventMessage[];
+}
+
 const EventsPage = () => {
   const dispatch = useAppDispatch();
-  const { items: events = [] } = useAppSelector((state) => state.events || { items: [] });
-  const { messages, isConnected, sendMessage } = useWebSocketContext();
+  const { items: events = [], loading } = useAppSelector((state) => state.events || { items: [], loading: false });
+  const { messages, isConnected, createPost } = useWebSocketContext();
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [hasRequestedEvents, setHasRequestedEvents] = useState(false);
   const carouselRef = useRef(null);
 
   // Function to transform WebSocket event message to your Event interface
@@ -83,21 +92,38 @@ const EventsPage = () => {
     };
   };
 
+  // Request events from server when component mounts and WebSocket connects
   useEffect(() => {
-    // Initial fetch of events
-    dispatch(fetchEvents());
-  }, [dispatch]);
-
-  // Subscribe to events when WebSocket connects
-  useEffect(() => {
-    if (isConnected) {
-      console.log('🎟️ EventsPage: Subscribing to events feed');
-      sendMessage('subscribe_events', {
-        userId: 'current_user', // Replace with actual user ID from auth state
-        timestamp: Date.now(),
-      });
+    if (isConnected && !hasRequestedEvents) {
+      console.log('🎟️ EventsPage: Requesting events from server');
+      dispatch(fetchEvents()); // Set loading state
+      
+      // Send the exact message format your backend expects
+      const eventSearchMessage = {
+        SearchType: {
+          SearchType: "EVENT"
+        }
+      };
+      
+      // Use createPost method since it sends raw data without wrapping
+      const success = createPost(eventSearchMessage);
+      
+      if (success) {
+        setHasRequestedEvents(true);
+        console.log('✅ EventsPage: Event search message sent successfully');
+      } else {
+        console.error('❌ EventsPage: Failed to send event search message');
+        dispatch(setEventsError('Failed to request events from server'));
+      }
     }
-  }, [isConnected, sendMessage]);
+  }, [isConnected, hasRequestedEvents, dispatch, createPost]);
+
+  // Reset request flag when WebSocket disconnects
+  useEffect(() => {
+    if (!isConnected) {
+      setHasRequestedEvents(false);
+    }
+  }, [isConnected]);
 
   // Process WebSocket messages for events
   useEffect(() => {
@@ -106,7 +132,32 @@ const EventsPage = () => {
     // Process the latest message
     const latestMessage = messages[messages.length - 1];
     
-    if (latestMessage && latestMessage.name === 'EVENT') {
+    // Handle events response from server
+    if (latestMessage && latestMessage.SearchType?.SearchType === 'EVENT') {
+      try {
+        const eventsResponse = latestMessage as EventsResponse;
+        
+        if (eventsResponse.Events && Array.isArray(eventsResponse.Events)) {
+          // Transform all events to your Event format
+          const transformedEvents = eventsResponse.Events
+            .filter(wsEvent => !wsEvent.IsCanceled) // Filter out canceled events
+            .map(transformWebSocketEvent);
+          
+          // Update the events state
+          dispatch(setEvents(transformedEvents));
+          console.log(`✅ EventsPage: Received ${transformedEvents.length} events from server`);
+        } else {
+          console.warn('⚠️ EventsPage: No events found in response');
+          dispatch(setEvents([]));
+        }
+      } catch (error) {
+        console.error('❌ EventsPage: Error processing events response:', error);
+        dispatch(setEventsError('Failed to process events response'));
+      }
+    }
+    
+    // Handle individual event updates (real-time)
+    else if (latestMessage && latestMessage.name === 'EVENT') {
       try {
         const wsEvent: WebSocketEventMessage = latestMessage;
         
@@ -153,12 +204,20 @@ const EventsPage = () => {
     setCurrentIndex((current) => (current === events.length - 1 ? 0 : current + 1));
   };
 
-  // If events is undefined or empty, show a loading state
-  if (!events || events.length === 0) {
+  // Show loading state
+  if (loading || (!events || events.length === 0)) {
     return (
       <BackNavigationTemplate title="Events">
         <div className="p-4 bg-gray-50 min-h-screen flex items-center justify-center">
-          <p className="text-xl text-gray-500">Loading events...</p>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#B43E8F] mx-auto mb-4"></div>
+            <p className="text-xl text-gray-500">
+              {loading ? 'Loading events...' : 'No events available'}
+            </p>
+            {!isConnected && (
+              <p className="text-sm text-red-500 mt-2">WebSocket disconnected</p>
+            )}
+          </div>
         </div>
       </BackNavigationTemplate>
     );

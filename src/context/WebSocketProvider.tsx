@@ -20,6 +20,7 @@ export interface WebSocketContextType {
 
   // WebSocket methods
   send: (message: any) => boolean;
+  sendRaw: (message: any) => boolean; // For sending exact message format
   clearMessages: () => void;
   connect: () => void;
   disconnect: () => void;
@@ -31,6 +32,9 @@ export interface WebSocketContextType {
   
   // Method specifically for creating posts
   createPost: (postData: any) => boolean;
+
+  // Method for requesting events from server
+  requestEvents: () => boolean;
 
   // Utility methods
   getMessagesByType: (messageType: string) => any[];
@@ -110,14 +114,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         }
       });
 
-      // Subscribe to events
-      send({
-        type: 'subscribe_events',
-        payload: {
-          userId: currentUserId,
-          timestamp: Date.now(),
-        }
-      });
+      // Note: We removed the automatic event subscription since events 
+      // will be requested individually by the EventsPage component
 
       console.log("✅ WebSocket Provider: All subscriptions sent for user:", currentUserId);
     }
@@ -182,6 +180,30 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }
   }, [isConnected, sendRaw, send]);
 
+  // Specific method for requesting events from server
+  const requestEvents = useCallback((): boolean => {
+    if (isConnected) {
+      console.log('🎟️ Requesting events from server');
+      
+      const eventSearchMessage = {
+        SearchType: {
+          SearchType: "EVENT"
+        }
+      };
+
+      // Use sendRaw to send the exact message format expected by backend
+      if (sendRaw) {
+        return sendRaw(eventSearchMessage);
+      } else {
+        console.warn('⚠️ sendRaw not available, falling back to regular send');
+        return send(eventSearchMessage);
+      }
+    } else {
+      console.warn('❌ Cannot request events: WebSocket not connected');
+      return false;
+    }
+  }, [isConnected, sendRaw, send]);
+
   // Log connection status changes
   useEffect(() => {
     console.log(`🔌 WebSocket Provider: Status changed to ${status}`);
@@ -222,6 +244,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     // Methods
     send,
+    sendRaw,
     clearMessages,
     connect,
     disconnect,
@@ -231,6 +254,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     sendPostInteraction,
     sendMessage,
     createPost,
+    requestEvents,
 
     // Utility methods
     getMessagesByType,
