@@ -5,7 +5,7 @@ import { RootState } from '@/store/store';
 import { WebSocketStatus } from '@/features/websocket/websocketSlice';
 
 // WebSocket configuration
-const WS_URL = 'ws://localhost:8090';
+const WS_URL = 'ws://localhost:8080/Memefest-SNAPSHOT-01/feeds';
 
 export interface WebSocketContextType {
   // WebSocket state (from Redux)

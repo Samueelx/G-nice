@@ -44,7 +44,7 @@ const ChatList = () => {
   useEffect(() => {
     // Initialize WebSocket connection if user is authenticated
     if (currentUser?.id) {
-      const wsUrl = process.env.REACT_APP_WS_URL || 'ws://localhost:8080';
+      const wsUrl = process.env.REACT_APP_WS_URL || 'ws://localhost:8080/Memefest-SNAPSHOT-01/feeds';
       dispatch(connectWebSocket(wsUrl, currentUser.id));
     }
 

@@ -17,7 +17,7 @@ const CreatePost = () => {
   const { createPost: createPostWS, isConnected } = useWebSocketContext();
   const isLoading = useAppSelector((state) => state.posts.isLoading);
   const error = useAppSelector((state) => state.posts.error);
-  const posts = useAppSelector((state) => state.posts.posts); // Track posts for success detection
+  const posts = useAppSelector((state) => state.posts.posts);
   
   // Initialize WebSocket posts handler
   useWebSocketPostsHandler();
@@ -28,22 +28,31 @@ const CreatePost = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastPostCount, setLastPostCount] = useState(0);
+  
+  // Use a ref to track the initial post count and submission state
+  const initialPostCountRef = useRef<number>(posts.length);
+  const submissionIdRef = useRef<string | null>(null);
+  
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize post count on mount
+  // Update initial post count when posts change and we're not submitting
   useEffect(() => {
-    setLastPostCount(posts.length);
-  }, []);
+    if (!isSubmitting) {
+      initialPostCountRef.current = posts.length;
+    }
+  }, [posts.length, isSubmitting]);
 
-  // Track successful post creation using both loading state and post count
+  // Enhanced success detection using multiple indicators
   useEffect(() => {
-    console.log('🔍 CreatePost useEffect - isSubmitting:', isSubmitting, 'isLoading:', isLoading, 'error:', error, 'posts.length:', posts.length, 'lastPostCount:', lastPostCount);
+    console.log('🔍 CreatePost useEffect - isSubmitting:', isSubmitting, 'isLoading:', isLoading, 'error:', error, 'posts.length:', posts.length, 'initialCount:', initialPostCountRef.current);
     
-    if (isSubmitting) {
-      // Check if loading is done and we have a new post (success case)
-      if (!isLoading && posts.length > lastPostCount) {
+    if (isSubmitting && submissionIdRef.current) {
+      // Success case: not loading, no error, and we have more posts
+      const hasNewPost = posts.length > initialPostCountRef.current;
+      const loadingFinished = !isLoading;
+      
+      if (loadingFinished && !error && hasNewPost) {
         console.log('✅ Post created successfully - navigating to feeds');
         
         toast({
@@ -54,17 +63,20 @@ const CreatePost = () => {
         
         // Reset states
         setIsSubmitting(false);
-        setLastPostCount(posts.length);
+        submissionIdRef.current = null;
+        initialPostCountRef.current = posts.length;
         
         // Navigate to feeds page after a short delay
         setTimeout(() => {
           navigate('/feeds');
         }, 1000);
       }
-      // Check if loading is done and we have an error
-      else if (!isLoading && error) {
+      // Error case: not loading and we have an error
+      else if (loadingFinished && error) {
         console.log('❌ Post creation failed with error:', error);
+        
         setIsSubmitting(false);
+        submissionIdRef.current = null;
         
         toast({
           title: 'Error',
@@ -72,8 +84,27 @@ const CreatePost = () => {
           variant: 'destructive',
         });
       }
+      // Timeout case: if we've been submitting for too long
+      else if (isSubmitting && submissionIdRef.current) {
+        // Check if we've been submitting for more than 30 seconds
+        const submissionTime = parseInt(submissionIdRef.current);
+        const currentTime = Date.now();
+        
+        if (currentTime - submissionTime > 30000) {
+          console.log('⏰ Post creation timed out');
+          
+          setIsSubmitting(false);
+          submissionIdRef.current = null;
+          
+          toast({
+            title: 'Timeout',
+            description: 'Post creation timed out. Please try again.',
+            variant: 'destructive',
+          });
+        }
+      }
     }
-  }, [isSubmitting, isLoading, error, posts.length, lastPostCount, navigate, toast]);
+  }, [isSubmitting, isLoading, error, posts.length, navigate, toast]);
 
   const handleImageClick = () => {
     imageInputRef.current?.click();
@@ -181,8 +212,17 @@ const CreatePost = () => {
     }
 
     console.log('📤 Starting post creation...');
+    
+    // Set submission tracking
     setIsSubmitting(true);
-    setLastPostCount(posts.length); // Remember current post count
+    submissionIdRef.current = Date.now().toString();
+    initialPostCountRef.current = posts.length;
+    
+    console.log('📊 Initial state:', {
+      isSubmitting: true,
+      initialPostCount: initialPostCountRef.current,
+      submissionId: submissionIdRef.current
+    });
 
     try {
       const currentUser = {
@@ -206,7 +246,7 @@ const CreatePost = () => {
       
       console.log('📤 createPost dispatch completed');
       
-      // Clear form on successful dispatch
+      // Clear form on successful dispatch (before WebSocket response)
       setBody('');
       setImage(null);
       setVideo(null);
@@ -225,9 +265,13 @@ const CreatePost = () => {
         title: 'Sending...',
         description: 'Your post is being created.',
       });
+      
+      // Don't set isSubmitting to false here - wait for WebSocket response
     } catch (error) {
       console.error('Create post error:', error);
       setIsSubmitting(false);
+      submissionIdRef.current = null;
+      
       toast({
         title: 'Error',
         description: error as string,
@@ -273,7 +317,7 @@ const CreatePost = () => {
           )}
           {/* Debug info - remove in production */}
           <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-            Debug: isSubmitting={isSubmitting.toString()}, isLoading={isLoading.toString()}, postsCount={posts.length}, error={error || 'none'}
+            Debug: isSubmitting={isSubmitting.toString()}, isLoading={isLoading.toString()}, postsCount={posts.length}, initialCount={initialPostCountRef.current}, error={error || 'none'}
           </div>
         </CardHeader>
        
