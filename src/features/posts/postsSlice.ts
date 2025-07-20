@@ -144,6 +144,7 @@ interface PostsState {
   posts: LegacyPost[];
   userPosts: LegacyPost[];
   currentPostDetails: LegacyPostDetails | null;
+  currentPostWithReplies: LegacyPostDetails | null; // ✅ Add this line
   isLoading: boolean;
   isLoadingPostDetails: boolean;
   error: string | null;
@@ -154,6 +155,7 @@ const initialState: PostsState = {
   posts: [],
   userPosts: [],
   currentPostDetails: null,
+  currentPostWithReplies: null, // ✅ Add this line
   isLoading: false,
   isLoadingPostDetails: false,
   error: null,
@@ -188,10 +190,13 @@ const formatTimestamp = (dateString: string): string => {
   try {
     // Handle different date formats that might come from server
     let date: Date;
-    
+
     // Format: "23-05-2025-10:23:23" or "23-05-2025:10:23:23"
-    if (dateString.includes('-') && (dateString.match(/:/g) || []).length >= 2) {
-      const parts = dateString.replace(/-(\d{2}):/, ':$1:').split(/[-:]/);
+    if (
+      dateString.includes("-") &&
+      (dateString.match(/:/g) || []).length >= 2
+    ) {
+      const parts = dateString.replace(/-(\d{2}):/, ":$1:").split(/[-:]/);
       if (parts.length >= 6) {
         const [day, month, year, hours, minutes, seconds] = parts;
         date = new Date(
@@ -208,17 +213,17 @@ const formatTimestamp = (dateString: string): string => {
     } else {
       date = new Date(dateString);
     }
-    
+
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 1) return 'now';
+
+    if (diffMins < 1) return "now";
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
     return `${Math.floor(diffMins / 1440)}d ago`;
   } catch (error) {
-    return 'now';
+    return "now";
   }
 };
 
@@ -229,8 +234,10 @@ const convertPostToLegacy = (post: Post): LegacyPost => {
     title: "", // Title is now part of Comment, you might want to extract first line
     body: post.Comment,
     content: post.Comment, // SocialPost expects 'content'
-    author: post.User.Username || 'Anonymous', // SocialPost expects 'author'
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(post.User.Username || 'Anonymous')}&background=random`,
+    author: post.User.Username || "Anonymous", // SocialPost expects 'author'
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      post.User.Username || "Anonymous"
+    )}&background=random`,
     timestamp: formatTimestamp(post.Created),
     imageUrl: post.ImageUrl,
     videoUrl: post.VideoUrl,
@@ -250,8 +257,10 @@ const convertReplyToLegacy = (reply: Reply): LegacyReply => {
   return {
     id: reply.PostId.toString(),
     content: reply.Comment,
-    author: reply.User.Username || 'Anonymous',
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(reply.User.Username || 'Anonymous')}&background=random`,
+    author: reply.User.Username || "Anonymous",
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      reply.User.Username || "Anonymous"
+    )}&background=random`,
     timestamp: formatTimestamp(reply.Created),
     imageUrl: reply.ImageUrl,
     videoUrl: reply.VideoUrl,
@@ -262,10 +271,12 @@ const convertReplyToLegacy = (reply: Reply): LegacyReply => {
 };
 
 // Helper function to convert PostWithReplies to LegacyPostDetails
-const convertPostDetailsToLegacy = (postWithReplies: PostWithReplies): LegacyPostDetails => {
+const convertPostDetailsToLegacy = (
+  postWithReplies: PostWithReplies
+): LegacyPostDetails => {
   const post = convertPostToLegacy(postWithReplies as Post);
   const replies = postWithReplies.Replys.map(convertReplyToLegacy);
-  
+
   return {
     post: {
       ...post,
@@ -390,8 +401,8 @@ export const fetchPosts = createAsyncThunk<
 // Updated thunk for fetching post details with replies
 export const fetchPostDetails = createAsyncThunk<
   AsyncThunkReturn,
-  { 
-    postId: number; 
+  {
+    postId: number;
     sendMessage: (payload: any) => void;
     postData?: Partial<Post>; // Optional post data to include in request
   },
@@ -413,19 +424,22 @@ export const fetchPostDetails = createAsyncThunk<
           Username: "",
           Contacts: 0,
           Cancel: false,
-          Verified: false
+          Verified: false,
         },
-        Replys: postData?.Replys || []
+        Replys: postData?.Replys || [],
       };
 
       const payload = {
         EditableType: {
-          EditableType: "POST"
+          EditableType: "POST",
         },
-        PostsWithReplys: [postRequest]
+        PostsWithReplys: [postRequest],
       };
 
-      console.log("🔍 Sending post details request:", JSON.stringify(payload, null, 2));
+      console.log(
+        "🔍 Sending post details request:",
+        JSON.stringify(payload, null, 2)
+      );
       sendMessage(payload);
       return { pending: true };
     } catch (error: unknown) {
@@ -483,11 +497,9 @@ const isServerPostDetailsResponse = (
     payload !== null &&
     "ResultCode" in payload &&
     "ResultMessage" in payload &&
-    (
-      "PostsWithReplys" in payload ||
+    ("PostsWithReplys" in payload ||
       "PostWithReplies" in payload ||
-      "postWithReplies" in payload
-    )
+      "postWithReplies" in payload)
   );
 };
 
@@ -518,10 +530,14 @@ const isLegacyPostArray = (payload: unknown): payload is LegacyPost[] => {
 };
 
 // Helper function to add posts without duplicates
-const addPostsWithoutDuplicates = (existingPosts: LegacyPost[], newPosts: LegacyPost[], prepend: boolean = true): LegacyPost[] => {
-  const existingIds = new Set(existingPosts.map(post => post.id));
-  const uniqueNewPosts = newPosts.filter(post => !existingIds.has(post.id));
-  
+const addPostsWithoutDuplicates = (
+  existingPosts: LegacyPost[],
+  newPosts: LegacyPost[],
+  prepend: boolean = true
+): LegacyPost[] => {
+  const existingIds = new Set(existingPosts.map((post) => post.id));
+  const uniqueNewPosts = newPosts.filter((post) => !existingIds.has(post.id));
+
   if (prepend) {
     return [...uniqueNewPosts, ...existingPosts];
   } else {
@@ -547,57 +563,71 @@ const postsSlice = createSlice({
       state.isLoading = false;
       state.isLoadingPostDetails = false;
     },
-    
+
     // Clear current post details
-    clearPostDetails: (state) => {
-      state.currentPostDetails = null;
-      state.postDetailsError = null;
-      state.isLoadingPostDetails = false;
-    },
-    
+   clearPostDetails: (state) => {
+  state.currentPostDetails = null;
+  state.currentPostWithReplies = null; // ✅ Add this line
+  state.postDetailsError = null;
+  state.isLoadingPostDetails = false;
+},
+
     // Handle post creation with proper duplicate prevention
     handlePostCreated: (
       state,
       action: PayloadAction<ServerPostResponse | PostResponse | LegacyPost>
     ) => {
-      console.log('🔥 handlePostCreated called with payload:', action.payload);
-      
+      console.log("🔥 handlePostCreated called with payload:", action.payload);
+
       // Set loading to false when post is created
       state.isLoading = false;
       state.error = null;
 
       // Handle server response format (new)
       if (isServerPostResponse(action.payload)) {
-        console.log('🔥 Processing server response format');
+        console.log("🔥 Processing server response format");
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
-        console.log('🔥 Converted posts:', newPosts);
-        
+        console.log("🔥 Converted posts:", newPosts);
+
         // Add posts without duplicates
         state.posts = addPostsWithoutDuplicates(state.posts, newPosts, true);
-        state.userPosts = addPostsWithoutDuplicates(state.userPosts, newPosts, true);
+        state.userPosts = addPostsWithoutDuplicates(
+          state.userPosts,
+          newPosts,
+          true
+        );
       }
       // Handle old PostResponse format
       else if (isPostResponse(action.payload)) {
-        console.log('🔥 Processing old PostResponse format');
+        console.log("🔥 Processing old PostResponse format");
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
         state.posts = addPostsWithoutDuplicates(state.posts, newPosts, true);
-        state.userPosts = addPostsWithoutDuplicates(state.userPosts, newPosts, true);
+        state.userPosts = addPostsWithoutDuplicates(
+          state.userPosts,
+          newPosts,
+          true
+        );
       }
       // Handle legacy format
       else if (isLegacyPost(action.payload)) {
-        console.log('🔥 Processing legacy post format');
-        state.posts = addPostsWithoutDuplicates(state.posts, [action.payload], true);
-        state.userPosts = addPostsWithoutDuplicates(state.userPosts, [action.payload], true);
+        console.log("🔥 Processing legacy post format");
+        state.posts = addPostsWithoutDuplicates(
+          state.posts,
+          [action.payload],
+          true
+        );
+        state.userPosts = addPostsWithoutDuplicates(
+          state.userPosts,
+          [action.payload],
+          true
+        );
       }
     },
 
-    handlePostCreationError: (
-      state,
-      action: PayloadAction<string>
-    ) => {
+    handlePostCreationError: (state, action: PayloadAction<string>) => {
       state.isLoading = false;
       state.error = action.payload;
-      console.error('❌ Post creation failed:', action.payload);
+      console.error("❌ Post creation failed:", action.payload);
     },
 
     // Handle fetching all posts
@@ -612,18 +642,26 @@ const postsSlice = createSlice({
       if (isServerPostResponse(action.payload)) {
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
         state.posts = newPosts;
-        console.log('✅ Posts fetched (server format):', newPosts.length, 'posts');
+        console.log(
+          "✅ Posts fetched (server format):",
+          newPosts.length,
+          "posts"
+        );
       }
       // Handle old PostResponse format
       else if (isPostResponse(action.payload)) {
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
         state.posts = newPosts;
-        console.log('✅ Posts fetched (old format):', newPosts.length, 'posts');
+        console.log("✅ Posts fetched (old format):", newPosts.length, "posts");
       }
       // Handle legacy format
       else if (isLegacyPostArray(action.payload)) {
         state.posts = action.payload;
-        console.log('✅ Posts fetched (legacy format):', action.payload.length, 'posts');
+        console.log(
+          "✅ Posts fetched (legacy format):",
+          action.payload.length,
+          "posts"
+        );
       }
     },
 
@@ -639,29 +677,38 @@ const postsSlice = createSlice({
       if (isServerPostResponse(action.payload)) {
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
         state.userPosts = newPosts;
-        console.log('✅ User posts fetched (server format):', newPosts.length, 'posts');
+        console.log(
+          "✅ User posts fetched (server format):",
+          newPosts.length,
+          "posts"
+        );
       }
       // Handle old PostResponse format
       else if (isPostResponse(action.payload)) {
         const newPosts = action.payload.Posts.map(convertPostToLegacy);
         state.userPosts = newPosts;
-        console.log('✅ User posts fetched (old format):', newPosts.length, 'posts');
+        console.log(
+          "✅ User posts fetched (old format):",
+          newPosts.length,
+          "posts"
+        );
       }
       // Handle legacy format
       else if (isLegacyPostArray(action.payload)) {
         state.userPosts = action.payload;
-        console.log('✅ User posts fetched (legacy format):', action.payload.length, 'posts');
+        console.log(
+          "✅ User posts fetched (legacy format):",
+          action.payload.length,
+          "posts"
+        );
       }
     },
 
     // Handle posts fetch error
-    handlePostsError: (
-      state,
-      action: PayloadAction<string>
-    ) => {
+    handlePostsError: (state, action: PayloadAction<string>) => {
       state.isLoading = false;
       state.error = action.payload;
-      console.error('❌ Posts fetch failed:', action.payload);
+      console.error("❌ Posts fetch failed:", action.payload);
     },
 
     // Handle new post received from broadcast
@@ -672,7 +719,7 @@ const postsSlice = createSlice({
       let newPost: LegacyPost;
 
       // Convert to legacy format if needed
-      if ('PostId' in action.payload) {
+      if ("PostId" in action.payload) {
         newPost = convertPostToLegacy(action.payload as Post);
       } else {
         newPost = action.payload as LegacyPost;
@@ -680,41 +727,45 @@ const postsSlice = createSlice({
 
       // Add to posts without duplicates
       state.posts = addPostsWithoutDuplicates(state.posts, [newPost], true);
-      console.log('📡 New post received and added:', newPost.id);
+      console.log("📡 New post received and added:", newPost.id);
     },
 
     // Handle post updated
-    handlePostUpdated: (
-      state,
-      action: PayloadAction<Post | LegacyPost>
-    ) => {
+    handlePostUpdated: (state, action: PayloadAction<Post | LegacyPost>) => {
       let updatedPost: LegacyPost;
 
       // Convert to legacy format if needed
-      if ('PostId' in action.payload) {
+      if ("PostId" in action.payload) {
         updatedPost = convertPostToLegacy(action.payload as Post);
       } else {
         updatedPost = action.payload as LegacyPost;
       }
 
       // Update in posts array
-      const postIndex = state.posts.findIndex(post => post.id === updatedPost.id);
+      const postIndex = state.posts.findIndex(
+        (post) => post.id === updatedPost.id
+      );
       if (postIndex !== -1) {
         state.posts[postIndex] = updatedPost;
-        console.log('🔄 Post updated in posts array:', updatedPost.id);
+        console.log("🔄 Post updated in posts array:", updatedPost.id);
       }
 
       // Update in userPosts array
-      const userPostIndex = state.userPosts.findIndex(post => post.id === updatedPost.id);
+      const userPostIndex = state.userPosts.findIndex(
+        (post) => post.id === updatedPost.id
+      );
       if (userPostIndex !== -1) {
         state.userPosts[userPostIndex] = updatedPost;
-        console.log('🔄 Post updated in user posts array:', updatedPost.id);
+        console.log("🔄 Post updated in user posts array:", updatedPost.id);
       }
 
       // Update in currentPostDetails if it's the same post
-      if (state.currentPostDetails && state.currentPostDetails.post.id === updatedPost.id) {
+      if (
+        state.currentPostDetails &&
+        state.currentPostDetails.post.id === updatedPost.id
+      ) {
         state.currentPostDetails.post = updatedPost;
-        console.log('🔄 Post updated in current post details:', updatedPost.id);
+        console.log("🔄 Post updated in current post details:", updatedPost.id);
       }
     },
 
@@ -723,49 +774,45 @@ const postsSlice = createSlice({
       state,
       action: PayloadAction<ServerPostDetailsResponse>
     ) => {
-      console.log('🔍 handlePostDetailsFetched called with:', action.payload);
-      
+      console.log("🔍 handlePostDetailsFetched called with:", action.payload);
+
       state.isLoadingPostDetails = false;
       state.postDetailsError = null;
 
       if (isServerPostDetailsResponse(action.payload)) {
-        // Get the post with replies from any of the possible formats
-        const postWithReplies = 
-          action.payload.PostsWithReplys?.[0] || 
-          action.payload.PostWithReplies?.[0] || 
+        const postWithReplies =
+          action.payload.PostsWithReplys?.[0] ||
+          action.payload.PostWithReplies?.[0] ||
           action.payload.postWithReplies?.[0];
 
         if (postWithReplies) {
-          // Convert to legacy format for component compatibility
           const legacyPostDetails = convertPostDetailsToLegacy(postWithReplies);
           state.currentPostDetails = legacyPostDetails;
-          
-          console.log('✅ Post details fetched successfully:', {
+          state.currentPostWithReplies = legacyPostDetails; // ✅ Add this line
+
+          console.log("✅ Post details fetched successfully:", {
             postId: postWithReplies.PostId,
-            repliesCount: postWithReplies.Replys.length
+            repliesCount: postWithReplies.Replys.length,
           });
         } else {
-          console.error('❌ No post data found in server response');
-          state.postDetailsError = 'No post data found';
+          console.error("❌ No post data found in server response");
+          state.postDetailsError = "No post data found";
         }
       } else {
-        console.error('❌ Invalid post details response format');
-        state.postDetailsError = 'Invalid response format';
+        console.error("❌ Invalid post details response format");
+        state.postDetailsError = "Invalid response format";
       }
     },
 
     // Handle post details fetch error (NEW - this was missing!)
-    handlePostDetailsError: (
-      state,
-      action: PayloadAction<string>
-    ) => {
+    handlePostDetailsError: (state, action: PayloadAction<string>) => {
       state.isLoadingPostDetails = false;
       state.postDetailsError = action.payload;
       state.currentPostDetails = null;
-      console.error('❌ Post details fetch failed:', action.payload);
+      console.error("❌ Post details fetch failed:", action.payload);
     },
   },
-  
+
   extraReducers: (builder) => {
     // Handle createPost async thunk
     builder
@@ -775,12 +822,12 @@ const postsSlice = createSlice({
       })
       .addCase(createPost.fulfilled, (state) => {
         // Keep loading state - will be cleared by handlePostCreated
-        console.log('📤 Post creation request sent successfully');
+        console.log("📤 Post creation request sent successfully");
       })
       .addCase(createPost.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload || 'Failed to create post';
-        console.error('❌ Post creation request failed:', action.payload);
+        state.error = action.payload || "Failed to create post";
+        console.error("❌ Post creation request failed:", action.payload);
       });
 
     // Handle fetchPosts async thunk
@@ -791,12 +838,12 @@ const postsSlice = createSlice({
       })
       .addCase(fetchPosts.fulfilled, (state) => {
         // Keep loading state - will be cleared by handlePostsFetched
-        console.log('📤 Posts fetch request sent successfully');
+        console.log("📤 Posts fetch request sent successfully");
       })
       .addCase(fetchPosts.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload || 'Failed to fetch posts';
-        console.error('❌ Posts fetch request failed:', action.payload);
+        state.error = action.payload || "Failed to fetch posts";
+        console.error("❌ Posts fetch request failed:", action.payload);
       });
 
     // Handle fetchPostDetails async thunk
@@ -807,12 +854,13 @@ const postsSlice = createSlice({
       })
       .addCase(fetchPostDetails.fulfilled, (state) => {
         // Keep loading state - will be cleared by handlePostDetailsFetched
-        console.log('📤 Post details fetch request sent successfully');
+        console.log("📤 Post details fetch request sent successfully");
       })
       .addCase(fetchPostDetails.rejected, (state, action) => {
         state.isLoadingPostDetails = false;
-        state.postDetailsError = action.payload || 'Failed to fetch post details';
-        console.error('❌ Post details fetch request failed:', action.payload);
+        state.postDetailsError =
+          action.payload || "Failed to fetch post details";
+        console.error("❌ Post details fetch request failed:", action.payload);
       });
 
     // Handle fetchUserPosts async thunk
@@ -823,12 +871,12 @@ const postsSlice = createSlice({
       })
       .addCase(fetchUserPosts.fulfilled, (state) => {
         // Keep loading state - will be cleared by handleUserPostsFetched
-        console.log('📤 User posts fetch request sent successfully');
+        console.log("📤 User posts fetch request sent successfully");
       })
       .addCase(fetchUserPosts.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload || 'Failed to fetch user posts';
-        console.error('❌ User posts fetch request failed:', action.payload);
+        state.error = action.payload || "Failed to fetch user posts";
+        console.error("❌ User posts fetch request failed:", action.payload);
       });
   },
 });
@@ -854,9 +902,17 @@ export default postsSlice.reducer;
 
 // Selectors
 export const selectPosts = (state: { posts: PostsState }) => state.posts.posts;
-export const selectUserPosts = (state: { posts: PostsState }) => state.posts.userPosts;
-export const selectCurrentPostDetails = (state: { posts: PostsState }) => state.posts.currentPostDetails;
-export const selectPostsLoading = (state: { posts: PostsState }) => state.posts.isLoading;
-export const selectPostDetailsLoading = (state: { posts: PostsState }) => state.posts.isLoadingPostDetails;
-export const selectPostsError = (state: { posts: PostsState }) => state.posts.error;
-export const selectPostDetailsError = (state: { posts: PostsState }) => state.posts.postDetailsError;
+export const selectUserPosts = (state: { posts: PostsState }) =>
+  state.posts.userPosts;
+export const selectCurrentPostDetails = (state: { posts: PostsState }) =>
+  state.posts.currentPostDetails;
+export const selectPostsLoading = (state: { posts: PostsState }) =>
+  state.posts.isLoading;
+export const selectPostDetailsLoading = (state: { posts: PostsState }) =>
+  state.posts.isLoadingPostDetails;
+export const selectPostsError = (state: { posts: PostsState }) =>
+  state.posts.error;
+export const selectPostDetailsError = (state: { posts: PostsState }) =>
+  state.posts.postDetailsError;
+
+export const selectCurrentPostWithReplies = (state: { posts: PostsState }) => state.posts.currentPostWithReplies;

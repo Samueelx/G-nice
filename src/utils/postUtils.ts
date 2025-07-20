@@ -1,44 +1,7 @@
 // utils/postUtils.ts
-
-export interface PostDetailsRequest {
-  EditableType: {
-    EditableType: string;
-  };
-  PostsWithReplys: Array<{
-    PostId: number;
-    Comment: string;
-    Created: string;
-    Upvotes: number;
-    Downvotes: number;
-    Cancel: boolean;
-    User: {
-      UserId: number;
-      Username: string;
-      Contacts: number;
-      Cancel: boolean;
-      Verified: boolean;
-    };
-    Replys: Array<{
-      PostId: number;
-      Comment: string;
-      Created: string;
-      Upvotes: number;
-      Downvotes: number;
-      Cancel: boolean;
-      User: {
-        UserId: number;
-        Username: string;
-        Contacts: number;
-        Cancel: boolean;
-        Verified: boolean;
-      };
-    }>;
-  }>;
-}
-
-export interface Post {
-  id?: string;
+interface Post {
   PostId?: number;
+  id?: string;
   Comment?: string;
   content?: string;
   Created?: string;
@@ -48,115 +11,177 @@ export interface Post {
   Downvotes?: number;
   downvotes?: number;
   User?: {
-    UserId: number;
-    Username: string;
-    Contacts: number;
-    Cancel: boolean;
-    Verified: boolean;
+    Username?: string;
+    UserId?: number;
+    Verified?: boolean;
   };
   author?: string;
-  Cancel?: boolean;
   Replys?: any[];
+  replies?: any[];
 }
 
 /**
- * Creates a WebSocket request to fetch a specific post with its replies
- * @param post - The post object to fetch details for
- * @returns The formatted request object for the WebSocket
+ * Validates if a post object has the necessary data to fetch details
  */
-export const createPostDetailsRequest = (post: Post): PostDetailsRequest => {
-  // Extract post ID - could be in different fields
-  const postId = post.PostId || parseInt(post.id || '0');
+export const isValidPostForDetails = (post: any): boolean => {
+  if (!post) return false;
   
-  // Extract other fields with fallbacks
-  const comment = post.Comment || post.content || '';
-  const created = post.Created || post.createdAt || new Date().toISOString();
-  const upvotes = post.Upvotes || post.upvotes || 0;
-  const downvotes = post.Downvotes || post.downvotes || 0;
+  // Check if we have a valid post ID
+  const hasValidId = post.PostId !== undefined || post.id !== undefined;
   
-  // Extract user info
-  const user = post.User || {
-    UserId: 0,
-    Username: post.author || 'Unknown',
-    Contacts: 0,
-    Cancel: false,
-    Verified: false
-  };
+  // For debugging
+  console.log('Validating post for details:', {
+    post,
+    hasValidId,
+    PostId: post.PostId,
+    id: post.id
+  });
+  
+  return hasValidId;
+};
 
-  const request: PostDetailsRequest = {
+/**
+ * Fetches post details by sending a WebSocket message
+ */
+export const fetchPostDetails = (post: Post, sendMessage: (message: any) => void) => {
+  if (!isValidPostForDetails(post)) {
+    console.error('Invalid post data for fetching details:', post);
+    return;
+  }
+
+  // Get the post ID (prioritize PostId over id)
+  const postId = post.PostId ?? (post.id ? parseInt(post.id) : 0);
+  
+  // Create the request message based on your server's expected format
+  const requestMessage = {
     EditableType: {
       EditableType: "POST"
     },
-    PostsWithReplys: [
-      {
-        PostId: postId,
-        Comment: comment,
-        Created: created,
-        Upvotes: upvotes,
-        Downvotes: downvotes,
+    PostsWithReplys: [{
+      PostId: postId,
+      Comment: post.Comment || post.content || "",
+      Created: post.Created || post.createdAt || "",
+      Upvotes: post.Upvotes || post.upvotes || 0,
+      Downvotes: post.Downvotes || post.downvotes || 0,
+      Cancel: false,
+      User: {
+        UserId: post.User?.UserId || 0,
+        Username: post.User?.Username || post.author || "",
+        Contacts: 0,
         Cancel: false,
-        User: {
-          UserId: user.UserId,
-          Username: user.Username,
-          Contacts: user.Contacts || 0,
-          Cancel: user.Cancel || false,
-          Verified: user.Verified || false
-        },
-        Replys: post.Replys || []
-      }
-    ]
+        Verified: post.User?.Verified || false
+      },
+      Replys: [] // Empty array as we're requesting the full data
+    }]
   };
 
-  return request;
+  console.log('📤 Sending post details request:', requestMessage);
+  sendMessage(requestMessage);
 };
 
 /**
- * Sends a request to fetch post details with replies via WebSocket
- * @param post - The post to fetch details for
- * @param sendMessage - The WebSocket send function
+ * Formats post data from server response to a consistent format
  */
-export const fetchPostDetails = (post: Post, sendMessage: (message: any) => void) => {
-  const request = createPostDetailsRequest(post);
-  
-  console.log('🔍 Fetching post details for post:', post.PostId || post.id);
-  console.log('📤 Sending post details request:', request);
-  
-  sendMessage(request);
-};
+export const formatPostData = (serverPost: any) => {
+  if (!serverPost) return null;
 
-/**
- * Utility to check if a post object has the minimum required fields
- * @param post - The post object to validate
- * @returns boolean indicating if the post is valid for fetching details
- */
-export const isValidPostForDetails = (post: Post): boolean => {
-  const hasId = !!(post.PostId || post.id);
-  const hasContent = !!(post.Comment || post.content);
-  
-  return hasId && hasContent;
-};
+  console.log('Formatting server post data:', serverPost);
 
-/**
- * Helper to format post data for display
- * @param post - Raw post data from server
- * @returns Formatted post object
- */
-export const formatPostData = (post: any) => {
-  return {
+  // Handle the case where serverPost might be an array (from PostsWithReplys)
+  const post = Array.isArray(serverPost) ? serverPost[0] : serverPost;
+  
+  if (!post) return null;
+
+  const formattedPost = {
     id: post.PostId?.toString() || post.id,
-    PostId: post.PostId,
+    PostId: post.PostId || (post.id ? parseInt(post.id) : undefined),
     content: post.Comment || post.content,
-    Comment: post.Comment,
-    author: post.User?.Username || post.author,
-    User: post.User,
+    Comment: post.Comment || post.content,
     createdAt: post.Created || post.createdAt,
-    Created: post.Created,
+    Created: post.Created || post.createdAt,
     upvotes: post.Upvotes || post.upvotes || 0,
-    Upvotes: post.Upvotes,
+    Upvotes: post.Upvotes || post.upvotes || 0,
     downvotes: post.Downvotes || post.downvotes || 0,
-    Downvotes: post.Downvotes,
+    Downvotes: post.Downvotes || post.downvotes || 0,
+    author: post.User?.Username || post.author,
+    User: {
+      Username: post.User?.Username || post.author,
+      UserId: post.User?.UserId || post.User?.userId || 0,
+      Verified: post.User?.Verified || false,
+      Contacts: post.User?.Contacts || 0
+    },
     replies: post.Replys || post.replies || [],
-    Replys: post.Replys,
-    verified: post.User?.Verified || false
+    Replys: post.Replys || post.replies || []
   };
+
+  console.log('✅ Formatted post data:', formattedPost);
+  return formattedPost;
+};
+
+/**
+ * Extracts post ID from various possible formats
+ */
+export const getPostId = (post: any): string | null => {
+  if (!post) return null;
+  
+  if (post.PostId !== undefined) return post.PostId.toString();
+  if (post.id !== undefined) return post.id.toString();
+  
+  return null;
+};
+
+/**
+ * Creates a consistent user object from various formats
+ */
+export const formatUserData = (user: any) => {
+  if (!user) return null;
+  
+  return {
+    username: user.Username || user.username,
+    userId: user.UserId || user.userId || user.id,
+    verified: user.Verified || user.verified || false,
+    contacts: user.Contacts || user.contacts || 0
+  };
+};
+
+/**
+ * Formats date strings consistently
+ */
+export const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+  
+  try {
+    // Handle the format "23-05-2025-10:23:23" (DD-MM-YYYY-HH:mm:ss)
+    if (dateString.includes('-') && dateString.split('-').length >= 3) {
+      const parts = dateString.split('-');
+      if (parts.length === 4) {
+        // Format: DD-MM-YYYY-HH:mm:ss
+        const [day, month, year, time] = parts;
+        const isoString = `${year}-${month}-${day}T${time}`;
+        const date = new Date(isoString);
+        
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+        }
+      }
+    }
+    
+    // Try parsing as a standard date
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    }
+    
+    // If all else fails, return the original string
+    return dateString;
+  } catch (error) {
+    console.warn('Error formatting date:', dateString, error);
+    return dateString;
+  }
 };

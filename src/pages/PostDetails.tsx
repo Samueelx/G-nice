@@ -1,35 +1,54 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { ArrowLeft, MessageCircle, Share, MoreHorizontal, Calendar, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { RootState } from '@/store/store';
+import { ArrowLeft, MessageCircle, Share, MoreHorizontal, Calendar, ThumbsUp } from 'lucide-react';
+import { AppDispatch } from '@/store/store';
 import { useWebSocketContext } from '@/context/useWebSocketContext';
-import { formatPostData } from '@/utils/postUtils';
+import { 
+  fetchPostDetails, 
+  clearPostDetails,
+  selectCurrentPostDetails,
+  selectPostDetailsLoading,
+  selectPostDetailsError
+} from '@/features/posts/postsSlice';
 
 const PostDetails: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   
-  const { currentPostWithReplies, isLoading, error } = useSelector((state: RootState) => state.posts);
-  const { isConnected, sendPostInteraction } = useWebSocketContext();
+  // Use the correct selectors from your slice
+  const currentPostDetails = useSelector(selectCurrentPostDetails);
+  const isLoading = useSelector(selectPostDetailsLoading);
+  const error = useSelector(selectPostDetailsError);
   
-  const [post, setPost] = useState<any>(null);
-  const [replies, setReplies] = useState<any[]>([]);
+  const { isConnected, sendMessage } = useWebSocketContext();
 
-  // Update local state when currentPostWithReplies changes
+  // Fetch post details when component mounts or postId changes
   useEffect(() => {
-    if (currentPostWithReplies) {
-      const formattedPost = formatPostData(currentPostWithReplies);
-      setPost(formattedPost);
-      setReplies(formattedPost.replies || []);
+    if (postId && isConnected) {
+      const postIdNumber = parseInt(postId, 10);
+      if (!isNaN(postIdNumber)) {
+        // Fix: Remove sendMessage from the condition and pass it as parameter
+        dispatch(fetchPostDetails({
+          postId: postIdNumber,
+          sendMessage
+        }));
+      }
     }
-  }, [currentPostWithReplies]);
+
+    // Cleanup when component unmounts
+    return () => {
+      dispatch(clearPostDetails());
+    };
+  }, [postId, isConnected, dispatch, sendMessage]);
 
   // Handle post interactions
   const handleInteraction = (action: string, data?: any) => {
-    if (post && sendPostInteraction) {
-      sendPostInteraction(post.id || post.PostId.toString(), action, data);
+    if (currentPostDetails?.post && sendMessage) {
+      // You can implement post interactions here
+      console.log('Post interaction:', action, data);
+      // Example: sendMessage({ action, postId: currentPostDetails.post.id, ...data });
     }
   };
 
@@ -51,6 +70,7 @@ const PostDetails: React.FC = () => {
     }
   };
 
+  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 flex items-center justify-center">
@@ -62,6 +82,7 @@ const PostDetails: React.FC = () => {
     );
   }
 
+  // Show error state
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 flex items-center justify-center">
@@ -70,18 +91,37 @@ const PostDetails: React.FC = () => {
             <p className="text-lg font-medium">Error loading post</p>
             <p className="text-sm mt-2">{error}</p>
           </div>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            Go Back
-          </button>
+          <div className="space-x-4">
+            <button
+              onClick={() => {
+                if (postId) {
+                  const postIdNumber = parseInt(postId, 10);
+                  if (!isNaN(postIdNumber)) {
+                    dispatch(fetchPostDetails({
+                      postId: postIdNumber,
+                      sendMessage
+                    }));
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!post) {
+  // Show not found state
+  if (!currentPostDetails) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
@@ -96,6 +136,8 @@ const PostDetails: React.FC = () => {
       </div>
     );
   }
+
+  const { post, replies } = currentPostDetails;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50">
@@ -127,24 +169,18 @@ const PostDetails: React.FC = () => {
           {/* Post Header */}
           <div className="flex items-start gap-4 mb-4">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-lg">
-              {post.User?.Username?.[0]?.toUpperCase() || post.author?.[0]?.toUpperCase() || 'U'}
+              {post.author?.[0]?.toUpperCase() || 'U'}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-bold text-gray-800">
-                  {post.User?.Username || post.author || 'Unknown User'}
+                  {post.author || 'Unknown User'}
                 </h3>
-                {post.User?.Verified && (
-                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
+                {/* Add verified badge if needed */}
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Calendar className="w-4 h-4" />
-                <span>{formatDate(post.Created || post.createdAt || '')}</span>
+                <span>{formatDate(post.createdAt || post.timestamp || '')}</span>
               </div>
             </div>
             <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -155,9 +191,21 @@ const PostDetails: React.FC = () => {
           {/* Post Content */}
           <div className="mb-6">
             <p className="text-gray-800 text-lg leading-relaxed">
-              {post.Comment || post.content}
+              {post.content || post.body}
             </p>
           </div>
+
+          {/* Post Media */}
+          {post.image && (
+            <div className="mb-6">
+              <img 
+                src={post.image} 
+                alt="Post content" 
+                className="rounded-lg max-w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+          )}
 
           {/* Post Stats */}
           <div className="flex items-center gap-6 py-3 border-t border-gray-100">
@@ -166,14 +214,7 @@ const PostDetails: React.FC = () => {
               className="flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors"
             >
               <ThumbsUp className="w-5 h-5" />
-              <span className="font-medium">{post.Upvotes || post.upvotes || 0}</span>
-            </button>
-            <button
-              onClick={() => handleInteraction('downvote')}
-              className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors"
-            >
-              <ThumbsDown className="w-5 h-5" />
-              <span className="font-medium">{post.Downvotes || post.downvotes || 0}</span>
+              <span className="font-medium">{post.likes || 0}</span>
             </button>
             <button
               onClick={() => handleInteraction('reply')}
@@ -206,27 +247,20 @@ const PostDetails: React.FC = () => {
             </div>
           ) : (
             replies.map((reply, index) => (
-              <div key={reply.PostId || index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div key={reply.id || index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 {/* Reply Header */}
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold">
-                    {reply.User?.Username?.[0]?.toUpperCase() || 'U'}
+                    {reply.author?.[0]?.toUpperCase() || 'U'}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-semibold text-gray-800">
-                        {reply.User?.Username || 'Unknown User'}
+                        {reply.author || 'Unknown User'}
                       </h4>
-                      {reply.User?.Verified && (
-                        <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
-                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
                     </div>
                     <p className="text-sm text-gray-500">
-                      {formatDate(reply.Created || '')}
+                      {formatDate(reply.createdAt || reply.timestamp || '')}
                     </p>
                   </div>
                 </div>
@@ -234,28 +268,33 @@ const PostDetails: React.FC = () => {
                 {/* Reply Content */}
                 <div className="mb-4">
                   <p className="text-gray-800 leading-relaxed">
-                    {reply.Comment}
+                    {reply.content}
                   </p>
                 </div>
+
+                {/* Reply Media */}
+                {reply.imageUrl && (
+                  <div className="mb-4">
+                    <img 
+                      src={reply.imageUrl} 
+                      alt="Reply content" 
+                      className="rounded-lg max-w-full h-auto"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
 
                 {/* Reply Actions */}
                 <div className="flex items-center gap-4 text-sm">
                   <button
-                    onClick={() => handleInteraction('upvote_reply', { replyId: reply.PostId })}
+                    onClick={() => handleInteraction('upvote_reply', { replyId: reply.id })}
                     className="flex items-center gap-1 text-gray-600 hover:text-green-600 transition-colors"
                   >
                     <ThumbsUp className="w-4 h-4" />
-                    <span>{reply.Upvotes || 0}</span>
+                    <span>{reply.likes || 0}</span>
                   </button>
                   <button
-                    onClick={() => handleInteraction('downvote_reply', { replyId: reply.PostId })}
-                    className="flex items-center gap-1 text-gray-600 hover:text-red-600 transition-colors"
-                  >
-                    <ThumbsDown className="w-4 h-4" />
-                    <span>{reply.Downvotes || 0}</span>
-                  </button>
-                  <button
-                    onClick={() => handleInteraction('reply_to_reply', { replyId: reply.PostId })}
+                    onClick={() => handleInteraction('reply_to_reply', { replyId: reply.id })}
                     className="text-gray-600 hover:text-purple-600 transition-colors"
                   >
                     Reply
@@ -270,7 +309,7 @@ const PostDetails: React.FC = () => {
         {!isConnected && (
           <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
             <p className="text-yellow-800 font-medium">
-              ⚠️ Not connected to live feed. Interactions may not work properly.
+              ⚠️ Not connected to live feed. Please check your connection.
             </p>
           </div>
         )}
