@@ -1,87 +1,98 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom"; // Add this import
 import SocialPost from "@/components/common/SocialPost";
-import data from "@/data.json";
 import JokeJumbotron from "@/components/templates/JokeJumbotron";
-import { useWebSocketContext } from "@/context/useWebSocketContext"; // Updated import
-import { Menu, Wifi, WifiOff, Bell, BellOff } from "lucide-react";
+import { useWebSocketContext } from "@/context/useWebSocketContext";
+import { useWebSocketPostsHandler } from "@/features/posts/useWebSocketPostsHandler";
+import { fetchPostDetails, isValidPostForDetails } from "@/utils/postUtils"; // Add this import
+import { Menu, Wifi, WifiOff, Bell, BellOff, Eye } from "lucide-react"; // Add Eye icon
+import { 
+  fetchPosts
+} from "@/features/posts/postsSlice";
+import { RootState } from "@/store/store";
 
 interface LandingPageProps {
   setIsSidebarOpen: (isOpen: boolean) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
-  const [posts, setPosts] = useState(data); // Initialize with static data
+  const dispatch = useDispatch();
+  const navigate = useNavigate(); // Add navigation hook
+  
+  // Get posts from Redux store
+  const { posts, isLoading, error, currentPostWithReplies } = useSelector((state: RootState) => state.posts);
+  
   const [showConnectionStatus, setShowConnectionStatus] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
   const [notifications, setNotifications] = useState(true);
+  const [loadingPostDetails, setLoadingPostDetails] = useState<string | null>(null); // Track which post is loading
 
-  // Use WebSocket context instead of useWebSocket hook
+  // Use WebSocket context
   const {
-    messages,
     isConnected,
-    error,
+    error: wsError,
     status,
     sendPostInteraction,
     sendMessage
   } = useWebSocketContext();
 
-  // Process incoming WebSocket messages
+  // Use the WebSocket posts handler hook - this will handle all WebSocket message processing
+  useWebSocketPostsHandler();
+
+  console.log('Full Redux state:', {
+    posts: posts,
+    isLoading: isLoading,
+    error: error,
+    currentPostWithReplies: currentPostWithReplies,
+    fullState: useSelector((state: RootState) => state.posts)
+  });
+
+  // Fetch posts when component mounts
   useEffect(() => {
-    if (messages && messages.length > 0) {
-      const latestMessage = messages[messages.length - 1];
-      console.log('Processing WebSocket message in LandingPage:', latestMessage);
+    if (isConnected) {
+      console.log("🚀 Fetching posts on component mount");
+      dispatch(fetchPosts({ sendMessage }));
+    }
+  }, [isConnected, dispatch, sendMessage]);
 
-      switch (latestMessage.type) {
-        case 'new_post':
-          // Add new post to the top of the feed
-          if (latestMessage.payload && latestMessage.payload.post) {
-            setPosts(prevPosts => [latestMessage.payload.post, ...prevPosts]);
-            setNewPostsCount(prev => prev + 1);
-            
-            // Show notification if enabled
-            if (notifications && 'Notification' in window && Notification.permission === 'granted') {
-              new Notification('New Post Available!', {
-                body: `New post from ${latestMessage.payload.post.author || 'Unknown'}`,
-                icon: '/g-icon.svg'
-              });
-            }
-          }
-          break;
+  // Listen for post with replies updates
+  useEffect(() => {
+    if (currentPostWithReplies && loadingPostDetails) {
+      console.log('📍 Post details loaded, navigating to post page');
+      setLoadingPostDetails(null);
+      
+      // Navigate to the post details page
+      // You can adjust this route as needed
+      navigate(`/post/${currentPostWithReplies.PostId || currentPostWithReplies.id}`);
+    }
+  }, [currentPostWithReplies, loadingPostDetails, navigate]);
 
-        case 'post_update':
-          // Update existing post
-          if (latestMessage.payload && latestMessage.payload.postId) {
-            setPosts(prevPosts => 
-              prevPosts.map(post => 
-                post.id === latestMessage.payload.postId 
-                  ? { ...post, ...latestMessage.payload.updates }
-                  : post
-              )
-            );
-          }
-          break;
-
-        case 'post_deleted':
-          // Remove deleted post
-          if (latestMessage.payload && latestMessage.payload.postId) {
-            setPosts(prevPosts => 
-              prevPosts.filter(post => post.id !== latestMessage.payload.postId)
-            );
-          }
-          break;
-
-        case 'posts_sync':
-          // Full posts synchronization
-          if (latestMessage.payload && latestMessage.payload.posts) {
-            setPosts(latestMessage.payload.posts);
-          }
-          break;
-
-        default:
-          console.log('Unhandled message type:', latestMessage.type);
+  // Listen for posts count changes to show notifications
+  useEffect(() => {
+    // This will run whenever posts array changes
+    // You can add logic here to detect new posts and show notifications
+    const currentPostsCount = posts.length;
+    
+    // Only show notification if we have posts and not loading
+    if (currentPostsCount > 0 && !isLoading) {
+      // Check if this is a new post (you might want to implement better logic here)
+      // For now, we'll just check if posts count increased
+      
+      // Show notification if enabled
+      if (notifications && 'Notification' in window && Notification.permission === 'granted') {
+        const latestPost = posts[0]; // Assuming newest posts are first
+        if (latestPost && latestPost.author) {
+          // Only show notification for posts from other users
+          // You might want to check against current user ID
+          new Notification('New Post Available!', {
+            body: `New post from ${latestPost.author}`,
+            icon: '/g-icon.svg'
+          });
+        }
       }
     }
-  }, [messages, notifications]);
+  }, [posts.length, isLoading, notifications, posts]);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -105,21 +116,37 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
     setNewPostsCount(0);
   }, []);
 
-  // Handle post interactions - now using context method
+  // Handle post interactions
   const handlePostInteraction = useCallback((postId: string, action: string, data?: any) => {
     sendPostInteraction(postId, action, data);
   }, [sendPostInteraction]);
 
-  // Send additional subscription when this component mounts (optional)
-  useEffect(() => {
-    if (isConnected) {
-      console.log("LandingPage: Ensuring posts subscription");
-      sendMessage('subscribe_posts', {
-        userId: 'current_user',
-        feed_type: 'main_feed'
-      });
+  // Handle post click to view details
+  const handlePostClick = useCallback((post: any) => {
+    if (!isConnected) {
+      console.warn('Cannot fetch post details: WebSocket not connected');
+      return;
     }
+
+    if (!isValidPostForDetails(post)) {
+      console.warn('Invalid post data for fetching details:', post);
+      return;
+    }
+
+    const postId = post.PostId?.toString() || post.id;
+    console.log('👁️ User clicked on post:', postId);
+    
+    setLoadingPostDetails(postId);
+    fetchPostDetails(post, sendMessage);
   }, [isConnected, sendMessage]);
+
+  // Refresh posts manually
+  const refreshPosts = useCallback(() => {
+    if (isConnected) {
+      console.log("🔄 Manually refreshing posts");
+      dispatch(fetchPosts({ sendMessage }));
+    }
+  }, [isConnected, dispatch, sendMessage]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 overflow-x-hidden">
@@ -161,6 +188,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
                     {newPostsCount} new
                   </button>
                 )}
+
+                {/* Refresh button */}
+                <button
+                  onClick={refreshPosts}
+                  className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
+                  title="Refresh posts"
+                  disabled={isLoading}
+                >
+                  <svg className={`w-4 h-4 text-purple-600 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
 
                 {/* Notifications toggle */}
                 <button
@@ -218,11 +257,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
                       Live Feed: {isConnected ? 'Connected ✅' : 'Disconnected ❌'}
                     </p>
                     <p className="text-xs opacity-75">
-                      Status: {status} | Messages: {messages?.length || 0}
+                      Status: {status} | Posts: {posts.length}
                     </p>
                   </div>
-                  {error && (
-                    <p className="text-xs text-red-600">Error: {error}</p>
+                  {(wsError || error) && (
+                    <p className="text-xs text-red-600">Error: {wsError || error}</p>
                   )}
                 </div>
               </div>
@@ -251,35 +290,125 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
           </div>
         )}
 
-        {/* Posts Grid - Single column on mobile, centered on desktop */}
-        <div className="grid gap-4 grid-cols-1 max-w-2xl mx-auto">
-          {posts.map((post, index) => (
-            <div key={post.id || index} className="relative">
-              {/* New post indicator */}
-              {index < newPostsCount && (
-                <div className="absolute -top-2 -right-2 z-10">
-                  <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                    New!
+        {/* Loading State */}
+        {isLoading && posts.length === 0 && (
+          <div className="max-w-2xl mx-auto text-center py-8">
+            <div className="text-gray-500">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <p className="text-lg font-medium">Loading posts...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && posts.length === 0 && (
+          <div className="max-w-2xl mx-auto text-center py-8">
+            <div className="text-red-500">
+              <p className="text-lg font-medium mb-2">Error loading posts</p>
+              <p className="text-sm mb-4">{error}</p>
+              <button
+                onClick={refreshPosts}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Posts Grid - Show posts even if loading is true, as long as we have posts */}
+        {posts.length > 0 && (
+          <div className="grid gap-4 grid-cols-1 max-w-2xl mx-auto">
+            {posts.map((post, index) => {
+              const postId = post.PostId?.toString() || post.id;
+              const isLoadingDetails = loadingPostDetails === postId;
+              
+              return (
+                <div key={post.id || index} className="relative group">
+                  {/* New post indicator */}
+                  {index < newPostsCount && (
+                    <div className="absolute -top-2 -right-2 z-10">
+                      <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                        New!
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* View Details Button Overlay */}
+                  <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePostClick(post);
+                      }}
+                      disabled={isLoadingDetails || !isConnected}
+                      className={`
+                        flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all
+                        ${isLoadingDetails 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-white/90 text-purple-600 hover:bg-purple-100 hover:text-purple-700 shadow-sm'
+                        }
+                      `}
+                      title={isLoadingDetails ? 'Loading post details...' : 'View post details'}
+                    >
+                      {isLoadingDetails ? (
+                        <>
+                          <div className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+                          <span>Loading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3 h-3" />
+                          <span>View</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Make the entire post clickable */}
+                  <div 
+                    className="cursor-pointer transform transition-transform duration-200 hover:scale-[1.02]"
+                    onClick={() => handlePostClick(post)}
+                  >
+                    <SocialPost 
+                      {...post}
+                      onInteraction={(action, data) => handlePostInteraction(post.id || `post-${index}`, action, data)}
+                    />
                   </div>
                 </div>
-              )}
-              
-              <SocialPost 
-                {...post}
-                onInteraction={(action, data) => handlePostInteraction(post.id || `post-${index}`, action, data)}
-              />
-            </div>
-          ))}
-        </div>
+              );
+            })}
+            
+            {/* Loading indicator at the bottom if loading more posts */}
+            {isLoading && (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* No posts message */}
-        {posts.length === 0 && (
+        {/* No posts message - only show if not loading and no posts */}
+        {!isLoading && posts.length === 0 && !error && (
           <div className="max-w-2xl mx-auto text-center py-8">
             <div className="text-gray-500">
               <p className="text-lg font-medium mb-2">No posts available</p>
               <p className="text-sm">
-                {isConnected ? 'Waiting for new posts...' : 'Connect to see live posts'}
+                {isConnected ? 'Be the first to create a post!' : 'Connect to see posts'}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Post details loading indicator */}
+        {loadingPostDetails && (
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full mx-4">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <p className="text-lg font-medium text-gray-800 mb-2">Loading Post Details</p>
+                <p className="text-sm text-gray-600">Fetching post and replies...</p>
+              </div>
             </div>
           </div>
         )}
@@ -287,7 +416,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
         {/* Debug info (only in development) */}
         {process.env.NODE_ENV === 'development' && (
           <div className="max-w-2xl mx-auto mt-8 p-4 bg-gray-100 rounded-lg text-xs text-gray-600">
-            <p>Debug: Posts: {posts.length} | WS Messages: {messages?.length || 0} | Connected: {isConnected ? 'Yes' : 'No'}</p>
+            <p>Debug: Posts: {posts.length} | Loading: {isLoading ? 'Yes' : 'No'} | Connected: {isConnected ? 'Yes' : 'No'}</p>
+            <p>Error: {error || 'None'} | WS Error: {wsError || 'None'}</p>
+            <p>Loading Post Details: {loadingPostDetails || 'None'} | Current Post: {currentPostWithReplies ? 'Loaded' : 'None'}</p>
           </div>
         )}
       </main>

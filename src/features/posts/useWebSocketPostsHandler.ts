@@ -8,11 +8,15 @@ import {
   handleUserPostsFetched,
   handlePostsError,
   handleNewPostReceived,
-  handlePostUpdated
+  handlePostUpdated,
+  handlePostDetailsFetched, // Fixed: Use the correct action name
+  handlePostDetailsError    // Fixed: Use the correct action name
 } from '@/features/posts/postsSlice';
 
 interface ServerResponse {
   Posts?: any[];
+  PostWithReplies?: any[]; // Server response format
+  postWithReplies?: any[]; // Alternative format
   ResultCode: number;
   ResultMessage: string;
   ResultId: number;
@@ -102,9 +106,26 @@ const processMessage = (message: any, dispatch: any) => {
     const isSuccess = serverResponse.ResultCode === 200;
     
     if (isSuccess) {
+      // Check for post with replies response (both possible formats)
+      if (serverResponse.PostWithReplies || serverResponse.postWithReplies) {
+        const postWithReplies = serverResponse.PostWithReplies || serverResponse.postWithReplies;
+        
+        // Create the proper payload structure for the slice
+        const payload = {
+          PostsWithReplys: postWithReplies,
+          ResultCode: serverResponse.ResultCode,
+          ResultMessage: serverResponse.ResultMessage,
+          ResultId: serverResponse.ResultId,
+          EditableType: serverResponse.EditableType
+        };
+        
+        dispatch(handlePostDetailsFetched(payload));
+        console.log('✅ Post details fetched successfully:', postWithReplies[0]);
+        return;
+      }
+      
       if (serverResponse.Posts && serverResponse.Posts.length > 0) {
         // Check EditableType to determine the operation
-        // Based on your server response, EditableType: 1 seems to be for POST creation
         if (serverResponse.EditableType === 1) {
           // This is a post creation response
           dispatch(handlePostCreated(serverResponse));
@@ -119,6 +140,15 @@ const processMessage = (message: any, dispatch: any) => {
       }
     } else {
       const errorMessage = serverResponse.ResultMessage || 'Server error occurred';
+      
+      // Check if this was a post with replies request that failed
+      // Look for indicators that this was a post details request
+      if (serverResponse.EditableType === 1 && !serverResponse.Posts) {
+        dispatch(handlePostDetailsError(errorMessage));
+        console.error('❌ Post details fetch error:', errorMessage, 'Code:', serverResponse.ResultCode);
+        return;
+      }
+      
       // For post creation errors, use the specific error handler
       if (serverResponse.EditableType === 1) {
         dispatch(handlePostCreationError(errorMessage));
@@ -185,6 +215,25 @@ const handleLegacyMessage = (message: LegacyMessage, dispatch: any) => {
       }
       break;
 
+    case 'post_details_fetched':
+    case 'post_with_replies_fetched':
+      if (message.success && message.data) {
+        // Convert legacy format to expected server response format
+        const payload = {
+          PostsWithReplys: Array.isArray(message.data) ? message.data : [message.data],
+          ResultCode: 200,
+          ResultMessage: 'success',
+          ResultId: 0,
+          EditableType: 1
+        };
+        dispatch(handlePostDetailsFetched(payload));
+        console.log('✅ Post details fetched successfully (legacy):', message.data);
+      } else {
+        dispatch(handlePostDetailsError(message.error || 'Failed to fetch post details'));
+        console.error('❌ Post details fetch failed (legacy):', message.error);
+      }
+      break;
+
     case 'new_post_broadcast':
       if (message.success && message.data) {
         dispatch(handleNewPostReceived(message.data));
@@ -204,6 +253,9 @@ const handleLegacyMessage = (message: LegacyMessage, dispatch: any) => {
       if (message.context === 'posts') {
         dispatch(handlePostsError(message.message || 'An error occurred'));
         console.error('❌ Posts error (legacy):', message.message);
+      } else if (message.context === 'post_details' || message.context === 'post_with_replies') {
+        dispatch(handlePostDetailsError(message.message || 'An error occurred'));
+        console.error('❌ Post details error (legacy):', message.message);
       }
       break;
 
