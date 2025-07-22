@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAppDispatch } from '@/hooks/hooks';
 import { useWebSocketContext } from '@/context/useWebSocketContext';
+import { getWebSocketService } from '@/services/websocketService';
 import {
   handlePostCreated,
   handlePostCreationError,
@@ -20,7 +21,8 @@ interface ServerResponse {
   ResultCode: number;
   ResultMessage: string;
   ResultId: number;
-  EditableType: number;
+  EditableType?: number;
+  Getable?: number;
 }
 
 interface LegacyMessage {
@@ -80,7 +82,40 @@ export const useWebSocketPostsHandler = () => {
     });
   }, [messages, dispatch]);
 
-  return null;
+  // NEW: Function to fetch post details
+  const fetchPostDetails = (postId: number) => {
+    const websocketService = getWebSocketService();
+    if (!websocketService) {
+      console.error('WebSocket service not available');
+      dispatch(handlePostDetailsError('WebSocket connection not available'));
+      return;
+    }
+
+    const request = {
+      "GetType": {
+        "GetType": "POST"
+      },
+      "PostsWithReplies": [
+        {
+          "PostId": postId
+        }
+      ]
+    };
+
+    console.log('🔍 Sending post details request:', request);
+    
+    // Use sendRaw to avoid adding WebSocket metadata
+    const success = websocketService.sendRaw(request);
+    
+    if (!success) {
+      console.error('Failed to send post details request');
+      dispatch(handlePostDetailsError('Failed to send request'));
+    }
+  };
+
+  return {
+    fetchPostDetails
+  };
 };
 
 const processMessage = (message: any, dispatch: any) => {
@@ -106,89 +141,107 @@ const processMessage = (message: any, dispatch: any) => {
     const isSuccess = serverResponse.ResultCode === 200;
     
     if (isSuccess) {
-      // Check for post with replies response (both possible formats)
-      if (serverResponse.PostWithReplies || serverResponse.postWithReplies) {
-        const postWithReplies = serverResponse.PostWithReplies || serverResponse.postWithReplies;
+      // FIXED: Handle post details response - check for postWithReplies (lowercase 'p') first
+      if (serverResponse.postWithReplies && Array.isArray(serverResponse.postWithReplies)) {
+        console.log('📝 Processing post with replies (lowercase):', serverResponse.postWithReplies);
         
-        console.log('📝 Processing post with replies:', postWithReplies);
-        
-        // The server response structure matches what your PostDetails expects
-        // We need to pass the first post from the array as the main post
-        const mainPost = Array.isArray(postWithReplies) ? postWithReplies[0] : postWithReplies;
-        
-        // Create the proper payload structure for the slice
-        const payload = {
-          post: mainPost, // The main post with replies
-          PostsWithReplys: postWithReplies,
-          ResultCode: serverResponse.ResultCode,
-          ResultMessage: serverResponse.ResultMessage,
-          ResultId: serverResponse.ResultId,
-          EditableType: serverResponse.EditableType
-        };
-        
-        dispatch(handlePostDetailsFetched(payload));
-        console.log('✅ Post details fetched successfully:', mainPost);
+        // The server response already matches the expected format for handlePostDetailsFetched
+        dispatch(handlePostDetailsFetched(serverResponse));
+        console.log('✅ Post details fetched successfully:', serverResponse.postWithReplies[0]);
         return;
       }
       
-      if (serverResponse.Posts && serverResponse.Posts.length > 0) {
-        // Check EditableType to determine the operation
+      // FIXED: Also check for PostWithReplies (capital P) as backup
+      if (serverResponse.PostWithReplies && Array.isArray(serverResponse.PostWithReplies)) {
+        console.log('📝 Processing post with replies (capital P):', serverResponse.PostWithReplies);
+        
+        // Convert to expected format with lowercase 'p'
+        const payload = {
+          ResultCode: serverResponse.ResultCode,
+          ResultMessage: serverResponse.ResultMessage,
+          postWithReplies: serverResponse.PostWithReplies,
+          ResultId: serverResponse.ResultId,
+          Getable: serverResponse.Getable
+        };
+        
+        dispatch(handlePostDetailsFetched(payload));
+        console.log('✅ Post details fetched successfully (PostWithReplies):', serverResponse.PostWithReplies[0]);
+        return;
+      }
+      
+      // Handle regular Posts responses
+      if (serverResponse.Posts && Array.isArray(serverResponse.Posts) && serverResponse.Posts.length > 0) {
+        // Check if this is a post details response disguised as Posts (with Replys property)
+        const firstPost = serverResponse.Posts[0];
+        if (firstPost && 'Replys' in firstPost && Array.isArray(firstPost.Replys)) {
+          console.log('📝 Processing post with replies from Posts array:', firstPost);
+          
+          // Convert Posts format to postWithReplies format
+          const payload = {
+            ResultCode: serverResponse.ResultCode,
+            ResultMessage: serverResponse.ResultMessage,
+            postWithReplies: serverResponse.Posts,
+            ResultId: serverResponse.ResultId,
+            Getable: serverResponse.Getable || serverResponse.EditableType || 1
+          };
+          
+          dispatch(handlePostDetailsFetched(payload));
+          console.log('✅ Post details fetched successfully (from Posts):', firstPost);
+          return;
+        }
+        
+        // Regular posts response handling
         if (serverResponse.EditableType === 1) {
-          // This might be a post creation response or other operation
-          // Check if this looks like a post details response disguised as Posts
-          if (serverResponse.Posts.length === 1 && serverResponse.Posts[0].Replys) {
-            // This looks like a post details response in Posts format
-            const mainPost = serverResponse.Posts[0];
-            const payload = {
-              post: mainPost,
-              PostsWithReplys: [mainPost],
-              ResultCode: serverResponse.ResultCode,
-              ResultMessage: serverResponse.ResultMessage,
-              ResultId: serverResponse.ResultId,
-              EditableType: serverResponse.EditableType
-            };
-            dispatch(handlePostDetailsFetched(payload));
-            console.log('✅ Post details fetched successfully (from Posts):', mainPost);
-            return;
-          } else {
-            // Regular post creation
-            dispatch(handlePostCreated(serverResponse));
-            console.log('✅ Post created successfully:', serverResponse.Posts[0]);
-          }
+          // This is a post creation response
+          dispatch(handlePostCreated(serverResponse));
+          console.log('✅ Post created successfully:', serverResponse.Posts[0]);
         } else {
           // This is likely a fetch posts response
           dispatch(handlePostsFetched(serverResponse));
           console.log('✅ Posts fetched successfully:', serverResponse.Posts.length, 'posts');
         }
+      } else if (serverResponse.Posts && Array.isArray(serverResponse.Posts) && serverResponse.Posts.length === 0) {
+        // Handle empty posts array - could be empty post details response
+        if (serverResponse.Getable === 1) {
+          // This looks like a post details request that returned no results
+          dispatch(handlePostDetailsError('Post not found or has no replies'));
+          console.log('📝 Post details request returned empty results');
+          return;
+        } else {
+          // Empty posts fetch
+          dispatch(handlePostsFetched(serverResponse));
+          console.log('✅ Posts fetched successfully (empty)');
+        }
       } else {
-        console.log('📝 Server response with no posts or post details:', serverResponse);
+        console.log('📝 Server response with no recognizable data structure:', serverResponse);
       }
     } else {
       const errorMessage = serverResponse.ResultMessage || 'Server error occurred';
       
-      // Check if this was a post with replies request that failed
-      // Look for indicators that this was a post details request
-      if (serverResponse.EditableType === 1 && 
-          !serverResponse.Posts && 
-          !serverResponse.PostWithReplies && 
-          !serverResponse.postWithReplies) {
+      // FIXED: Better detection for post details request failures
+      // Check if this is likely a post details request error
+      if (serverResponse.Getable === 1 || 
+          (!serverResponse.Posts && !serverResponse.EditableType) ||
+          (serverResponse.Posts && Array.isArray(serverResponse.Posts) && serverResponse.Posts.length === 0 && serverResponse.Getable)) {
         dispatch(handlePostDetailsError(errorMessage));
         console.error('❌ Post details fetch error:', errorMessage, 'Code:', serverResponse.ResultCode);
         return;
       }
       
-      // For post creation errors, use the specific error handler
+      // For post creation errors (EditableType indicates post operation)
       if (serverResponse.EditableType === 1) {
         dispatch(handlePostCreationError(errorMessage));
+        console.error('❌ Post creation error:', errorMessage, 'Code:', serverResponse.ResultCode);
       } else {
+        // General posts error
         dispatch(handlePostsError(errorMessage));
+        console.error('❌ Posts fetch error:', errorMessage, 'Code:', serverResponse.ResultCode);
       }
-      console.error('❌ Server error:', errorMessage, 'Code:', serverResponse.ResultCode);
     }
     return;
   }
 
-  // Handle legacy messages (check the wrapper message for legacy format)
+  // Handle legacy messages (keep existing logic)
   if (isLegacyMessage(message)) {
     console.log('✅ Recognized as legacy message');
     handleLegacyMessage(message, dispatch);
@@ -249,12 +302,11 @@ const handleLegacyMessage = (message: LegacyMessage, dispatch: any) => {
         // Convert legacy format to expected server response format
         const mainPost = Array.isArray(message.data) ? message.data[0] : message.data;
         const payload = {
-          post: mainPost,
-          PostsWithReplys: Array.isArray(message.data) ? message.data : [message.data],
           ResultCode: 200,
           ResultMessage: 'success',
+          postWithReplies: Array.isArray(message.data) ? message.data : [message.data],
           ResultId: 0,
-          EditableType: 1
+          Getable: 1
         };
         dispatch(handlePostDetailsFetched(payload));
         console.log('✅ Post details fetched successfully (legacy):', message.data);

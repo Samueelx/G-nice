@@ -76,15 +76,13 @@ interface ServerPostResponse {
   EditableType: number; // Server sends number, not string
 }
 
-// Fixed interface for post details response to match server format
+// FIXED: Updated interface to match the exact server response format
 interface ServerPostDetailsResponse {
-  PostsWithReplys?: PostWithReplies[]; // Optional as server might use different case
-  PostWithReplies?: PostWithReplies[]; // Alternative format
-  postWithReplies?: PostWithReplies[]; // Another alternative format
   ResultCode: number;
   ResultMessage: string;
+  postWithReplies: PostWithReplies[]; // This matches your server response (lowercase 'p')
   ResultId: number;
-  EditableType: number;
+  Getable: number; // Required field based on your response example
 }
 
 // Legacy interface for backwards compatibility
@@ -144,7 +142,7 @@ interface PostsState {
   posts: LegacyPost[];
   userPosts: LegacyPost[];
   currentPostDetails: LegacyPostDetails | null;
-  currentPostWithReplies: LegacyPostDetails | null; // ✅ Add this line
+  currentPostWithReplies: LegacyPostDetails | null;
   isLoading: boolean;
   isLoadingPostDetails: boolean;
   error: string | null;
@@ -155,7 +153,7 @@ const initialState: PostsState = {
   posts: [],
   userPosts: [],
   currentPostDetails: null,
-  currentPostWithReplies: null, // ✅ Add this line
+  currentPostWithReplies: null,
   isLoading: false,
   isLoadingPostDetails: false,
   error: null,
@@ -188,6 +186,9 @@ const formatCurrentDate = (): string => {
 // Helper function to format timestamp for display
 const formatTimestamp = (dateString: string): string => {
   try {
+    // Handle null or undefined dates
+    if (!dateString) return "now";
+    
     // Handle different date formats that might come from server
     let date: Date;
 
@@ -227,55 +228,60 @@ const formatTimestamp = (dateString: string): string => {
   }
 };
 
-// Helper function to convert new format to legacy format for component compatibility
+// FIXED: Helper function to convert new format to legacy format - handles null values
 const convertPostToLegacy = (post: Post): LegacyPost => {
+  // Handle null values from server
+  const username = post.User?.Username || "Anonymous";
+  const comment = post.Comment || "";
+  const created = post.Created || formatCurrentDate();
+  
   return {
     id: post.PostId.toString(),
     title: "", // Title is now part of Comment, you might want to extract first line
-    body: post.Comment,
-    content: post.Comment, // SocialPost expects 'content'
-    author: post.User.Username || "Anonymous", // SocialPost expects 'author'
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      post.User.Username || "Anonymous"
-    )}&background=random`,
-    timestamp: formatTimestamp(post.Created),
+    body: comment,
+    content: comment, // SocialPost expects 'content'
+    author: username, // SocialPost expects 'author'
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
+    timestamp: formatTimestamp(created),
     imageUrl: post.ImageUrl,
     videoUrl: post.VideoUrl,
     image: post.ImageUrl, // SocialPost expects 'image'
-    userId: post.User.UserId.toString(),
-    createdAt: post.Created,
-    updatedAt: post.Created,
-    likes: post.Upvotes,
+    userId: post.User?.UserId?.toString() || "0",
+    createdAt: created,
+    updatedAt: created,
+    likes: post.Upvotes || 0,
     comments: post.Replys?.length || 0, // Use actual replies count
     shares: 0,
     isLiked: false,
   };
 };
 
-// Helper function to convert reply to legacy format
+// FIXED: Helper function to convert reply to legacy format - handles null values
 const convertReplyToLegacy = (reply: Reply): LegacyReply => {
+  const username = reply.User?.Username || "Anonymous";
+  const comment = reply.Comment || "";
+  const created = reply.Created || formatCurrentDate();
+  
   return {
     id: reply.PostId.toString(),
-    content: reply.Comment,
-    author: reply.User.Username || "Anonymous",
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      reply.User.Username || "Anonymous"
-    )}&background=random`,
-    timestamp: formatTimestamp(reply.Created),
+    content: comment,
+    author: username,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
+    timestamp: formatTimestamp(created),
     imageUrl: reply.ImageUrl,
     videoUrl: reply.VideoUrl,
-    userId: reply.User.UserId.toString(),
-    createdAt: reply.Created,
-    likes: reply.Upvotes,
+    userId: reply.User?.UserId?.toString() || "0",
+    createdAt: created,
+    likes: reply.Upvotes || 0,
   };
 };
 
-// Helper function to convert PostWithReplies to LegacyPostDetails
+// FIXED: Helper function to convert PostWithReplies to LegacyPostDetails - handles null values
 const convertPostDetailsToLegacy = (
   postWithReplies: PostWithReplies
 ): LegacyPostDetails => {
   const post = convertPostToLegacy(postWithReplies as Post);
-  const replies = postWithReplies.Replys.map(convertReplyToLegacy);
+  const replies = (postWithReplies.Replys || []).map(convertReplyToLegacy);
 
   return {
     post: {
@@ -398,42 +404,28 @@ export const fetchPosts = createAsyncThunk<
   }
 });
 
-// Updated thunk for fetching post details with replies
+// FIXED: Updated thunk for fetching post details with correct payload format
 export const fetchPostDetails = createAsyncThunk<
   AsyncThunkReturn,
   {
     postId: number;
     sendMessage: (payload: any) => void;
-    postData?: Partial<Post>; // Optional post data to include in request
   },
   { rejectValue: string }
 >(
   "posts/fetchPostDetails",
-  async ({ postId, sendMessage, postData }, { rejectWithValue }) => {
+  async ({ postId, sendMessage }, { rejectWithValue }) => {
     try {
-      // Create the request payload matching the format you provided
-      const postRequest = {
-        PostId: postId,
-        Comment: postData?.Comment || "",
-        Created: postData?.Created || formatCurrentDate(),
-        Upvotes: postData?.Upvotes || 0,
-        Downvotes: postData?.Downvotes || 0,
-        Cancel: false,
-        User: postData?.User || {
-          UserId: 0,
-          Username: "",
-          Contacts: 0,
-          Cancel: false,
-          Verified: false,
-        },
-        Replys: postData?.Replys || [],
-      };
-
+      // FIXED: Create the request payload matching the exact format you specified
       const payload = {
-        EditableType: {
-          EditableType: "POST",
+        GetType: {
+          GetType: "POST"
         },
-        PostsWithReplys: [postRequest],
+        PostsWithReplies: [
+          {
+            PostId: postId
+          }
+        ]
       };
 
       console.log(
@@ -489,6 +481,7 @@ const isServerPostResponse = (
   );
 };
 
+// FIXED: Updated type guard to match exact server response format
 const isServerPostDetailsResponse = (
   payload: unknown
 ): payload is ServerPostDetailsResponse => {
@@ -497,9 +490,9 @@ const isServerPostDetailsResponse = (
     payload !== null &&
     "ResultCode" in payload &&
     "ResultMessage" in payload &&
-    ("PostsWithReplys" in payload ||
-      "PostWithReplies" in payload ||
-      "postWithReplies" in payload)
+    "postWithReplies" in payload && // Only check for the exact field name from server
+    "ResultId" in payload &&
+    "Getable" in payload
   );
 };
 
@@ -558,6 +551,7 @@ const postsSlice = createSlice({
       state.posts = [];
       state.userPosts = [];
       state.currentPostDetails = null;
+      state.currentPostWithReplies = null;
       state.error = null;
       state.postDetailsError = null;
       state.isLoading = false;
@@ -565,12 +559,12 @@ const postsSlice = createSlice({
     },
 
     // Clear current post details
-   clearPostDetails: (state) => {
-  state.currentPostDetails = null;
-  state.currentPostWithReplies = null; // ✅ Add this line
-  state.postDetailsError = null;
-  state.isLoadingPostDetails = false;
-},
+    clearPostDetails: (state) => {
+      state.currentPostDetails = null;
+      state.currentPostWithReplies = null;
+      state.postDetailsError = null;
+      state.isLoadingPostDetails = false;
+    },
 
     // Handle post creation with proper duplicate prevention
     handlePostCreated: (
@@ -767,9 +761,18 @@ const postsSlice = createSlice({
         state.currentPostDetails.post = updatedPost;
         console.log("🔄 Post updated in current post details:", updatedPost.id);
       }
+
+      // Update in currentPostWithReplies if it's the same post
+      if (
+        state.currentPostWithReplies &&
+        state.currentPostWithReplies.post.id === updatedPost.id
+      ) {
+        state.currentPostWithReplies.post = updatedPost;
+        console.log("🔄 Post updated in current post with replies:", updatedPost.id);
+      }
     },
 
-    // Handle post details fetched (NEW - this was missing!)
+    // FIXED: Handle post details fetched - updated to match exact server response
     handlePostDetailsFetched: (
       state,
       action: PayloadAction<ServerPostDetailsResponse>
@@ -780,19 +783,17 @@ const postsSlice = createSlice({
       state.postDetailsError = null;
 
       if (isServerPostDetailsResponse(action.payload)) {
-        const postWithReplies =
-          action.payload.PostsWithReplys?.[0] ||
-          action.payload.PostWithReplies?.[0] ||
-          action.payload.postWithReplies?.[0];
+        // Get the first post from the postWithReplies array (exact server format)
+        const postWithReplies = action.payload.postWithReplies?.[0];
 
         if (postWithReplies) {
           const legacyPostDetails = convertPostDetailsToLegacy(postWithReplies);
           state.currentPostDetails = legacyPostDetails;
-          state.currentPostWithReplies = legacyPostDetails; // ✅ Add this line
+          state.currentPostWithReplies = legacyPostDetails;
 
           console.log("✅ Post details fetched successfully:", {
             postId: postWithReplies.PostId,
-            repliesCount: postWithReplies.Replys.length,
+            repliesCount: postWithReplies.Replys?.length || 0,
           });
         } else {
           console.error("❌ No post data found in server response");
@@ -804,11 +805,12 @@ const postsSlice = createSlice({
       }
     },
 
-    // Handle post details fetch error (NEW - this was missing!)
+    // Handle post details fetch error
     handlePostDetailsError: (state, action: PayloadAction<string>) => {
       state.isLoadingPostDetails = false;
       state.postDetailsError = action.payload;
       state.currentPostDetails = null;
+      state.currentPostWithReplies = null;
       console.error("❌ Post details fetch failed:", action.payload);
     },
   },
@@ -900,19 +902,37 @@ export const {
 // Export reducer
 export default postsSlice.reducer;
 
-// Selectors
+// Selectors (completing the missing parts)
 export const selectPosts = (state: { posts: PostsState }) => state.posts.posts;
 export const selectUserPosts = (state: { posts: PostsState }) =>
   state.posts.userPosts;
 export const selectCurrentPostDetails = (state: { posts: PostsState }) =>
   state.posts.currentPostDetails;
-export const selectPostsLoading = (state: { posts: PostsState }) =>
+export const selectCurrentPostWithReplies = (state: { posts: PostsState }) =>
+  state.posts.currentPostWithReplies;
+export const selectIsLoading = (state: { posts: PostsState }) =>
   state.posts.isLoading;
-export const selectPostDetailsLoading = (state: { posts: PostsState }) =>
+export const selectIsLoadingPostDetails = (state: { posts: PostsState }) =>
   state.posts.isLoadingPostDetails;
-export const selectPostsError = (state: { posts: PostsState }) =>
-  state.posts.error;
+export const selectError = (state: { posts: PostsState }) => state.posts.error;
 export const selectPostDetailsError = (state: { posts: PostsState }) =>
   state.posts.postDetailsError;
 
-export const selectCurrentPostWithReplies = (state: { posts: PostsState }) => state.posts.currentPostWithReplies;
+// Additional utility selectors
+export const selectPostById = (postId: string) => (state: { posts: PostsState }) =>
+  state.posts.posts.find(post => post.id === postId);
+
+export const selectUserPostById = (postId: string) => (state: { posts: PostsState }) =>
+  state.posts.userPosts.find(post => post.id === postId);
+
+export const selectPostsCount = (state: { posts: PostsState }) =>
+  state.posts.posts.length;
+
+export const selectUserPostsCount = (state: { posts: PostsState }) =>
+  state.posts.userPosts.length;
+
+export const selectHasError = (state: { posts: PostsState }) =>
+  Boolean(state.posts.error || state.posts.postDetailsError);
+
+export const selectIsAnyLoading = (state: { posts: PostsState }) =>
+  state.posts.isLoading || state.posts.isLoadingPostDetails;

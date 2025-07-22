@@ -126,6 +126,7 @@ export class WebSocketService {
           ...message,
         };
         
+        console.log('📤 Sending WebSocket message with metadata:', messageWithId);
         this.ws.send(JSON.stringify(messageWithId));
         return true;
       } catch (error) {
@@ -134,14 +135,17 @@ export class WebSocketService {
         return false;
       }
     }
+    console.warn('Cannot send message - WebSocket not connected');
     return false;
   }
 
-  // NEW: Send raw message without adding WebSocket metadata
+  // Send raw message without adding WebSocket metadata - for server API calls
   sendRaw(message: any): boolean {
     if (this.ws?.readyState === WebSocket.OPEN) {
       try {
-        this.ws.send(JSON.stringify(message));
+        const jsonMessage = JSON.stringify(message);
+        console.log('📤 Sending raw WebSocket message:', jsonMessage);
+        this.ws.send(jsonMessage);
         return true;
       } catch (error) {
         console.error('Error sending raw WebSocket message:', error);
@@ -149,7 +153,56 @@ export class WebSocketService {
         return false;
       }
     }
+    console.warn('Cannot send raw message - WebSocket not connected');
     return false;
+  }
+
+  // NEW: Send post details request with proper format
+  sendPostDetailsRequest(postId: number): boolean {
+    const request = {
+      "GetType": {
+        "GetType": "POST"
+      },
+      "PostsWithReplies": [
+        {
+          "PostId": postId
+        }
+      ]
+    };
+
+    console.log('🔍 Sending post details request for PostId:', postId);
+    console.log('📤 Request payload:', request);
+    
+    return this.sendRaw(request);
+  }
+
+  // NEW: Send create post request with proper format
+  sendCreatePostRequest(postData: any): boolean {
+    const request = {
+      "EditableType": {
+        "EditableType": "POST"
+      },
+      "Posts": [postData]
+    };
+
+    console.log('📝 Sending create post request:', request);
+    
+    return this.sendRaw(request);
+  }
+
+  // NEW: Send fetch posts request with proper format
+  sendFetchPostsRequest(options: any = {}): boolean {
+    const request = {
+      "GetType": {
+        "GetType": "POST"
+      },
+      "Posts": [],
+      ...options
+    };
+
+    console.log('📋 Sending fetch posts request:', request);
+    
+    return this.sendRaw(request);
   }
 
   private handleOpen(): void {
@@ -177,60 +230,64 @@ export class WebSocketService {
   }
 
   private handleMessage(event: MessageEvent): void {
-  try {
-    const data = JSON.parse(event.data);
-    
-    console.log('📨 Raw WebSocket message received:', data);
-    
-    // Handle heartbeat/ping messages
-    if (data.type === 'ping') {
-      this.send({ type: 'pong', timestamp: Date.now() });
-      return;
-    }
-
-    if (data.type === 'pong') {
-      this.dispatch(updateHeartbeat(Date.now()));
-      return;
-    }
-
-    // Determine message type based on server response structure
-    let messageType = data.type;
-    
-    if (!messageType) {
-      // Infer message type from server response structure
-      if (data.Posts && Array.isArray(data.Posts)) {
-        messageType = 'posts_update';
-      } else if (data.Events && Array.isArray(data.Events)) {
-        messageType = 'events_update';
-      } else if (data.Messages && Array.isArray(data.Messages)) {
-        messageType = 'messages_update';
-      } else if (data.Notifications && Array.isArray(data.Notifications)) {
-        messageType = 'notifications_update';
-      } else if (data.ResultCode !== undefined) {
-        // Generic server response with result code
-        messageType = 'server_response';
-      } else {
-        // Default fallback
-        messageType = 'unknown';
+    try {
+      const data = JSON.parse(event.data);
+      
+      console.log('📨 Raw WebSocket message received:', data);
+      
+      // Handle heartbeat/ping messages
+      if (data.type === 'ping') {
+        this.send({ type: 'pong', timestamp: Date.now() });
+        return;
       }
+
+      if (data.type === 'pong') {
+        this.dispatch(updateHeartbeat(Date.now()));
+        return;
+      }
+
+      // Determine message type based on server response structure
+      let messageType = data.type;
+      
+      if (!messageType) {
+        // Infer message type from server response structure
+        if (data.Posts && Array.isArray(data.Posts)) {
+          messageType = 'posts_update';
+        } else if (data.postWithReplies && Array.isArray(data.postWithReplies)) {
+          messageType = 'post_details_update';
+        } else if (data.PostWithReplies && Array.isArray(data.PostWithReplies)) {
+          messageType = 'post_details_update';
+        } else if (data.Events && Array.isArray(data.Events)) {
+          messageType = 'events_update';
+        } else if (data.Messages && Array.isArray(data.Messages)) {
+          messageType = 'messages_update';
+        } else if (data.Notifications && Array.isArray(data.Notifications)) {
+          messageType = 'notifications_update';
+        } else if (data.ResultCode !== undefined) {
+          // Generic server response with result code
+          messageType = 'server_response';
+        } else {
+          // Default fallback
+          messageType = 'unknown';
+        }
+      }
+
+      console.log('📨 Message categorized as type:', messageType);
+
+      // Dispatch regular messages to the store
+      this.dispatch(addMessage({
+        id: data.id || this.generateMessageId(),
+        type: messageType,
+        payload: data.payload || data, // Use entire response as payload if no specific payload
+        timestamp: data.timestamp || Date.now(),
+        // Store original raw data for easier access
+        rawData: data,
+      }));
+    } catch (error) {
+      console.error('Error parsing WebSocket message:', error);
+      this.dispatch(setError('Failed to parse incoming message'));
     }
-
-    console.log('📨 Message categorized as type:', messageType);
-
-    // Dispatch regular messages to the store
-    this.dispatch(addMessage({
-      id: data.id || this.generateMessageId(),
-      type: messageType,
-      payload: data.payload || data, // Use entire response as payload if no specific payload
-      timestamp: data.timestamp || Date.now(),
-      // Store original raw data for easier access
-      rawData: data,
-    }));
-  } catch (error) {
-    console.error('Error parsing WebSocket message:', error);
-    this.dispatch(setError('Failed to parse incoming message'));
   }
-}
 
   private handleClose(event: CloseEvent): void {
     const elapsed = Date.now() - this.connectionStartTime;
