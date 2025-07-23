@@ -20,9 +20,18 @@ interface ServerResponse {
   postWithReplies?: any[];
   ResultCode: number;
   ResultMessage: string;
-  ResultId: number;
+  ResultId?: number;
   EditableType?: number;
   Getable?: number;
+}
+
+// Interface that matches exactly what the slice expects
+interface ServerPostDetailsResponse {
+  ResultCode: number;
+  ResultMessage: string;
+  postWithReplies: any[]; // This matches your slice's ServerPostDetailsResponse
+  ResultId: number;
+  Getable: number;
 }
 
 interface LegacyMessage {
@@ -82,7 +91,7 @@ export const useWebSocketPostsHandler = () => {
     });
   }, [messages, dispatch]);
 
-  // NEW: Function to fetch post details
+  // Function to fetch post details
   const fetchPostDetails = (postId: number) => {
     const websocketService = getWebSocketService();
     if (!websocketService) {
@@ -141,50 +150,61 @@ const processMessage = (message: any, dispatch: any) => {
     const isSuccess = serverResponse.ResultCode === 200;
     
     if (isSuccess) {
-      // FIXED: Handle post details response - check for postWithReplies (lowercase 'p') first
-      if (serverResponse.postWithReplies && Array.isArray(serverResponse.postWithReplies)) {
-        console.log('📝 Processing post with replies (lowercase):', serverResponse.postWithReplies);
-        
-        // The server response already matches the expected format for handlePostDetailsFetched
-        dispatch(handlePostDetailsFetched(serverResponse));
-        console.log('✅ Post details fetched successfully:', serverResponse.postWithReplies[0]);
-        return;
-      }
-      
-      // FIXED: Also check for PostWithReplies (capital P) as backup
+      // PRIORITY 1: Handle PostWithReplies (capital P) - this matches your server response
       if (serverResponse.PostWithReplies && Array.isArray(serverResponse.PostWithReplies)) {
-        console.log('📝 Processing post with replies (capital P):', serverResponse.PostWithReplies);
+        console.log('📝 Processing post with replies (PostWithReplies):', serverResponse.PostWithReplies);
         
-        // Convert to expected format with lowercase 'p'
-        const payload = {
+        // Convert to expected format with lowercase 'p' to match slice interface
+        const payload: ServerPostDetailsResponse = {
           ResultCode: serverResponse.ResultCode,
           ResultMessage: serverResponse.ResultMessage,
-          postWithReplies: serverResponse.PostWithReplies,
-          ResultId: serverResponse.ResultId,
-          Getable: serverResponse.Getable
+          postWithReplies: serverResponse.PostWithReplies, // Convert to lowercase
+          ResultId: serverResponse.ResultId || 0,
+          Getable: serverResponse.Getable || 1
         };
         
+        console.log('📤 Dispatching formatted payload to slice:', payload);
         dispatch(handlePostDetailsFetched(payload));
         console.log('✅ Post details fetched successfully (PostWithReplies):', serverResponse.PostWithReplies[0]);
         return;
       }
       
-      // Handle regular Posts responses
+      // PRIORITY 2: Handle postWithReplies (lowercase 'p') - backup format
+      if (serverResponse.postWithReplies && Array.isArray(serverResponse.postWithReplies)) {
+        console.log('📝 Processing post with replies (postWithReplies):', serverResponse.postWithReplies);
+        
+        // This already matches the slice interface
+        const payload: ServerPostDetailsResponse = {
+          ResultCode: serverResponse.ResultCode,
+          ResultMessage: serverResponse.ResultMessage,
+          postWithReplies: serverResponse.postWithReplies,
+          ResultId: serverResponse.ResultId || 0,
+          Getable: serverResponse.Getable || 1
+        };
+        
+        console.log('📤 Dispatching payload to slice (postWithReplies):', payload);
+        dispatch(handlePostDetailsFetched(payload));
+        console.log('✅ Post details fetched successfully (postWithReplies):', serverResponse.postWithReplies[0]);
+        return;
+      }
+      
+      // PRIORITY 3: Handle Posts array with replies (fallback)
       if (serverResponse.Posts && Array.isArray(serverResponse.Posts) && serverResponse.Posts.length > 0) {
         // Check if this is a post details response disguised as Posts (with Replys property)
         const firstPost = serverResponse.Posts[0];
-        if (firstPost && 'Replys' in firstPost && Array.isArray(firstPost.Replys)) {
+        if (firstPost && ('Replys' in firstPost || 'replies' in firstPost) && serverResponse.Getable === 1) {
           console.log('📝 Processing post with replies from Posts array:', firstPost);
           
-          // Convert Posts format to postWithReplies format
-          const payload = {
+          // Convert Posts format to postWithReplies format that matches slice interface
+          const payload: ServerPostDetailsResponse = {
             ResultCode: serverResponse.ResultCode,
             ResultMessage: serverResponse.ResultMessage,
             postWithReplies: serverResponse.Posts,
-            ResultId: serverResponse.ResultId,
-            Getable: serverResponse.Getable || serverResponse.EditableType || 1
+            ResultId: serverResponse.ResultId || 0,
+            Getable: serverResponse.Getable
           };
           
+          console.log('📤 Dispatching formatted payload to slice (from Posts):', payload);
           dispatch(handlePostDetailsFetched(payload));
           console.log('✅ Post details fetched successfully (from Posts):', firstPost);
           return;
@@ -195,13 +215,13 @@ const processMessage = (message: any, dispatch: any) => {
           // This is a post creation response
           dispatch(handlePostCreated(serverResponse));
           console.log('✅ Post created successfully:', serverResponse.Posts[0]);
-        } else {
-          // This is likely a fetch posts response
+        } else if (serverResponse.Getable !== 1) {
+          // This is likely a fetch posts response (not post details)
           dispatch(handlePostsFetched(serverResponse));
           console.log('✅ Posts fetched successfully:', serverResponse.Posts.length, 'posts');
         }
       } else if (serverResponse.Posts && Array.isArray(serverResponse.Posts) && serverResponse.Posts.length === 0) {
-        // Handle empty posts array - could be empty post details response
+        // Handle empty posts array
         if (serverResponse.Getable === 1) {
           // This looks like a post details request that returned no results
           dispatch(handlePostDetailsError('Post not found or has no replies'));
@@ -218,11 +238,9 @@ const processMessage = (message: any, dispatch: any) => {
     } else {
       const errorMessage = serverResponse.ResultMessage || 'Server error occurred';
       
-      // FIXED: Better detection for post details request failures
-      // Check if this is likely a post details request error
-      if (serverResponse.Getable === 1 || 
-          (!serverResponse.Posts && !serverResponse.EditableType) ||
-          (serverResponse.Posts && Array.isArray(serverResponse.Posts) && serverResponse.Posts.length === 0 && serverResponse.Getable)) {
+      // Better detection for post details request failures
+      // The key indicator is Getable === 1, which seems to be set for post details requests
+      if (serverResponse.Getable === 1) {
         dispatch(handlePostDetailsError(errorMessage));
         console.error('❌ Post details fetch error:', errorMessage, 'Code:', serverResponse.ResultCode);
         return;
@@ -300,7 +318,6 @@ const handleLegacyMessage = (message: LegacyMessage, dispatch: any) => {
     case 'post_with_replies_fetched':
       if (message.success && message.data) {
         // Convert legacy format to expected server response format
-        const mainPost = Array.isArray(message.data) ? message.data[0] : message.data;
         const payload = {
           ResultCode: 200,
           ResultMessage: 'success',
