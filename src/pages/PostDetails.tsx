@@ -8,7 +8,7 @@ import {
   fetchPostDetails, 
   clearPostDetails,
   selectCurrentPostDetails,
-  selectPostDetailsLoading,
+  selectIsLoadingPostDetails,
   selectPostDetailsError
 } from '@/features/posts/postsSlice';
 
@@ -19,7 +19,7 @@ const PostDetails: React.FC = () => {
   
   // Use the correct selectors from your slice
   const currentPostDetails = useSelector(selectCurrentPostDetails);
-  const isLoading = useSelector(selectPostDetailsLoading);
+  const isLoading = useSelector(selectIsLoadingPostDetails);
   const error = useSelector(selectPostDetailsError);
   
   const { isConnected, sendMessage } = useWebSocketContext();
