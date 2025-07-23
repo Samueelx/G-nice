@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom"; // Add this import
+import { useNavigate } from "react-router-dom";
 import SocialPost from "@/components/common/SocialPost";
 import JokeJumbotron from "@/components/templates/JokeJumbotron";
 import { useWebSocketContext } from "@/context/useWebSocketContext";
 import { useWebSocketPostsHandler } from "@/features/posts/useWebSocketPostsHandler";
-import { fetchPostDetails, isValidPostForDetails } from "@/utils/postUtils"; // Add this import
-import { Menu, Wifi, WifiOff, Bell, BellOff, Eye } from "lucide-react"; // Add Eye icon
+import { isValidPostForDetails } from "@/utils/postUtils"; // Remove fetchPostDetails import
+import { Menu, Wifi, WifiOff, Bell, BellOff, Eye } from "lucide-react";
 import { 
-  fetchPosts
+  fetchPosts,
+  fetchPostDetails // Add this import for the Redux thunk
 } from "@/features/posts/postsSlice";
 import { RootState } from "@/store/store";
 
@@ -18,26 +19,27 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
   const dispatch = useDispatch();
-  const navigate = useNavigate(); // Add navigation hook
+  const navigate = useNavigate();
   
   // Get posts from Redux store
-  const { posts, isLoading, error, currentPostWithReplies } = useSelector((state: RootState) => state.posts);
+  const { posts, isLoading, error, currentPostWithReplies, isLoadingPostDetails } = useSelector((state: RootState) => state.posts);
   
   const [showConnectionStatus, setShowConnectionStatus] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
   const [notifications, setNotifications] = useState(true);
-  const [loadingPostDetails, setLoadingPostDetails] = useState<string | null>(null); // Track which post is loading
+  const [loadingPostDetails, setLoadingPostDetails] = useState<string | null>(null);
 
-  // Use WebSocket context
+  // Use WebSocket context - add sendRaw
   const {
     isConnected,
     error: wsError,
     status,
     sendPostInteraction,
-    sendMessage
+    sendMessage,
+    sendRaw // Add this
   } = useWebSocketContext();
 
-  // Use the WebSocket posts handler hook - this will handle all WebSocket message processing
+  // Use the WebSocket posts handler hook
   useWebSocketPostsHandler();
 
   console.log('Full Redux state:', {
@@ -45,6 +47,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
     isLoading: isLoading,
     error: error,
     currentPostWithReplies: currentPostWithReplies,
+    isLoadingPostDetails: isLoadingPostDetails,
     fullState: useSelector((state: RootState) => state.posts)
   });
 
@@ -62,29 +65,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
       console.log('📍 Post details loaded, navigating to post page');
       setLoadingPostDetails(null);
       
-      // Navigate to the post details page
-      // You can adjust this route as needed
-      navigate(`/post/${currentPostWithReplies.PostId || currentPostWithReplies.id}`);
+      navigate(`/post/${currentPostWithReplies.post.id}`);
     }
   }, [currentPostWithReplies, loadingPostDetails, navigate]);
 
   // Listen for posts count changes to show notifications
   useEffect(() => {
-    // This will run whenever posts array changes
-    // You can add logic here to detect new posts and show notifications
     const currentPostsCount = posts.length;
     
-    // Only show notification if we have posts and not loading
     if (currentPostsCount > 0 && !isLoading) {
-      // Check if this is a new post (you might want to implement better logic here)
-      // For now, we'll just check if posts count increased
-      
-      // Show notification if enabled
       if (notifications && 'Notification' in window && Notification.permission === 'granted') {
-        const latestPost = posts[0]; // Assuming newest posts are first
+        const latestPost = posts[0];
         if (latestPost && latestPost.author) {
-          // Only show notification for posts from other users
-          // You might want to check against current user ID
           new Notification('New Post Available!', {
             body: `New post from ${latestPost.author}`,
             icon: '/g-icon.svg'
@@ -121,7 +113,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
     sendPostInteraction(postId, action, data);
   }, [sendPostInteraction]);
 
-  // Handle post click to view details
+  // Handle post click to view details - UPDATED to use Redux thunk
   const handlePostClick = useCallback((post: any) => {
     if (!isConnected) {
       console.warn('Cannot fetch post details: WebSocket not connected');
@@ -133,12 +125,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
       return;
     }
 
-    const postId = post.PostId?.toString() || post.id;
+    const postId = parseInt(post.PostId?.toString() || post.id);
     console.log('👁️ User clicked on post:', postId);
     
-    setLoadingPostDetails(postId);
-    fetchPostDetails(post, sendMessage);
-  }, [isConnected, sendMessage]);
+    setLoadingPostDetails(postId.toString());
+    
+    // Use Redux thunk with sendRaw
+    dispatch(fetchPostDetails({ 
+      postId, 
+      sendRaw 
+    }));
+  }, [isConnected, sendRaw, dispatch]);
 
   // Refresh posts manually
   const refreshPosts = useCallback(() => {
@@ -316,12 +313,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
           </div>
         )}
 
-        {/* Posts Grid - Show posts even if loading is true, as long as we have posts */}
+        {/* Posts Grid */}
         {posts.length > 0 && (
           <div className="grid gap-4 grid-cols-1 max-w-2xl mx-auto">
             {posts.map((post, index) => {
               const postId = post.PostId?.toString() || post.id;
-              const isLoadingDetails = loadingPostDetails === postId;
+              const isLoadingDetails = loadingPostDetails === postId || isLoadingPostDetails;
               
               return (
                 <div key={post.id || index} className="relative group">
@@ -388,7 +385,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
           </div>
         )}
 
-        {/* No posts message - only show if not loading and no posts */}
+        {/* No posts message */}
         {!isLoading && posts.length === 0 && !error && (
           <div className="max-w-2xl mx-auto text-center py-8">
             <div className="text-gray-500">
@@ -400,8 +397,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
           </div>
         )}
 
-        {/* Post details loading indicator */}
-        {loadingPostDetails && (
+        {/* Post details loading indicator - Updated to use Redux state */}
+        {(loadingPostDetails || isLoadingPostDetails) && (
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full mx-4">
               <div className="text-center">
@@ -418,7 +415,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
           <div className="max-w-2xl mx-auto mt-8 p-4 bg-gray-100 rounded-lg text-xs text-gray-600">
             <p>Debug: Posts: {posts.length} | Loading: {isLoading ? 'Yes' : 'No'} | Connected: {isConnected ? 'Yes' : 'No'}</p>
             <p>Error: {error || 'None'} | WS Error: {wsError || 'None'}</p>
-            <p>Loading Post Details: {loadingPostDetails || 'None'} | Current Post: {currentPostWithReplies ? 'Loaded' : 'None'}</p>
+            <p>Loading Post Details: {loadingPostDetails || 'None'} | Redux Loading: {isLoadingPostDetails ? 'Yes' : 'No'}</p>
+            <p>Current Post: {currentPostWithReplies ? 'Loaded' : 'None'}</p>
           </div>
         )}
       </main>

@@ -404,19 +404,19 @@ export const fetchPosts = createAsyncThunk<
   }
 });
 
-// FIXED: Updated thunk for fetching post details with correct payload format
+// FIXED: Updated thunk for fetching post details with sendRaw method
 export const fetchPostDetails = createAsyncThunk<
   AsyncThunkReturn,
   {
     postId: number;
-    sendMessage: (payload: any) => void;
+    sendRaw: (payload: any) => void; // Changed from sendMessage to sendRaw
   },
   { rejectValue: string }
 >(
   "posts/fetchPostDetails",
-  async ({ postId, sendMessage }, { rejectWithValue }) => {
+  async ({ postId, sendRaw }, { rejectWithValue }) => {
     try {
-      // FIXED: Create the request payload matching the exact format you specified
+      // Create the request payload matching the exact format you specified
       const payload = {
         GetType: {
           GetType: "POST"
@@ -432,7 +432,9 @@ export const fetchPostDetails = createAsyncThunk<
         "🔍 Sending post details request:",
         JSON.stringify(payload, null, 2)
       );
-      sendMessage(payload);
+      
+      // Use sendRaw instead of sendMessage to send exact payload
+      sendRaw(payload);
       return { pending: true };
     } catch (error: unknown) {
       const errorMessage =

@@ -105,7 +105,7 @@ export const useWebSocketPostsHandler = () => {
     console.log('🔍 Sending post details request:', request);
     
     // Use sendRaw to avoid adding WebSocket metadata
-    const success = websocketService.sendRaw(request);
+    const success = websocketService.sendPostDetailsRequest(postId);
     
     if (!success) {
       console.error('Failed to send post details request');
