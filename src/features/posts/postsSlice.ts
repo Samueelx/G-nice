@@ -20,6 +20,14 @@ interface CreatePostData {
   image?: File;
 }
 
+// Updated interface for API payload
+interface CreatePostPayload {
+  title: string;
+  body: string;
+  image?: string; // base64 encoded string
+  imageType?: string; // MIME type of the image
+}
+
 interface PostsState {
   posts: Post[];
   userPosts: Post[];
@@ -34,22 +42,43 @@ const initialState: PostsState = {
   error: null,
 };
 
+// Helper function to convert File to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      // Remove the data URL prefix (data:image/jpeg;base64,) and keep only base64 string
+      const base64String = (reader.result as string).split(',')[1];
+      resolve(base64String);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 // Async thunks
 export const createPost = createAsyncThunk(
   "posts/createPost",
   async (postData: CreatePostData, { rejectWithValue }) => {
     try {
-      const formData = new FormData();
-      formData.append("title", postData.title);
-      formData.append("body", postData.body);
+      const payload: CreatePostPayload = {
+        title: postData.title,
+        body: postData.body,
+      };
+
+      // Convert image to base64 if provided
       if (postData.image) {
-        formData.append("image", postData.image);
+        const base64Image = await fileToBase64(postData.image);
+        payload.image = base64Image;
+        payload.imageType = postData.image.type;
       }
-      const response = await axios.post("/api/posts", formData, {
+
+      const response = await axios.post("/api/posts", payload, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/json",
         },
       });
+      
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -118,7 +147,6 @@ const postsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-
       // Fetch Posts
       .addCase(fetchPosts.pending, (state) => {
         state.isLoading = true;
@@ -132,7 +160,6 @@ const postsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-
       // Fetch User Posts
       .addCase(fetchUserPosts.pending, (state) => {
         state.isLoading = true;
