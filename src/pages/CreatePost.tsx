@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Image, Link, X } from 'lucide-react';
 import { createPost } from '@/features/posts/postsSlice';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
@@ -13,7 +12,6 @@ const CreatePost = () => {
   const { toast } = useToast();
   const isLoading = useAppSelector((state) => state.posts.isLoading);
   
-  const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -54,11 +52,10 @@ const CreatePost = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !body.trim()) return;
+    if (!body.trim()) return;
 
     try {
-      await dispatch(createPost({ title, body, image })).unwrap();
-      setTitle('');
+      await dispatch(createPost({ body, image })).unwrap();
       setBody('');
       setImage(null);
       setImagePreview(null);
@@ -78,19 +75,9 @@ const CreatePost = () => {
   return (
     <Card className="max-w-2xl mx-auto">
       <form onSubmit={handleSubmit}>
-        <CardHeader className="space-y-4">
-          <Input
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-lg font-semibold"
-            maxLength={300}
-          />
-        </CardHeader>
-       
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-6">
           <Textarea
-            placeholder="What's on your mind?"
+            placeholder="Share your joke..."
             value={body}
             onChange={(e) => setBody(e.target.value)}
             className="min-h-[150px]"
@@ -147,7 +134,7 @@ const CreatePost = () => {
          
           <Button
             type="submit"
-            disabled={isLoading || !title.trim() || !body.trim()}
+            disabled={isLoading || !body.trim()}
             className="px-6"
           >
             {isLoading ? 'Posting...' : 'Post'}

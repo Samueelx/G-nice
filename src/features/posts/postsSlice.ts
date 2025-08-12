@@ -4,7 +4,6 @@ import axios from "axios";
 // Types
 interface Post {
   id: string;
-  title: string;
   body: string;
   imageUrl?: string;
   userId: string;
@@ -15,14 +14,12 @@ interface Post {
 }
 
 interface CreatePostData {
-  title: string;
   body: string;
   image?: File;
 }
 
 // Updated interface for API payload
 interface CreatePostPayload {
-  title: string;
   body: string;
   image?: string; // base64 encoded string
   imageType?: string; // MIME type of the image
@@ -62,7 +59,6 @@ export const createPost = createAsyncThunk(
   async (postData: CreatePostData, { rejectWithValue }) => {
     try {
       const payload: CreatePostPayload = {
-        title: postData.title,
         body: postData.body,
       };
 
