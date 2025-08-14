@@ -1,10 +1,10 @@
 import BackNavigationTemplate from '@/components/templates/BackNavigationTemplate';
-import { Circle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef } from 'react';
 import { useGetEventsQuery, useGetFeaturedEventsQuery } from '@/services/api/eventsApi';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-
+import EventsPageSkeleton from '@/components/templates/EventsPageSkeleton'; // Import the skeleton
 
 const EventsPage = () => {
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ const EventsPage = () => {
   } = useGetFeaturedEventsQuery();
 
   const events = eventsData?.events || [];
-  const carouselEvents = featuredEvents || events.slice(0, 4); // Fallback to first 4 events if no featured events
+  const carouselEvents = featuredEvents || events.slice(0, 4);
 
   const categories = [
     { id: 'mine', label: 'Mine' },
@@ -62,14 +62,6 @@ const EventsPage = () => {
     );
   };
 
-  // Loading component
-  const LoadingSpinner = () => (
-    <div className="flex items-center justify-center py-12">
-      <Loader2 className="h-8 w-8 animate-spin text-[#B43E8F]" />
-      <span className="ml-2 text-gray-600">Loading events...</span>
-    </div>
-  );
-
   // Error component
   const ErrorMessage = ({ message }: { message: string }) => (
     <Alert className="mb-6">
@@ -79,11 +71,20 @@ const EventsPage = () => {
     </Alert>
   );
 
+  // Show skeleton while loading
+  if (eventsLoading || featuredLoading) {
+    return (
+      <BackNavigationTemplate title='Events'>
+        <EventsPageSkeleton />
+      </BackNavigationTemplate>
+    );
+  }
+
   return (
     <BackNavigationTemplate title='Events'>
       <div className="p-4 bg-gray-50 min-h-screen">
         {/* Desktop Carousel Section */}
-        {!featuredLoading && !featuredError && carouselEvents.length > 0 && (
+        {!featuredError && carouselEvents.length > 0 && (
           <div className="hidden md:block mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Top picks from our staff</h2>
             
@@ -217,9 +218,6 @@ const EventsPage = () => {
             </div>
           </div>
 
-          {/* Loading State */}
-          {eventsLoading && <LoadingSpinner />}
-
           {/* Error State */}
           {eventsError && (
             <ErrorMessage 
@@ -232,7 +230,7 @@ const EventsPage = () => {
           )}
 
           {/* Empty State */}
-          {!eventsLoading && !eventsError && events.length === 0 && (
+          {!eventsError && events.length === 0 && (
             <div className="text-center py-12">
               <Circle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No events found</h3>
@@ -246,7 +244,7 @@ const EventsPage = () => {
           )}
 
           {/* Events Grid */}
-          {!eventsLoading && !eventsError && events.length > 0 && (
+          {!eventsError && events.length > 0 && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
                 <div
@@ -260,7 +258,6 @@ const EventsPage = () => {
                       alt={event.title}
                       className="w-full h-48 object-cover"
                       onError={(e) => {
-                        // Fallback image on error
                         e.currentTarget.src = 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=2000&auto=format&fit=crop';
                       }}
                     />
