@@ -1,6 +1,6 @@
 // userSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import instance from '@/api/axiosConfig';
+import { formInstance } from '@/api/axiosConfig';
 import { AxiosResponse } from 'axios';
 
 // Types for the registration data and response
@@ -40,7 +40,7 @@ export const registerUser = createAsyncThunk<
   }
 >('user/register', async (userData: UserRegistrationData, { rejectWithValue }) => {
   try {
-    const response: AxiosResponse<RegistrationResponse> = await instance.put(
+    const response: AxiosResponse<RegistrationResponse> = await formInstance.put(
       'Memefest-SNAPSHOT-01/resources/SignIn/Verify-email',
       userData
     );
