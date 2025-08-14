@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Pencil, MapPin, Calendar, Briefcase, Users, ArrowLeft, AlertCircle, Loader } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useProfileData } from '@/hooks/useProfileData'; // Adjust import path
-import {Comment, Post} from '@/features/profile/profileSlice';
+import { useProfileData } from '../hooks/useProfileData'; // Adjust import path
+import AdvancedProfileSkeleton from '@/components/templates/AdvancedProfileSkeleton';
 
 type ProfilePageProps = {
   isOwnProfile?: boolean;
@@ -13,6 +13,9 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
   const [activeTab, setActiveTab] = useState<'posts' | 'comments' | 'about'>('posts');
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
+  
+  // Debug logging
+  console.log('ProfilePage - userId from params:', userId);
   
   const {
     profile,
@@ -33,12 +36,7 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
   // Loading state
   if (loading && !profile) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading profile...</p>
-        </div>
-      </div>
+      <AdvancedProfileSkeleton />
     );
   }
 
@@ -87,7 +85,7 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                 <p className="text-gray-500">No posts yet</p>
               </div>
             ) : (
-              posts.map((post: Post) => (
+              posts.map((post) => (
                 <div
                   key={post.id}
                   className="bg-white p-4 rounded-lg shadow-md flex flex-col gap-2"
@@ -144,7 +142,7 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                 <p className="text-gray-500">No comments yet</p>
               </div>
             ) : (
-              comments.map((comment: Comment) => (
+              comments.map((comment) => (
                 <div key={comment.id} className="bg-white p-4 rounded-lg shadow-md">
                   <p className="text-sm text-gray-500 mb-2">
                     Commented on: <span className="font-medium">{comment.postTitle}</span>
