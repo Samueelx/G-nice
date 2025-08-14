@@ -40,9 +40,18 @@ const initialState: ChatsState = {
 // Async thunks
 export const fetchChats = createAsyncThunk(
   'chats/fetchChats',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
-      const response = await instance.get('/api/chats');
+      // Get the token from the auth state
+      const token = (getState() as any).auth?.token;
+      
+      // Make the request with the Authorization header
+      const response = await instance.get('/api/chats', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch chats');
@@ -52,9 +61,16 @@ export const fetchChats = createAsyncThunk(
 
 export const searchUsers = createAsyncThunk(
   'chats/searchUsers',
-  async (searchTerm: string, { rejectWithValue }) => {
+  async (searchTerm: string, { rejectWithValue, getState }) => {
     try {
-      const response = await instance.get(`/api/users/search?username=${searchTerm}`);
+      const token = (getState() as any).auth?.token;
+      
+      const response = await instance.get(`/api/users/search?username=${searchTerm}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to search users');
@@ -64,9 +80,19 @@ export const searchUsers = createAsyncThunk(
 
 export const createChat = createAsyncThunk(
   'chats/createChat',
-  async (recipientId: string, { rejectWithValue }) => {
+  async (recipientId: string, { rejectWithValue, getState }) => {
     try {
-      const response = await instance.post('/api/chats', { recipientId });
+      const token = (getState() as any).auth?.token;
+      
+      const response = await instance.post('/api/chats', 
+        { recipientId }, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create chat');
