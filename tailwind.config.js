@@ -55,7 +55,18 @@ export default {
           5: "hsl(var(--chart-5))",
         },
       },
+      // Add animations and keyframes for the skeleton shimmer effect
+      animation: {
+        shimmer: 'shimmer 2s infinite',
+      },
+      keyframes: {
+        shimmer: {
+          '100%': {
+            transform: 'translateX(100%)',
+          },
+        },
+      },
     },
   },
-  // plugins: [daisyui, require("tailwindcss-animate")],
+  plugins: [daisyui, require("tailwindcss-animate")],
 };
