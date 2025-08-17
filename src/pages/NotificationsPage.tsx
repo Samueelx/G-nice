@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { X, FileText, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import NotificationsSkeleton from '@/components/templates/NotificationsSkeleton';
 import { 
   useGetNotificationsQuery,
   useMarkAsReadMutation,
@@ -11,6 +10,7 @@ import {
 } from '@/services/api/notificationsApi';
 import { setActiveTab, setLastSeenTimestamp } from '@/features/notifications/notificationsSlice';
 import type { RootState } from '@/store/store';
+import NotificationsSkeleton from '@/components/templates/NotificationsSkeleton';
 
 const MobileNotifications = () => {
   const dispatch = useDispatch();
@@ -21,12 +21,22 @@ const MobileNotifications = () => {
   const { 
     data: notificationsData, 
     isLoading, 
-    isError, 
+    isError,
+    error,
     refetch 
   } = useGetNotificationsQuery({
     type: activeTab === 'all' ? undefined : activeTab,
-    limit: 20,
   });
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Notifications query state:', { 
+      isLoading, 
+      isError, 
+      error, 
+      dataCount: notificationsData?.notifications?.length 
+    });
+  }, [isLoading, isError, error, notificationsData]);
 
   const [markAsRead] = useMarkAsReadMutation();
   const [respondToAccessRequest] = useRespondToAccessRequestMutation();

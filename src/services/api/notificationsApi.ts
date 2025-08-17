@@ -39,7 +39,7 @@ export interface NotificationFilters {
 export const notificationsApi = createApi({
   reducerPath: 'notificationsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:8000/api/notifications',
+    baseUrl: 'http://localhost:3001/api/notifications',
     prepareHeaders: (headers, { getState }) => {
       // Add auth token if you have one in your state
       const token = (getState() as RootState).auth.token;
@@ -50,6 +50,9 @@ export const notificationsApi = createApi({
     },
   }),
   tagTypes: ['Notification'],
+  // Global configuration to keep polling even on errors
+  keepUnusedDataFor: 60, // Keep data for 60 seconds
+  refetchOnMountOrArgChange: true,
   endpoints: (builder) => ({
     // Get notifications with pagination and filters
     getNotifications: builder.query<NotificationsResponse, NotificationFilters>({
@@ -65,6 +68,12 @@ export const notificationsApi = createApi({
       providesTags: ['Notification'],
       // Enable polling - refetch every 30 seconds
       pollingInterval: 30000,
+      // Continue polling even on error and when unfocused
+      skipPollingIfUnfocused: false,
+      // Force polling to continue even after errors (for development)
+      forceRefetch: ({ currentArg, previousArg }) => {
+        return true; // Always refetch
+      },
     }),
 
     // Get unread count only (for badge)
@@ -73,6 +82,8 @@ export const notificationsApi = createApi({
       providesTags: ['Notification'],
       // Poll more frequently for unread count
       pollingInterval: 15000,
+      // Continue polling even on error
+      skipPollingIfUnfocused: false,
     }),
 
     // Mark notification as read
