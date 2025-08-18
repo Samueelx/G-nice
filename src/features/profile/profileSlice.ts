@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
-
-const BASE_URL = 'http://localhost:3000'; // Adjust this to your API base URL
+import axiosInstance from "@/api/axiosConfig"; // Import your configured axios instance
 
 // Types matching your ProfilePage component
 export type UserProfile = {
@@ -53,7 +52,8 @@ export const fetchProfile = createAsyncThunk(
   'profile/fetchProfile',
   async (userId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BASE_URL}/api/users/${userId}/profile`);
+      // Use your configured axios instance (baseURL already set in axiosConfig)
+      const response = await axiosInstance.get(`/api/users/${userId}/profile`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -69,7 +69,7 @@ export const fetchUserPosts = createAsyncThunk(
   'profile/fetchUserPosts',
   async (userId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BASE_URL}/api/users/${userId}/posts`);
+      const response = await axiosInstance.get(`/api/users/${userId}/posts`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -85,7 +85,7 @@ export const fetchUserComments = createAsyncThunk(
   'profile/fetchUserComments',
   async (userId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BASE_URL}/api/users/${userId}/comments`);
+      const response = await axiosInstance.get(`/api/users/${userId}/comments`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -101,7 +101,7 @@ export const updateProfile = createAsyncThunk(
   'profile/updateProfile',
   async (profileData: Partial<UserProfile>, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${BASE_URL}/api/users/${profileData.id}/profile`, profileData);
+      const response = await axiosInstance.put(`/api/users/${profileData.id}/profile`, profileData);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
