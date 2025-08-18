@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
+import axiosInstance from '@/api/axiosConfig'; // Import your configured axios instance
 import { SearchState, SearchCategory } from '@/types/search';
 
 const initialState: SearchState = {
@@ -18,12 +18,13 @@ export const searchContent = createAsyncThunk(
   'search/searchContent',
   async ({ query, category }: { query: string; category: SearchCategory }, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`http://localhost:8080/api/search`, {
+      // Use your configured axios instance instead of raw axios
+      const response = await axiosInstance.get('/api/search', {
         params: { query, category }
       });
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error)) {
+      if (axiosInstance.isAxiosError(error)) {
         return rejectWithValue(error.response?.data || 'Search failed');
       }
       return rejectWithValue('An unexpected error occurred');
