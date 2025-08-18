@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import axios from "axios";
+import axiosInstance from "@/api/axiosConfig"; // Import your configured axios instance
 
 // Types
 interface Post {
@@ -69,7 +69,8 @@ export const createPost = createAsyncThunk(
         payload.imageType = postData.image.type;
       }
 
-      const response = await axios.post("/api/posts", payload, {
+      // Use your configured axios instance instead of raw axios
+      const response = await axiosInstance.post("/api/posts", payload, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -88,7 +89,8 @@ export const fetchPosts = createAsyncThunk(
   "posts/fetchPosts",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get("/api/posts");
+      // Use your configured axios instance
+      const response = await axiosInstance.get("/api/posts");
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -102,7 +104,8 @@ export const fetchUserPosts = createAsyncThunk(
   "posts/fetchUserPosts",
   async (userId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/posts/user/${userId}`);
+      // Use your configured axios instance
+      const response = await axiosInstance.get(`/api/posts/user/${userId}`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
