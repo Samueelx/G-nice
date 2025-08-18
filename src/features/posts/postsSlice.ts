@@ -13,9 +13,25 @@ interface Post {
   comments: number;
 }
 
+export interface Comment {
+  id: string;
+  postId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface CreatePostData {
   body: string;
   image?: File;
+}
+
+interface CreateCommentData {
+  postId: string;
+  body: string;
 }
 
 // Updated interface for API payload
@@ -28,14 +44,22 @@ interface CreatePostPayload {
 interface PostsState {
   posts: Post[];
   userPosts: Post[];
+  selectedPost: Post | null;
+  comments: Comment[];
   isLoading: boolean;
+  isLoadingPost: boolean;
+  isLoadingComments: boolean;
   error: string | null;
 }
 
 const initialState: PostsState = {
   posts: [],
   userPosts: [],
+  selectedPost: null,
+  comments: [],
   isLoading: false,
+  isLoadingPost: false,
+  isLoadingComments: false,
   error: null,
 };
 
@@ -115,6 +139,59 @@ export const fetchUserPosts = createAsyncThunk(
   }
 );
 
+// New: Fetch single post by ID
+export const fetchPostById = createAsyncThunk(
+  "posts/fetchPostById",
+  async (postId: string, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get(`/api/posts/${postId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch post"
+      );
+    }
+  }
+);
+
+// New: Fetch comments for a specific post
+export const fetchComments = createAsyncThunk(
+  "posts/fetchComments",
+  async (postId: string, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get(`/api/posts/${postId}/comments`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch comments"
+      );
+    }
+  }
+);
+
+// New: Create a comment
+export const createComment = createAsyncThunk(
+  "posts/createComment",
+  async (commentData: CreateCommentData, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(
+        `/api/posts/${commentData.postId}/comments`,
+        { body: commentData.body },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create comment"
+      );
+    }
+  }
+);
+
 // Slice
 const postsSlice = createSlice({
   name: "posts",
@@ -128,6 +205,10 @@ const postsSlice = createSlice({
       state.userPosts = [];
       state.error = null;
       state.isLoading = false;
+    },
+    clearSelectedPost: (state) => {
+      state.selectedPost = null;
+      state.comments = [];
     },
   },
   extraReducers: (builder) => {
@@ -174,9 +255,57 @@ const postsSlice = createSlice({
       .addCase(fetchUserPosts.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      // Fetch Post By ID
+      .addCase(fetchPostById.pending, (state) => {
+        state.isLoadingPost = true;
+        state.error = null;
+      })
+      .addCase(fetchPostById.fulfilled, (state, action: PayloadAction<Post>) => {
+        state.isLoadingPost = false;
+        state.selectedPost = action.payload;
+      })
+      .addCase(fetchPostById.rejected, (state, action) => {
+        state.isLoadingPost = false;
+        state.error = action.payload as string;
+      })
+      // Fetch Comments
+      .addCase(fetchComments.pending, (state) => {
+        state.isLoadingComments = true;
+        state.error = null;
+      })
+      .addCase(fetchComments.fulfilled, (state, action: PayloadAction<Comment[]>) => {
+        state.isLoadingComments = false;
+        state.comments = action.payload;
+      })
+      .addCase(fetchComments.rejected, (state, action) => {
+        state.isLoadingComments = false;
+        state.error = action.payload as string;
+      })
+      // Create Comment
+      .addCase(createComment.pending, (state) => {
+        state.isLoadingComments = true;
+        state.error = null;
+      })
+      .addCase(createComment.fulfilled, (state, action: PayloadAction<Comment>) => {
+        state.isLoadingComments = false;
+        state.comments.push(action.payload);
+        // Update comment count in selected post if it exists
+        if (state.selectedPost) {
+          state.selectedPost.comments += 1;
+        }
+        // Update comment count in posts array if the post exists there
+        const postIndex = state.posts.findIndex(post => post.id === action.payload.postId);
+        if (postIndex !== -1) {
+          state.posts[postIndex].comments += 1;
+        }
+      })
+      .addCase(createComment.rejected, (state, action) => {
+        state.isLoadingComments = false;
+        state.error = action.payload as string;
       });
   },
 });
 
-export const { clearError, resetPosts } = postsSlice.actions;
+export const { clearError, resetPosts, clearSelectedPost } = postsSlice.actions;
 export default postsSlice.reducer;

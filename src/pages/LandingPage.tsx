@@ -3,12 +3,19 @@ import SocialPost from "@/components/common/SocialPost";
 import data from "@/data.json";
 import JokeJumbotron from "@/components/templates/JokeJumbotron";
 import { Menu } from "lucide-react"; // Removed Sparkles import
+import { useNavigate } from "react-router-dom";
 
 interface LandingPageProps {
   setIsSidebarOpen: (isOpen: boolean) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
+  const navigate = useNavigate();
+
+  const handlePostClick = () => {
+    navigate(`/post/${data[0].id}`);
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 overflow-x-hidden">
       {/* Mobile-optimized header */}
@@ -60,7 +67,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
         </div>
 
         {/* Posts Grid - Single column on mobile, centered on desktop */}
-        <div className="grid gap-4 grid-cols-1 max-w-2xl mx-auto">
+        <div className="grid gap-4 grid-cols-1 max-w-2xl mx-auto cursor-pointer" onClick={handlePostClick}>
           {data.map((post, index) => (
             <SocialPost key={index} {...post} />
           ))}

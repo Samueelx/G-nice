@@ -19,6 +19,7 @@ import CreatePost from "@/pages/CreatePost";
 import ChatList from "@/pages/ChatList";
 import NewChat from "@/pages/NewChat";
 import SearchInterface from "@/pages/SearchInterface";
+import PostDetailPage from "@/pages/PostDetailPage";
 
 
 const router = createBrowserRouter([
@@ -85,6 +86,10 @@ const router = createBrowserRouter([
     {
         path: '/search',
         element: <PrivateRoute><SearchInterface /></PrivateRoute>
+    },
+    {
+        path: '/post/:postId',
+        element: <PrivateRoute><PostDetailPage/></PrivateRoute>
     }
 ]);
 

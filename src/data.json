@@ -1,94 +1,97 @@
 [
-    {
-      "author": {
-        "name": "Jane Doe",
-        "avatar": "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
-        "username": "jane_doe"
-      },
-      "content": "Had a great day hiking in the mountains! 🌄",
-      "images": [
-        {
-          "url": "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
-          "alt": "A scenic view of mountains during sunset"
-        }
-      ],
-      "timestamp": "2 hours ago",
-      "likes": 120,
-      "comments": 45,
-      "taggedUsers": [
-        {
-          "username": "hiker_bob",
-          "displayName": "Hiker Bob"
-        },
-        {
-          "username": "nature_lover",
-          "displayName": "Nature Lover"
-        }
-      ]
+  {
+    "id": 1,
+    "author": {
+      "name": "Jane Doe",
+      "avatar": "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
+      "username": "jane_doe"
     },
-    {
-      "author": {
-        "name": "John Smith",
-        "avatar": "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
-        "username": "john_smith"
+    "content": "Had a great day hiking in the mountains! 🌄",
+    "images": [
+      {
+        "url": "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
+        "alt": "A scenic view of mountains during sunset"
+      }
+    ],
+    "timestamp": "2 hours ago",
+    "likes": 120,
+    "comments": 45,
+    "taggedUsers": [
+      {
+        "username": "hiker_bob",
+        "displayName": "Hiker Bob"
       },
-      "content": "Check out this delicious pasta I made! 🍝",
-      "images": [
-        {
-          "url": "https://images.unsplash.com/photo-1556761223-4c4282c73f77?q=80&w=1965&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-          "alt": "A plate of freshly cooked pasta"
-        },
-        {
-          "url": "https://images.unsplash.com/photo-1546549032-9571cd6b27df?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-          "alt": "Close-up of pasta with sauce"
-        }
-      ],
-      "timestamp": "5 hours ago",
-      "likes": 85,
-      "comments": 20
+      {
+        "username": "nature_lover",
+        "displayName": "Nature Lover"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "author": {
+      "name": "John Smith",
+      "avatar": "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
+      "username": "john_smith"
     },
-    {
-      "author": {
-        "name": "Emily Carter",
-        "avatar": "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
-        "username": "emily_carter"
+    "content": "Check out this delicious pasta I made! 🍝",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1556761223-4c4282c73f77?q=80&w=1965&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "alt": "A plate of freshly cooked pasta"
       },
-      "content": "Excited to announce my first art exhibition! 🎨 Come visit me at the gallery this weekend.",
-      "images": [],
-      "timestamp": "1 day ago",
-      "likes": 230,
-      "comments": 60,
-      "taggedUsers": [
-        {
-          "username": "art_enthusiast",
-          "displayName": "Art Enthusiast"
-        }
-      ]
+      {
+        "url": "https://images.unsplash.com/photo-1546549032-9571cd6b27df?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "alt": "Close-up of pasta with sauce"
+      }
+    ],
+    "timestamp": "5 hours ago",
+    "likes": 85,
+    "comments": 20
+  },
+  {
+    "id": 3,
+    "author": {
+      "name": "Emily Carter",
+      "avatar": "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
+      "username": "emily_carter"
     },
-    {
-      "author": {
-        "name": "Mike Johnson",
-        "avatar": "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
-        "username": "mike_johnson"
+    "content": "Excited to announce my first art exhibition! 🎨 Come visit me at the gallery this weekend.",
+    "images": [],
+    "timestamp": "1 day ago",
+    "likes": 230,
+    "comments": 60,
+    "taggedUsers": [
+      {
+        "username": "art_enthusiast",
+        "displayName": "Art Enthusiast"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "author": {
+      "name": "Mike Johnson",
+      "avatar": "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp",
+      "username": "mike_johnson"
+    },
+    "content": "Throwback to last summer's beach trip 🏖️.",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1706519493838-306fac1c9cb8?q=80&w=1949&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "alt": "A sandy beach with turquoise water"
       },
-      "content": "Throwback to last summer's beach trip 🏖️.",
-      "images": [
-        {
-          "url": "https://images.unsplash.com/photo-1706519493838-306fac1c9cb8?q=80&w=1949&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-          "alt": "A sandy beach with turquoise water"
-        },
-        {
-          "url": "https://images.unsplash.com/photo-1414609245224-afa02bfb3fda?q=80&w=1978&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-          "alt": "A sunset view on the beach"
-        },
-        {
-          "url": "https://images.unsplash.com/photo-1520454974749-611b7248ffdb?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-          "alt": "Friends playing volleyball on the beach"
-        }
-      ],
-      "timestamp": "3 days ago",
-      "likes": 340,
-      "comments": 120
-    }
-  ]
-  
+      {
+        "url": "https://images.unsplash.com/photo-1414609245224-afa02bfb3fda?q=80&w=1978&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "alt": "A sunset view on the beach"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1520454974749-611b7248ffdb?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "alt": "Friends playing volleyball on the beach"
+      }
+    ],
+    "timestamp": "3 days ago",
+    "likes": 340,
+    "comments": 120
+  }
+]
