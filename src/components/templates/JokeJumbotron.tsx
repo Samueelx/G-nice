@@ -20,8 +20,7 @@ const JokeJumbotron: React.FC = () => {
   // Fetch joke of the day on component mount
   useEffect(() => {
     dispatch(fetchJokeOfTheDay());
-    console.log("Joke", joke);
-  }, [dispatch, joke]);
+  }, [dispatch]); // Removed joke from dependency array to avoid infinite loop
   
   const handleLikeClick = async () => {
     if (joke) {
@@ -29,8 +28,13 @@ const JokeJumbotron: React.FC = () => {
       dispatch(likeLocalJoke());
       
       try {
-        // API call
-        await dispatch(likeJoke(joke.id)).unwrap();
+        // API call with proper error handling
+        const resultAction = await dispatch(likeJoke(joke.id));
+        if (likeJoke.rejected.match(resultAction)) {
+          // Revert optimistic update on failure
+          dispatch(likeLocalJoke()); // Dispatch again to toggle back
+          console.error('Failed to like joke:', resultAction.payload);
+        }
       } catch (error) {
         // Revert optimistic update on failure
         dispatch(likeLocalJoke()); // Dispatch again to toggle back

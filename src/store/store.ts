@@ -1,4 +1,4 @@
-import { configureStore, Store } from "@reduxjs/toolkit";
+import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import authReducer from "../features/auth/authSlice";
 import postsReducer from "../features/posts/postsSlice";
@@ -12,7 +12,9 @@ import notificationsReducer from "../features/notifications/notificationsSlice";
 import { notificationsApi } from "@/services/api/notificationsApi";
 import { eventsApi } from "@/services/api/eventsApi";
 
-export const store: Store = configureStore({
+
+// Remove the explicit Store type annotation - let TypeScript infer it
+export const store = configureStore({
   reducer: {
     auth: authReducer,
     posts: postsReducer,
@@ -33,11 +35,10 @@ export const store: Store = configureStore({
         // Ignore these action types in serializableCheck
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
-      // Enable thunk middleware
-      thunk: true,
+      // thunk: true is redundant - it's enabled by default in getDefaultMiddleware()
     }).concat(
       eventsApi.middleware,
-      notificationsApi.middleware  // Add this line
+      notificationsApi.middleware
     ),
   // Enable Redux DevTools in development
   devTools: process.env.NODE_ENV !== "production",

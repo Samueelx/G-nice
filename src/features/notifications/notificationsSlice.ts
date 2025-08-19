@@ -57,3 +57,4 @@ export const {
 } = notificationsSlice.actions;
 
 export default notificationsSlice.reducer;
+export type { NotificationsState };

@@ -39,36 +39,54 @@ const initialState: JokeState = {
 };
 
 // API base URL
-const API_URL ='https://api.example.com';
+const API_URL ='https://localhost:3000/api/jumbotron';
 
-// Async thunks
-export const fetchJokeOfTheDay = createAsyncThunk(
+// Async thunks - properly typed
+export const fetchJokeOfTheDay = createAsyncThunk<
+  Joke,
+  void,
+  { rejectValue: string }
+>(
   'jokes/fetchJokeOfTheDay',
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/jokes/daily`);
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to fetch joke of the day');
+      }
       return rejectWithValue('Failed to fetch joke of the day');
     }
   }
 );
 
-export const fetchJokeComments = createAsyncThunk(
+export const fetchJokeComments = createAsyncThunk<
+  { jokeId: string; comments: Comment[] },
+  string,
+  { rejectValue: string }
+>(
   'jokes/fetchJokeComments',
   async (jokeId: string, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/jokes/${jokeId}/comments`);
       return { jokeId, comments: response.data };
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to fetch joke comments');
+      }
       return rejectWithValue('Failed to fetch joke comments');
     }
   }
 );
 
-export const addJokeComment = createAsyncThunk(
+export const addJokeComment = createAsyncThunk<
+  { jokeId: string; comment: Comment },
+  { jokeId: string; content: string; user: any },
+  { rejectValue: string }
+>(
   'jokes/addJokeComment',
-  async ({ jokeId, content, user }: { jokeId: string, content: string, user: any }, { rejectWithValue }) => {
+  async ({ jokeId, content, user }, { rejectWithValue }) => {
     try {
       const commentData = {
         authorId: user.id,
@@ -80,30 +98,47 @@ export const addJokeComment = createAsyncThunk(
       const response = await axios.post(`${API_URL}/jokes/${jokeId}/comments`, commentData);
       return { jokeId, comment: response.data };
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to add comment');
+      }
       return rejectWithValue('Failed to add comment');
     }
   }
 );
 
-export const likeJoke = createAsyncThunk(
+export const likeJoke = createAsyncThunk<
+  Joke,
+  string,
+  { rejectValue: string }
+>(
   'jokes/likeJoke',
   async (jokeId: string, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API_URL}/jokes/${jokeId}/like`);
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to like joke');
+      }
       return rejectWithValue('Failed to like joke');
     }
   }
 );
 
-export const likeComment = createAsyncThunk(
+export const likeComment = createAsyncThunk<
+  { jokeId: string; commentId: string; data: any },
+  { jokeId: string; commentId: string },
+  { rejectValue: string }
+>(
   'jokes/likeComment',
-  async ({ jokeId, commentId }: { jokeId: string, commentId: string }, { rejectWithValue }) => {
+  async ({ jokeId, commentId }, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API_URL}/comments/${commentId}/like`);
       return { jokeId, commentId, data: response.data };
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to like comment');
+      }
       return rejectWithValue('Failed to like comment');
     }
   }
@@ -241,3 +276,4 @@ const jokeSlice = createSlice({
 // Export actions and reducer
 export const { setCurrentJoke, addLocalComment, likeLocalComment, likeLocalJoke } = jokeSlice.actions;
 export default jokeSlice.reducer;
+export type { JokeState };

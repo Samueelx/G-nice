@@ -214,3 +214,4 @@ export const {
 } = profileSlice.actions;
 
 export default profileSlice.reducer;
+export type { ProfileState };

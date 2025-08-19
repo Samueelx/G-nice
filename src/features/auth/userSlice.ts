@@ -77,3 +77,4 @@ const userSlice = createSlice({
 
 export const { clearError } = userSlice.actions;
 export default userSlice.reducer;
+export type { UserState };

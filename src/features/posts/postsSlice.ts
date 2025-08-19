@@ -309,3 +309,4 @@ const postsSlice = createSlice({
 
 export const { clearError, resetPosts, clearSelectedPost } = postsSlice.actions;
 export default postsSlice.reducer;
+export type { PostsState };

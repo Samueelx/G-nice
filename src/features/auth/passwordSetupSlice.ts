@@ -110,3 +110,4 @@ const passwordSetupSlice = createSlice({
 
 export const {resetPasswordSetupState} = passwordSetupSlice.actions;
 export default passwordSetupSlice.reducer;
+export type { PasswordSetupState };

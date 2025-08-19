@@ -191,3 +191,4 @@ export const selectChatsLoading = (state: { chats: ChatsState }) => state.chats.
 export const selectSearchLoading = (state: { chats: ChatsState }) => state.chats.isSearching;
 
 export default chatsSlice.reducer;
+export type { ChatsState };
