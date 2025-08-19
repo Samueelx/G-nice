@@ -1,4 +1,3 @@
-// userSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { formInstance } from '@/api/axiosConfig';
 import { AxiosResponse } from 'axios';
@@ -44,7 +43,7 @@ export const registerUser = createAsyncThunk<
       'Memefest-SNAPSHOT-01/resources/SignIn/Verify-email',
       userData
     );
-    return response; // Fix: Return only the `data` property
+    return response.data; // Fixed: Return only the `data` property
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Registration failed');
   }
@@ -66,7 +65,7 @@ const userSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.registrationResponse = action.payload; // Fix: `action.payload` is now `RegistrationResponse`
+        state.registrationResponse = action.payload; // Now `action.payload` is correctly typed as `RegistrationResponse`
         state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {
