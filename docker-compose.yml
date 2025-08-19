@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  g-nice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: g-nice-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=https://your-api-domain.com/api
+    restart: unless-stopped
+    
+    # Optional: Add volume for development
+    # volumes:
+    #   - ./src:/app/src
+    #   - ./public:/app/public
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Optional: Add a network for multiple services
+networks:
+  default:
+    name: g-nice-network
