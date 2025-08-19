@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: g-nice-frontend
     ports:
-      - "3000:80"
+      - "4000:80"
     environment:
       - NODE_ENV=production
       - VITE_API_URL=https://your-api-domain.com/api
