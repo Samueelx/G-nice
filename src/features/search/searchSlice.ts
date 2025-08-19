@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axiosInstance from '@/api/axiosConfig'; // Import your configured axios instance
+import axios from 'axios'; // Import axios for isAxiosError
 import { SearchState, SearchCategory } from '@/types/search';
 
 const initialState: SearchState = {
@@ -24,7 +25,7 @@ export const searchContent = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      if (axiosInstance.isAxiosError(error)) {
+      if (axios.isAxiosError(error)) { // Fixed: Use axios.isAxiosError instead of axiosInstance.isAxiosError
         return rejectWithValue(error.response?.data || 'Search failed');
       }
       return rejectWithValue('An unexpected error occurred');
