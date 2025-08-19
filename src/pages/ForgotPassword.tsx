@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
-import { forgotPassword } from '@/features/auth/authSlice';
-import { UnknownAction } from '@reduxjs/toolkit';
+import { forgotPassword, clearMessage } from '@/features/auth/authSlice';
 
 const ForgotPassword: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -11,6 +10,11 @@ const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const { isLoading, error, message } = useAppSelector((state) => state.auth);
 
+  // Clear messages when component mounts
+  useEffect(() => {
+    dispatch(clearMessage());
+  }, [dispatch]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
   };
@@ -18,11 +22,14 @@ const ForgotPassword: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const resultAction = await dispatch(forgotPassword(email) as unknown as UnknownAction);
+      const resultAction = await dispatch(forgotPassword(email));
       
       if (forgotPassword.fulfilled.match(resultAction)) {
-        // Optionally navigate to a confirmation page or show a success message
-        navigate('/reset-password');
+        // Optionally navigate to a confirmation page after showing success message
+        // You might want to delay navigation to let user see the success message
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
       }
     } catch (err) {
       console.log('Unexpected error during forgot password request:', err);

@@ -26,7 +26,7 @@ export interface Comment {
 
 interface CreatePostData {
   body: string;
-  image?: File;
+  image?: File | null;
 }
 
 interface CreateCommentData {

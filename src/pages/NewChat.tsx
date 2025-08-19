@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
+import {  useAppSelector } from "@/hooks/hooks";
 import { Search } from "lucide-react";
 import { RootState } from "@/store/store"; // Ensure correct store import
 import instance from "@/api/axiosConfig";
@@ -16,7 +16,6 @@ const NewChat = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { error } = useAppSelector((state: RootState) => state.chats);
 

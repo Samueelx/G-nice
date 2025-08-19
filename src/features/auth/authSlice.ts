@@ -4,16 +4,22 @@ interface LoginCredentials {
   username: string;
   password: string;
 }
+
 interface AuthState {
   user: unknown | null;
   token: string | null;
-  isLoading: boolean | null;
+  isLoading: boolean | undefined;
   error: string | null;
+  message: string | null; // Added message property
   isAuthenticated: boolean;
 }
 
 /**async thunk for login */
-export const loginUser = createAsyncThunk(
+export const loginUser = createAsyncThunk<
+  any,
+  LoginCredentials,
+  { rejectValue: string }
+>(
   'auth/login',
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
@@ -44,7 +50,11 @@ export const loginUser = createAsyncThunk(
 );
 
 /**Async thunk for Google sign in */
-export const googleSignIn = createAsyncThunk(
+export const googleSignIn = createAsyncThunk<
+  any,
+  string,
+  { rejectValue: string }
+>(
   'auth/googleSignIn',
   async (credential: string, { rejectWithValue }) => {
     try {
@@ -100,7 +110,11 @@ export const googleSignIn = createAsyncThunk(
 );
 
 /**Async thunk for reset password */
-export const resetPassword = createAsyncThunk(
+export const resetPassword = createAsyncThunk<
+  any,
+  { token: string; newPassword: string },
+  { rejectValue: string }
+>(
   'auth/resetPassword',
   async(
     {token, newPassword} : { token: string; newPassword: string },
@@ -114,18 +128,25 @@ export const resetPassword = createAsyncThunk(
         },
         body: JSON.stringify({token, newPassword}),
       });
-      return await response.json();
-    } catch (error: any) {
-      if(error.response && error.response?.data){
-        return rejectWithValue(error.response.data?.message);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Reset password failed');
       }
-      return rejectWithValue('An unexpected error occured');
+
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue((error as Error).message);
     }
   }
 );
 
 /**async thunk for forgot password */
-export const forgotPassword = createAsyncThunk(
+export const forgotPassword = createAsyncThunk<
+  any,
+  string,
+  { rejectValue: string }
+>(
   'auth/forgotPassword',
   async (email: string, { rejectWithValue }) => {
     try {
@@ -134,15 +155,17 @@ export const forgotPassword = createAsyncThunk(
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(email),
-      })
+        body: JSON.stringify({ email }), // Fixed: wrap email in an object
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Forgot password request failed');
+      }
 
       return await response.json();
-    } catch(error: any) {
-      if(error.response && error.response?.data){
-        return rejectWithValue(error.response.data?.message);
-      }
-      return rejectWithValue('An unexpected error occured');
+    } catch(error) {
+      return rejectWithValue((error as Error).message);
     }
   }
 )
@@ -155,6 +178,7 @@ const authSlice = createSlice({
     token: localStorage.getItem('accessTkn'),
     isLoading: false,
     error: null,
+    message: null, // Added message property
     isAuthenticated: !!localStorage.getItem('accessTkn'),
   } as AuthState,
   reducers: {
@@ -162,8 +186,13 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.message = null; // Clear message on logout
       localStorage.removeItem('accessTkn');
       localStorage.removeItem('refreshTkn');
+    },
+    clearMessage: (state) => {
+      state.message = null;
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -172,12 +201,14 @@ const authSlice = createSlice({
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.message = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.user;
         state.token = action.payload.accessTkn;
         state.error = null;
+        state.message = null;
         state.isAuthenticated = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
@@ -185,6 +216,7 @@ const authSlice = createSlice({
         state.error = action.payload as string;
         state.user = null;
         state.token = null;
+        state.message = null;
         state.isAuthenticated = false;
       })
 
@@ -192,12 +224,14 @@ const authSlice = createSlice({
       .addCase(googleSignIn.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.message = null;
       })
       .addCase(googleSignIn.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.user;
         state.token = action.payload.accessTkn;
         state.error = null;
+        state.message = null;
         state.isAuthenticated = true;
       })
       .addCase(googleSignIn.rejected, (state, action) => {
@@ -205,24 +239,46 @@ const authSlice = createSlice({
         state.error = action.payload as string;
         state.user = null;
         state.token = null;
+        state.message = null;
       })
-      //Reset reducers
+
+      // Reset password reducers
       .addCase(resetPassword.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.message = null;
       })
-      .addCase(resetPassword.fulfilled, (state) => {
+      .addCase(resetPassword.fulfilled, (state, action) => {
         state.isLoading = false;
         state.error = null;
+        state.message = action.payload?.message || 'Password reset successful!';
         state.isAuthenticated = false;
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || 'Password reset failed!'
+        state.error = action.payload as string || 'Password reset failed!';
+        state.message = null;
+      })
+
+      // Forgot password reducers
+      .addCase(forgotPassword.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+        state.message = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        state.message = action.payload?.message || 'Password reset email sent successfully!';
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+        state.message = null;
       });
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, clearMessage } = authSlice.actions;
 export default authSlice.reducer;
 export type { AuthState };
