@@ -3,7 +3,7 @@ import { RootState } from '@/store/store';
 
 export interface Notification {
   id: string;
-  type: 'comment' | 'file' | 'access' | 'mention' | 'completion' | 'fileAdd';
+  type: 'all' | 'mentions' | 'comments' | 'files' | 'access'; // Updated to match slice types
   userId: string;
   user: {
     name: string;
@@ -30,7 +30,7 @@ export interface NotificationsResponse {
 }
 
 export interface NotificationFilters {
-  type?: 'all' | 'mentions' | 'comments' | 'files' | 'access';
+  type?: 'all' | 'mentions' | 'comments' | 'files' | 'access'; // Updated to match slice types
   isRead?: boolean;
   limit?: number;
   cursor?: string;

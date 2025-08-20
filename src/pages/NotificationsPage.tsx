@@ -64,13 +64,13 @@ const MobileNotifications = () => {
           navigate(`/posts/${notification.relatedEntityId}`);
         }
         break;
-      case 'mention':
+      case 'mentions':
         // Navigate to the post where user was mentioned
         if (notification.relatedEntityId) {
           navigate(`/posts/${notification.relatedEntityId}`);
         }
         break;
-      case 'fileAdd':
+      case 'archive':
         // Navigate to the file or post
         if (notification.relatedEntityId) {
           navigate(`/posts/${notification.relatedEntityId}`);
@@ -198,12 +198,15 @@ const MobileNotifications = () => {
         <div className="flex px-4 gap-4 pb-2 justify-evenly">
           {[
             { key: 'all', label: 'View All' },
-            { key: 'mentions', label: 'Mentions' }
+            { key: 'mentions', label: 'Mentions' },
+            { key: 'comments', label: 'Comments' },
+            { key: 'files', label: 'Files' },
+            { key: 'access', label: 'Access' }
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => dispatch(setActiveTab(tab.key as any))}
-              className={`text-sm py-1 ${
+              className={`text-sm py-1 px-2 ${
                 activeTab === tab.key
                   ? 'text-gray-900 border-b-2 border-gray-900'
                   : 'text-gray-600'
