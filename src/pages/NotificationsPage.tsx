@@ -58,7 +58,7 @@ const MobileNotifications = () => {
 
     // Navigate based on notification type
     switch (notification.type) {
-      case 'comment':
+      case 'comments':
         // Navigate to the post/comment
         if (notification.relatedEntityId) {
           navigate(`/posts/${notification.relatedEntityId}`);
@@ -66,12 +66,6 @@ const MobileNotifications = () => {
         break;
       case 'mentions':
         // Navigate to the post where user was mentioned
-        if (notification.relatedEntityId) {
-          navigate(`/posts/${notification.relatedEntityId}`);
-        }
-        break;
-      case 'archive':
-        // Navigate to the file or post
         if (notification.relatedEntityId) {
           navigate(`/posts/${notification.relatedEntityId}`);
         }
