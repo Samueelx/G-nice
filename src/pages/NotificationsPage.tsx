@@ -26,6 +26,10 @@ const MobileNotifications = () => {
     refetch 
   } = useGetNotificationsQuery({
     type: activeTab === 'all' ? undefined : activeTab,
+  }, {
+    pollingInterval: 30000, // Poll every 30 seconds
+    skipPollingIfUnfocused: false,
+    refetchOnFocus: true,
   });
 
   // Debug logging

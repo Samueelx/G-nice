@@ -66,24 +66,12 @@ export const notificationsApi = createApi({
         return `?${params.toString()}`;
       },
       providesTags: ['Notification'],
-      // Enable polling - refetch every 30 seconds
-      pollingInterval: 30000,
-      // Continue polling even on error and when unfocused
-      skipPollingIfUnfocused: false,
-      // Force polling to continue even after errors (for development)
-      forceRefetch: ({ currentArg, previousArg }) => {
-        return true; // Always refetch
-      },
     }),
 
     // Get unread count only (for badge)
     getUnreadCount: builder.query<{ count: number }, void>({
       query: () => '/unread-count',
       providesTags: ['Notification'],
-      // Poll more frequently for unread count
-      pollingInterval: 15000,
-      // Continue polling even on error
-      skipPollingIfUnfocused: false,
     }),
 
     // Mark notification as read
