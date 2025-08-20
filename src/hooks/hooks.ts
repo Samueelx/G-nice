@@ -20,17 +20,17 @@ export const useChatById = (chatId: string) =>
     );
   
   // Example of a combined hook for chat-related data
-  export const useChatData = () => {
-    const chats = useAppSelector((state) => state.chats);
-    const dispatch = useAppDispatch();
+  // export const useChatData = () => {
+  //   const chats = useAppSelector((state) => state.chats);
+  //   const dispatch = useAppDispatch();
   
-    return {
-      chats: chats.chats,
-      searchResults: chats.searchResults,
-      isLoading: chats.isLoading,
-      isSearching: chats.isSearching,
-      error: chats.error,
-      searchError: chats.searchError,
-      dispatch,
-    };
-  };
+  //   return {
+  //     chats: chats.chats,
+  //     searchResults: chats.searchResults,
+  //     isLoading: chats.isLoading,
+  //     isSearching: chats.isSearching,
+  //     error: chats.error,
+  //     searchError: chats.searchError,
+  //     dispatch,
+  //   };
+  // };
