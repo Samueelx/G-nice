@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import instance from '@/api/axiosConfig';
 
 // Types
 export interface Comment {
@@ -38,9 +39,6 @@ const initialState: JokeState = {
   error: null
 };
 
-// API base URL
-const API_URL ='https://localhost:3000/api/jumbotron';
-
 // Async thunks - properly typed
 export const fetchJokeOfTheDay = createAsyncThunk<
   Joke,
@@ -50,7 +48,7 @@ export const fetchJokeOfTheDay = createAsyncThunk<
   'jokes/fetchJokeOfTheDay',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/jokes/daily`);
+      const response = await instance.get(`/jokes/daily`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -69,7 +67,7 @@ export const fetchJokeComments = createAsyncThunk<
   'jokes/fetchJokeComments',
   async (jokeId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/jokes/${jokeId}/comments`);
+      const response = await instance.get(`/jokes/${jokeId}/comments`);
       return { jokeId, comments: response.data };
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -95,7 +93,7 @@ export const addJokeComment = createAsyncThunk<
         content,
       };
       
-      const response = await axios.post(`${API_URL}/jokes/${jokeId}/comments`, commentData);
+      const response = await instance.post(`/jokes/${jokeId}/comments`, commentData);
       return { jokeId, comment: response.data };
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -114,7 +112,7 @@ export const likeJoke = createAsyncThunk<
   'jokes/likeJoke',
   async (jokeId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/jokes/${jokeId}/like`);
+      const response = await instance.post(`/jokes/${jokeId}/like`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -133,7 +131,7 @@ export const likeComment = createAsyncThunk<
   'jokes/likeComment',
   async ({ jokeId, commentId }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/comments/${commentId}/like`);
+      const response = await instance.post(`/comments/${commentId}/like`);
       return { jokeId, commentId, data: response.data };
     } catch (error) {
       if (axios.isAxiosError(error)) {
