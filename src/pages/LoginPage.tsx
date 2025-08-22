@@ -67,44 +67,65 @@ const LoginPage: React.FC = () => {
 
 
   return (
-    <section className="bg-[#E500A4] min-h-screen flex items-center justify-center">
+    <section className="bg-[#E500A4] min-h-screen flex items-center justify-center p-0 md:p-4">
       {/* login container */}
-      <div className="bg-cyan-100 flex rounded-2xl shadow-lg max-w-3xl p-5 min-h-screen md:min-h-full">
+      <div className="bg-cyan-100 w-full h-screen md:h-auto md:rounded-2xl md:shadow-lg md:max-w-3xl flex md:p-5">
         {/* form */}
-        <div className="sm:w-1/2 px-16">
-          <h2 className="font-bold text-2xl text-[#002D74]">Login</h2>
-          <p className="text-sm mt-4 text-[#002D74]">
-            If you're already a member, easily log in
-          </p>
+        <div className="w-full sm:w-1/2 px-6 md:px-16 flex flex-col justify-center min-h-screen md:min-h-0">
+          <div className="mb-8">
+            <h2 className="font-bold text-2xl text-[#002D74]">Login</h2>
+            <p className="text-sm mt-4 text-[#002D74]">
+              If you're already a member, easily log in
+            </p>
+          </div>
 
           {error && (
             <div className="mt-4 text-red-500 text-sm">{error}</div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <input
-              className="p-2 mt-8 rounded-xl border"
-              type="text"
-              name="username"
-              placeholder="Username"
-              value={formData.username}
-              onChange={handleInputChange}
-            />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6 md:gap-8">
+            <div className="relative mt-6">
+              <input
+                className="p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none"
+                type="text"
+                name="username"
+                id="username"
+                placeholder=" "
+                value={formData.username}
+                onChange={handleInputChange}
+              />
+              <label
+                htmlFor="username"
+                className="absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
+                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm"
+              >
+                Username
+              </label>
+            </div>
+            
             <div className="relative">
               <input
-                className="p-2 rounded-xl border w-full"
+                className="p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none"
                 type={showPassword ? 'text' : 'password'}
                 name="password"
-                placeholder="Password"
+                id="password"
+                placeholder=" "
                 value={formData.password}
                 onChange={handleInputChange}
               />
+              <label
+                htmlFor="password"
+                className="absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
+                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm"
+              >
+                Password
+              </label>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"
                 height="16"
                 fill="gray"
-                className="absolute top-1/2 right-3 -translate-y-1/2 bi bi-eye"
+                className="absolute top-1/2 right-3 -translate-y-1/2 bi bi-eye cursor-pointer"
                 viewBox="0 0 16 16"
                 onClick={() => setShowPassword(!showPassword)}
               >
@@ -112,7 +133,14 @@ const LoginPage: React.FC = () => {
                 <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0" />
               </svg>
             </div>
-            <button type='submit' className="bg-[#FEC5D8] rounded-xl py-2 hover:bg-[#feb5ce] transition-colors" disabled={isLoading}>{isLoading ? 'Logging in...' : 'Log In'}</button>
+            
+            <button 
+              type='submit' 
+              className="bg-[#FEC5D8] rounded-xl py-2 hover:bg-[#feb5ce] transition-colors disabled:opacity-75" 
+              disabled={isLoading}
+            >
+              {isLoading ? 'Logging in...' : 'Log In'}
+            </button>
           </form>
 
           <div className="mt-10 grid grid-cols-3 items-center text-gray-500">

@@ -65,8 +65,8 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <main className="bg-[#E500A4] min-h-screen flex items-center justify-center p-4 md:p-0">
-      <div className="bg-cyan-100 rounded-2xl shadow-lg w-dvw md:max-w-4xl md:flex">
+    <main className="bg-[#E500A4] min-h-screen flex items-center justify-center p-0 md:p-4">
+      <div className="bg-cyan-100 w-full h-screen md:h-auto md:rounded-2xl md:shadow-lg md:max-w-4xl md:flex">
         {/* Image Section - Hidden on mobile, visible on md screens and up */}
         <div className="hidden md:block md:w-1/2 bg-[#FEC5D8] rounded-l-2xl sm:flex items-center justify-center p-8">
           <img 
@@ -77,7 +77,7 @@ const Signup: React.FC = () => {
         </div>
 
         {/* Form Section */}
-        <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col justify-center">
+        <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col justify-center min-h-screen md:min-h-0">
           <div className="mb-8 text-center">
             <h2 className="text-4xl md:text-5xl font-bold text-[#002D74] pb-4 font-akronim">
               G-nyce
@@ -87,8 +87,8 @@ const Signup: React.FC = () => {
             </p>
           </div>
 
-          <form className="flex flex-col gap-4 md:gap-6">
-            <div className="relative">
+          <form className="flex flex-col gap-6 md:gap-8">
+            <div className="relative mt-6">
               <input
                 type="text"
                 className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
@@ -100,8 +100,8 @@ const Signup: React.FC = () => {
               />
               <label
                 htmlFor="firstname"
-                className={`absolute left-3 -top-6 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
-                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-6 peer-focus:text-sm`}
+                className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
+                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
               >
                 First Name
               </label>
@@ -118,8 +118,8 @@ const Signup: React.FC = () => {
               />
               <label
                 htmlFor="lastname"
-                className={`absolute left-3 -top-6 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
-                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-6 peer-focus:text-sm`}
+                className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
+                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
               >
                 Last Name
               </label>
@@ -136,8 +136,8 @@ const Signup: React.FC = () => {
               />
               <label
                 htmlFor="email"
-                className={`absolute left-3 -top-6 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
-                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-6 peer-focus:text-sm`}
+                className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
+                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
               >
                 Email
               </label>
@@ -154,8 +154,8 @@ const Signup: React.FC = () => {
               />
               <label
                 htmlFor="username"
-                className={`absolute left-3 -top-6 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
-                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-6 peer-focus:text-sm`}
+                className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
+                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
               >
                 Choose a username
               </label>
