@@ -1,10 +1,38 @@
-import { useState } from 'react';
-import { ArrowLeft, MapPin, Calendar, Briefcase, Users } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, MapPin, Calendar, Briefcase, Users, MoreVertical, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const AdvancedProfileSkeleton = () => {
+type AdvancedProfileSkeletonProps = {
+  isOwnProfile?: boolean;
+  onEditProfile?: () => void;
+};
+
+const AdvancedProfileSkeleton = ({ isOwnProfile = false, onEditProfile }: AdvancedProfileSkeletonProps) => {
   const [activeTab, setActiveTab] = useState<'posts' | 'comments' | 'about'>('posts');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleEditProfileClick = () => {
+    setShowDropdown(false);
+    if (onEditProfile) {
+      onEditProfile();
+    }
+  };
 
   const renderTabContentSkeleton = () => {
     switch (activeTab) {
@@ -74,7 +102,33 @@ const AdvancedProfileSkeleton = () => {
       
       case 'about':
         return (
-          <div className="bg-white p-6 rounded-lg shadow-md space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow-md space-y-6 relative">
+            {/* Three-dot menu for About tab - only show if it's user's own profile */}
+            {isOwnProfile && (
+              <div className="absolute top-4 right-4" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="More options"
+                >
+                  <MoreVertical className="w-5 h-5 text-gray-500" />
+                </button>
+                
+                {/* Dropdown Menu */}
+                {showDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                    <button
+                      onClick={handleEditProfileClick}
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 rounded-lg"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Edit Profile Details
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Bio Section */}
             <div>
               <div className="h-6 bg-gray-300 rounded w-12 mb-2 animate-pulse" />
@@ -142,9 +196,11 @@ const AdvancedProfileSkeleton = () => {
             <div className="h-9 bg-gray-300 rounded-md w-56 animate-pulse" />
             <div className="h-5 bg-gray-300 rounded-md w-32 animate-pulse" />
           </div>
-          <div className="h-10 bg-blue-300 rounded-full w-36 animate-pulse flex items-center justify-center">
-            <div className="w-4 h-4 bg-blue-400 rounded animate-pulse" />
-          </div>
+          {isOwnProfile && (
+            <div className="h-10 bg-blue-300 rounded-full w-36 animate-pulse flex items-center justify-center">
+              <div className="w-4 h-4 bg-blue-400 rounded animate-pulse" />
+            </div>
+          )}
         </div>
 
         {/* Interactive Tabs */}
