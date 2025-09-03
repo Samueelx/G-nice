@@ -20,6 +20,9 @@ import ChatList from "@/pages/ChatList";
 import NewChat from "@/pages/NewChat";
 import SearchInterface from "@/pages/SearchInterface";
 import PostDetailPage from "@/pages/PostDetailPage";
+import EditProfilePage from "@/pages/EditProfilePage";
+import SettingsPage from "@/pages/SettingsPage";
+import ChangePasswordPage from "@/pages/ChangePasswordPage";
 
 
 const router = createBrowserRouter([
@@ -90,6 +93,22 @@ const router = createBrowserRouter([
     {
         path: '/post/:postId',
         element: <PrivateRoute><PostDetailPage/></PrivateRoute>
+    },
+    {
+        path: '/profile/:username',
+        element: <PrivateRoute><ProfilePage isOwnProfile={false}/></PrivateRoute>
+    },
+    {
+        path: '/profile/edit-profile',
+        element: <PrivateRoute><EditProfilePage/></PrivateRoute>
+    },
+    {
+        path: '/settings',
+        element: <PrivateRoute><SettingsPage/></PrivateRoute>
+    },
+    {
+        path: '/settings/change-password',
+        element: <PrivateRoute><ChangePasswordPage /></PrivateRoute>
     }
 ]);
 
