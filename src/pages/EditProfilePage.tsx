@@ -7,8 +7,8 @@ import {
   updateProfileOptimistic,
   type EditProfileData 
 } from '@/features/profile/profileSlice';
-import { RootState } from '@/store/store'; // Adjust this import path to match your store setup
-import { AppDispatch } from '@/store/store'; // Adjust this import path to match your store setup
+import { RootState } from '@/store/store';
+import { AppDispatch } from '@/store/store';
 
 const EditProfilePage = () => {
   const dispatch = useDispatch<AppDispatch>();
