@@ -5,10 +5,11 @@ import {
   updateProfileWithFormData, 
   clearError,
   updateProfileOptimistic,
+  type EditProfileData 
 } from '@/features/profile/profileSlice';
-import type { EditProfileData } from '@/features/profile/profileSlice';
 import { RootState } from '@/store/store';
 import { AppDispatch } from '@/store/store';
+// import type { UserProfile } from '@/features/profile/profileSlice';
 
 const EditProfilePage = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -57,7 +58,7 @@ const EditProfilePage = () => {
   }, [dispatch, error]);
 
   const handleInputChange = (field: keyof EditProfileData, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev: EditProfileData) => ({
       ...prev,
       [field]: value
     }));
