@@ -38,7 +38,7 @@ export const eventsApi = createApi({
   reducerPath: "eventsApi",
   baseQuery: fetchBaseQuery({
     // Fixed for Vite - use import.meta.env instead of process.env
-    baseUrl: import.meta.env.API_BASE_URL || "http://localhost:3001/api",
+    baseUrl: import.meta.env.API_BASE_URL || "http://localhost:8080/Memefest-SNAPSHOT-01/resources",
     prepareHeaders: (headers, { getState }) => {
       // Add auth token if available
       const token = (getState() as any).auth?.token;
@@ -64,7 +64,7 @@ export const eventsApi = createApi({
         if (params.sortOrder)
           searchParams.append("sortOrder", params.sortOrder);
 
-        return `/events?${searchParams.toString()}`;
+        return `/Event?${searchParams.toString()}`;
       },
       providesTags: ["Event"],
     }),
