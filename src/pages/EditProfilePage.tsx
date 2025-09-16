@@ -5,8 +5,8 @@ import {
   updateProfileWithFormData, 
   clearError,
   updateProfileOptimistic,
-  type EditProfileData 
 } from '@/features/profile/profileSlice';
+import type { EditProfileData } from '@/features/profile/profileSlice';
 import { RootState } from '@/store/store';
 import { AppDispatch } from '@/store/store';
 
