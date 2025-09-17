@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MoreVertical, Heart, MessageCircle, Share2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { useAppDispatch } from "@/hooks/hooks";
+import { fetchUserByUsername } from "@/features/profile/profileSlice";
 
 type PostImage = {
   url: string;
@@ -38,12 +41,35 @@ const SocialPost = ({
   taggedUsers = [],
 }: PostProps) => {
   const [isLiked, setIsLiked] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const handleAvatarClick = async () => {
+    try {
+      // Dispatch the action to fetch user data by username
+      const resultAction = await dispatch(fetchUserByUsername(author.username));
+      
+      // Check if the request was successful
+      if (fetchUserByUsername.fulfilled.match(resultAction)) {
+        // Navigate to the profile page with the username
+        navigate(`/profile/${author.username}`);
+      } else {
+        // Handle error if needed
+        console.error('Failed to fetch user profile:', resultAction.payload);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
 
   return (
     <Card className="w-full bg-white/80 backdrop-blur-sm border border-purple-100 hover:border-purple-200 transition-all duration-300 hover:shadow-lg">
       <CardHeader className="p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div 
+            className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors flex-1"
+            onClick={handleAvatarClick}
+          >
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-75 blur transition duration-200" />
               <Avatar className="relative w-10 h-10 border-2 border-white">
@@ -52,7 +78,9 @@ const SocialPost = ({
               </Avatar>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">{author.name}</h3>
+              <h3 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
+                {author.name}
+              </h3>
               <p className="text-sm text-purple-600">{timestamp}</p>
             </div>
           </div>
