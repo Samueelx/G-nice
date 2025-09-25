@@ -24,20 +24,30 @@ const Homepage: React.FC = () => {
       "/icon-glasses-kiss.svg",
       "/face-laughing.svg",
       "/face-haha.svg",
+      "/feeling.svg",
+      "/disbelief.svg",
+      "/rolling-eyes.svg",
+      "/winking.svg"
     ];
 
+    // Moved positions higher up (reduced top percentages)
     const positions = [
-      { top: "10%", left: "10%" },
-      { top: "20%", left: "80%" },
-      { top: "40%", left: "20%" },
-      { top: "60%", left: "75%" },
-      { top: "80%", left: "15%" },
-      { top: "85%", left: "60%" },
-      { top: "30%", left: "50%" },
-      { top: "70%", left: "40%" },
+      { top: "5%", left: "10%" },
+      { top: "15%", left: "80%" },
+      { top: "25%", left: "20%" },
+      { top: "35%", left: "75%" },
+      { top: "45%", left: "15%" },
+      { top: "55%", left: "60%" },
+      { top: "20%", left: "50%" },
+      { top: "40%", left: "40%" },
+      { top: "10%", left: "65%" },
+      { top: "50%", left: "30%" },
+      { top: "30%", left: "85%" },
+      { top: "60%", left: "25%" },
     ];
 
-    const sizes = ["w-12 h-12", "w-16 h-16", "w-20 h-20", "w-24 h-24"];
+    // Reduced emoji sizes
+    const sizes = ["w-8 h-8", "w-10 h-10", "w-12 h-12", "w-16 h-16"];
 
     const newPeople = emojis.map((emoji, index) => ({
       id: `emoji-${index}`,
@@ -71,12 +81,9 @@ const Homepage: React.FC = () => {
           ))}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center z-10 bg-[#E500A4]/50 rounded-lg p-4">
             <div className="mb-52">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold mb-8">
                 The Social site brimming with fun and laughter!
               </h2>
-              <p className="text-lg md:text-xl mb-8">
-                Join and discover endless humour to light up every moment of life.
-              </p>
             </div>
             <div className="flex flex-col gap-4 w-full max-w-xs mt-8">
               <button
@@ -90,7 +97,7 @@ const Homepage: React.FC = () => {
                 transition duration-300 ease-in-out group
               `}
               >
-                <span className="tracking-wide text-sm">Let’s Get Started</span>
+                <span className="tracking-wide text-sm">Let's Get Started</span>
                 <svg
                   className="w-6 h-6 transform transition-transform duration-200 group-hover:translate-x-2 group-hover:scale-110"
                   viewBox="0 0 24 24"
