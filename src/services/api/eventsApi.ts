@@ -1,18 +1,22 @@
-// src/services/api/eventsApi.ts
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-// Backend types (matching your backend exactly)
+// Backend types (matching your actual backend response)
 export interface BackendEvent {
-  EventId: string;
-  Title: string;
+  eventId: number;
+  title: string;
   Venue: string;
   timestamp: string;
-  price: number;
+  description?: string;
+  createdAt?: string;
+  postedBy?: {
+    username: string;
+    userId: number;
+  };
+  // Optional fields that might not be in backend
+  price?: number;
   imageUrl?: string[];
   videoUrl?: string[];
-  description?: string;
   category?: string;
-  createdAt?: string;
   updatedAt?: string;
 }
 
@@ -25,22 +29,22 @@ export interface BackendEventsQueryParams {
   sortOrder?: "asc" | "desc";
 }
 
-// Frontend types (your current UI-friendly structure)
+// Frontend types (matching what EventsPage expects)
 export interface Event {
-  id: string;
-  title: string;
-  location: string;
-  time: string;
-  date: {
-    day: number;
+  id: string; // EventsPage expects 'id'
+  title: string; // EventsPage expects 'title'
+  location: string; // EventsPage expects 'location'
+  time: string; // EventsPage expects 'time'
+  date: { // EventsPage expects parsed date object
+    day: string;
     month: string;
   };
   price: number;
-  imageUrl: string;
   description?: string;
   category?: string;
   createdAt?: string;
   updatedAt?: string;
+  imageUrl: string; // EventsPage expects single string, not array
 }
 
 export interface EventsResponse {
@@ -59,30 +63,44 @@ export interface EventsQueryParams {
   sortOrder?: "asc" | "desc";
 }
 
+// Helper function to parse timestamp and extract time/date
+const parseTimestamp = (timestamp: string) => {
+  try {
+    const date = new Date(timestamp);
+    const time = date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+    const day = date.getDate().toString();
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    
+    return { time, date: { day, month } };
+  } catch (error) {
+    // Fallback if timestamp parsing fails
+    return {
+      time: 'TBD',
+      date: { day: '1', month: 'Jan' }
+    };
+  }
+};
+
 // Transformation functions
 const transformBackendEventToFrontend = (backendEvent: BackendEvent): Event => {
-  // Parse timestamp to create date object
-  const date = new Date(backendEvent.timestamp);
-  const day = date.getDate();
-  const month = date.toLocaleDateString('en-US', { month: 'short' });
-  const time = date.toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
-    minute: '2-digit',
-    hour12: true 
-  });
-
+  const { time, date } = parseTimestamp(backendEvent.timestamp);
+  
   return {
-    id: backendEvent.EventId,
-    title: backendEvent.Title,
-    location: backendEvent.Venue,
-    time: time,
-    date: { day, month },
-    price: backendEvent.price,
-    imageUrl: backendEvent.imageUrl?.[0] || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=2000&auto=format&fit=crop', // Use first image or fallback
+    id: backendEvent.eventId.toString(), // Convert to string and use 'id'
+    title: backendEvent.title, // Keep title
+    location: backendEvent.Venue, // Map Venue to location
+    time, // Parsed time from timestamp
+    date, // Parsed date object with day/month
+    price: backendEvent.price || 0, // Default to 0 if not provided
     description: backendEvent.description,
     category: backendEvent.category,
     createdAt: backendEvent.createdAt,
     updatedAt: backendEvent.updatedAt,
+    imageUrl: backendEvent.imageUrl?.[0] || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=2000&auto=format&fit=crop',
   };
 };
 
@@ -90,8 +108,8 @@ const transformFrontendParamsToBackend = (frontendParams: EventsQueryParams): Ba
   return {
     page: frontendParams.page,
     limit: frontendParams.limit,
-    category: frontendParams.category ? [frontendParams.category] : undefined, // Convert string to array
-    Title: frontendParams.search, // Map search to Title
+    category: frontendParams.category ? [frontendParams.category] : undefined,
+    Title: frontendParams.search,
     sortBy: frontendParams.sortBy,
     sortOrder: frontendParams.sortOrder,
   };
@@ -121,7 +139,6 @@ export const eventsApi = createApi({
         if (backendParams.page) searchParams.append("page", backendParams.page.toString());
         if (backendParams.limit) searchParams.append("limit", backendParams.limit.toString());
         if (backendParams.category) {
-          // Handle category array - append each category separately or as comma-separated
           backendParams.category.forEach(cat => searchParams.append("category", cat));
         }
         if (backendParams.Title) searchParams.append("Title", backendParams.Title);
@@ -130,25 +147,36 @@ export const eventsApi = createApi({
         
         return `/Event?${searchParams.toString()}`;
       },
-      transformResponse: (response: { events: BackendEvent[]; total: number; page: number; limit: number }): EventsResponse => ({
-        events: response.events.map(transformBackendEventToFrontend),
-        total: response.total,
-        page: response.page,
-        limit: response.limit,
-      }),
+      transformResponse: (response: BackendEvent[] | { events: BackendEvent[]; total: number; page: number; limit: number }): EventsResponse => {
+        if (Array.isArray(response)) {
+          return {
+            events: response.map(transformBackendEventToFrontend),
+            total: response.length,
+            page: 1,
+            limit: response.length,
+          };
+        } else {
+          return {
+            events: response.events.map(transformBackendEventToFrontend),
+            total: response.total,
+            page: response.page,
+            limit: response.limit,
+          };
+        }
+      },
       providesTags: ["Event"],
     }),
 
     // Get a single event by ID
     getEventById: builder.query<Event, string>({
-      query: (id) => `/events/${id}`,
+      query: (id) => `/Event/${id}`, // Updated to match your backend pattern
       transformResponse: (response: BackendEvent): Event => transformBackendEventToFrontend(response),
       providesTags: (_result, _error, id) => [{ type: "Event", id }],
     }),
 
     // Get featured/top picks events
     getFeaturedEvents: builder.query<Event[], void>({
-      query: () => "/events/featured",
+      query: () => "/Event/featured", // Updated to match your backend pattern
       transformResponse: (response: BackendEvent[]): Event[] => response.map(transformBackendEventToFrontend),
       providesTags: ["Event"],
     }),
@@ -159,13 +187,24 @@ export const eventsApi = createApi({
       { category: string; limit?: number }
     >({
       query: ({ category, limit = 10 }) =>
-        `/events/category/${category}?limit=${limit}`,
-      transformResponse: (response: { events: BackendEvent[]; total: number; page: number; limit: number }): EventsResponse => ({
-        events: response.events.map(transformBackendEventToFrontend),
-        total: response.total,
-        page: response.page,
-        limit: response.limit,
-      }),
+        `/Event/category/${category}?limit=${limit}`, // Updated to match your backend pattern
+      transformResponse: (response: BackendEvent[] | { events: BackendEvent[]; total: number; page: number; limit: number }): EventsResponse => {
+        if (Array.isArray(response)) {
+          return {
+            events: response.map(transformBackendEventToFrontend),
+            total: response.length,
+            page: 1,
+            limit: response.length,
+          };
+        } else {
+          return {
+            events: response.events.map(transformBackendEventToFrontend),
+            total: response.total,
+            page: response.page,
+            limit: response.limit,
+          };
+        }
+      },
       providesTags: ["Event"],
     }),
   }),

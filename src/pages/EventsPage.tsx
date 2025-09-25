@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useRef } from 'react';
 import { useGetEventsQuery, useGetFeaturedEventsQuery } from '@/services/api/eventsApi';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import EventsPageSkeleton from '@/components/templates/EventsPageSkeleton'; // Import the skeleton
+import EventsPageSkeleton from '@/components/templates/EventsPageSkeleton';
 
 const EventsPage = () => {
   const navigate = useNavigate();
@@ -147,6 +147,9 @@ const EventsPage = () => {
                           src={event.imageUrl} 
                           alt={event.title} 
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=2000&auto=format&fit=crop';
+                          }}
                         />
                       </div>
                     </div>
