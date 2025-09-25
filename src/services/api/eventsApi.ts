@@ -65,19 +65,40 @@ export interface EventsQueryParams {
 }
 
 // Helper function to parse timestamp and extract time/date
+// Helper function to parse timestamp and extract time/date
 const parseTimestamp = (timestamp: string) => {
   try {
-    const date = new Date(timestamp);
+    // Handle backend format: "23-05-2025:12:00:00"
+    // Split by colon to separate date and time parts
+    const [datePart, ...timeParts] = timestamp.split(':');
+    const timePart = timeParts.join(':'); // Rejoin time parts in case there are multiple colons
+    
+    // Split date part by dash: "23-05-2025" -> ["23", "05", "2025"]
+    const [day, month, year] = datePart.split('-');
+    
+    // Create ISO format string: "2025-05-23T12:00:00"
+    const isoString = `${year}-${month}-${day}T${timePart}`;
+    
+    // Parse the ISO string
+    const date = new Date(isoString);
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid date');
+    }
+    
     const time = date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: true 
     });
-    const day = date.getDate().toString();
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
     
-    return { time, date: { day, month } };
+    const dayString = date.getDate().toString();
+    const monthString = date.toLocaleDateString('en-US', { month: 'short' });
+    
+    return { time, date: { day: dayString, month: monthString } };
   } catch (error) {
+    console.warn('Failed to parse timestamp:', timestamp, error);
     // Fallback if timestamp parsing fails
     return {
       time: 'TBD',
