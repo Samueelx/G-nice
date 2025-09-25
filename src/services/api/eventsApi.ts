@@ -1,10 +1,11 @@
+// src/services/api/eventsApi.ts
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // Backend types (matching your actual backend response)
 export interface BackendEvent {
   eventId: number;
   title: string;
-  Venue: string;
+  venue: string; // Changed to camelCase
   timestamp: string;
   description?: string;
   createdAt?: string;
@@ -92,7 +93,7 @@ const transformBackendEventToFrontend = (backendEvent: BackendEvent): Event => {
   return {
     id: backendEvent.eventId.toString(), // Convert to string and use 'id'
     title: backendEvent.title, // Keep title
-    location: backendEvent.Venue, // Map Venue to location
+    location: backendEvent.venue, // Map venue to location (now camelCase)
     time, // Parsed time from timestamp
     date, // Parsed date object with day/month
     price: backendEvent.price || 0, // Default to 0 if not provided
