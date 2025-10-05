@@ -1,14 +1,26 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import axiosInstance from "@/api/axiosConfig"; // Import your configured axios instance
+import axiosInstance from "@/api/axiosConfig";
 
-// Types
+// Types matching backend response
 interface Post {
   id: string;
   body: string;
-  imageUrl?: string;
-  userId: string;
+  imageUrls?: string[]; // Changed to match backend (array of URLs)
+  user: {
+    userId: string;
+  };
   createdAt: string;
-  updatedAt: string;
+  likes: number;
+  comments: number;
+}
+
+// Normalized Post for frontend use
+interface NormalizedPost {
+  id: string;
+  body: string;
+  imageUrls?: string[];
+  userId: string; // Flattened from user.userId
+  createdAt: string;
   likes: number;
   comments: number;
 }
@@ -34,17 +46,19 @@ interface CreateCommentData {
   body: string;
 }
 
-// Updated interface for API payload
+// Updated interface matching backend expectations
 interface CreatePostPayload {
   body: string;
-  image?: string; // base64 encoded string
-  imageType?: string; // MIME type of the image
+  images?: Array<{
+    image: string; // base64 encoded string
+    imageType: string; // MIME type
+  }>;
 }
 
 interface PostsState {
-  posts: Post[];
-  userPosts: Post[];
-  selectedPost: Post | null;
+  posts: NormalizedPost[];
+  userPosts: NormalizedPost[];
+  selectedPost: NormalizedPost | null;
   comments: Comment[];
   isLoading: boolean;
   isLoadingPost: boolean;
@@ -69,13 +83,23 @@ const fileToBase64 = (file: File): Promise<string> => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
-      // Remove the data URL prefix (data:image/jpeg;base64,) and keep only base64 string
       const base64String = (reader.result as string).split(',')[1];
       resolve(base64String);
     };
     reader.onerror = (error) => reject(error);
   });
 };
+
+// Helper function to normalize backend post to frontend format
+const normalizePost = (post: Post): NormalizedPost => ({
+  id: post.id,
+  body: post.body,
+  imageUrls: post.imageUrls,
+  userId: post.user.userId,
+  createdAt: post.createdAt,
+  likes: post.likes,
+  comments: post.comments,
+});
 
 // Async thunks
 export const createPost = createAsyncThunk(
@@ -86,21 +110,24 @@ export const createPost = createAsyncThunk(
         body: postData.body,
       };
 
-      // Convert image to base64 if provided
+      // Convert image to base64 if provided - wrap in images array
       if (postData.image) {
         const base64Image = await fileToBase64(postData.image);
-        payload.image = base64Image;
-        payload.imageType = postData.image.type;
+        payload.images = [
+          {
+            image: base64Image,
+            imageType: postData.image.type,
+          },
+        ];
       }
 
-      // Use your configured axios instance instead of raw axios
-      const response = await axiosInstance.post("/api/posts", payload, {
+      const response = await axiosInstance.post<Post>("/api/posts", payload, {
         headers: {
           "Content-Type": "application/json",
         },
       });
       
-      return response.data;
+      return normalizePost(response.data);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create post"
@@ -113,9 +140,9 @@ export const fetchPosts = createAsyncThunk(
   "posts/fetchPosts",
   async (_, { rejectWithValue }) => {
     try {
-      // Use your configured axios instance
-      const response = await axiosInstance.get("/api/posts");
-      return response.data;
+      // Updated to match backend endpoint
+      const response = await axiosInstance.get<Post[]>("/resources/post/admin");
+      return response.data.map(normalizePost);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch posts"
@@ -128,9 +155,8 @@ export const fetchUserPosts = createAsyncThunk(
   "posts/fetchUserPosts",
   async (userId: string, { rejectWithValue }) => {
     try {
-      // Use your configured axios instance
-      const response = await axiosInstance.get(`/api/posts/user/${userId}`);
-      return response.data;
+      const response = await axiosInstance.get<Post[]>(`/api/posts/user/${userId}`);
+      return response.data.map(normalizePost);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch user posts"
@@ -139,13 +165,12 @@ export const fetchUserPosts = createAsyncThunk(
   }
 );
 
-// New: Fetch single post by ID
 export const fetchPostById = createAsyncThunk(
   "posts/fetchPostById",
   async (postId: string, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get(`/api/posts/${postId}`);
-      return response.data;
+      const response = await axiosInstance.get<Post>(`/api/posts/${postId}`);
+      return normalizePost(response.data);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch post"
@@ -154,12 +179,11 @@ export const fetchPostById = createAsyncThunk(
   }
 );
 
-// New: Fetch comments for a specific post
 export const fetchComments = createAsyncThunk(
   "posts/fetchComments",
   async (postId: string, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get(`/api/posts/${postId}/comments`);
+      const response = await axiosInstance.get<Comment[]>(`/api/posts/${postId}/comments`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -169,12 +193,11 @@ export const fetchComments = createAsyncThunk(
   }
 );
 
-// New: Create a comment
 export const createComment = createAsyncThunk(
   "posts/createComment",
   async (commentData: CreateCommentData, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post(
+      const response = await axiosInstance.post<Comment>(
         `/api/posts/${commentData.postId}/comments`,
         { body: commentData.body },
         {
@@ -212,13 +235,12 @@ const postsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Create Post
     builder
       .addCase(createPost.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(createPost.fulfilled, (state, action: PayloadAction<Post>) => {
+      .addCase(createPost.fulfilled, (state, action: PayloadAction<NormalizedPost>) => {
         state.isLoading = false;
         state.posts.unshift(action.payload);
         state.userPosts.unshift(action.payload);
@@ -227,12 +249,11 @@ const postsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      // Fetch Posts
       .addCase(fetchPosts.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchPosts.fulfilled, (state, action: PayloadAction<Post[]>) => {
+      .addCase(fetchPosts.fulfilled, (state, action: PayloadAction<NormalizedPost[]>) => {
         state.isLoading = false;
         state.posts = action.payload;
       })
@@ -240,28 +261,23 @@ const postsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      // Fetch User Posts
       .addCase(fetchUserPosts.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(
-        fetchUserPosts.fulfilled,
-        (state, action: PayloadAction<Post[]>) => {
-          state.isLoading = false;
-          state.userPosts = action.payload;
-        }
-      )
+      .addCase(fetchUserPosts.fulfilled, (state, action: PayloadAction<NormalizedPost[]>) => {
+        state.isLoading = false;
+        state.userPosts = action.payload;
+      })
       .addCase(fetchUserPosts.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      // Fetch Post By ID
       .addCase(fetchPostById.pending, (state) => {
         state.isLoadingPost = true;
         state.error = null;
       })
-      .addCase(fetchPostById.fulfilled, (state, action: PayloadAction<Post>) => {
+      .addCase(fetchPostById.fulfilled, (state, action: PayloadAction<NormalizedPost>) => {
         state.isLoadingPost = false;
         state.selectedPost = action.payload;
       })
@@ -269,7 +285,6 @@ const postsSlice = createSlice({
         state.isLoadingPost = false;
         state.error = action.payload as string;
       })
-      // Fetch Comments
       .addCase(fetchComments.pending, (state) => {
         state.isLoadingComments = true;
         state.error = null;
@@ -282,7 +297,6 @@ const postsSlice = createSlice({
         state.isLoadingComments = false;
         state.error = action.payload as string;
       })
-      // Create Comment
       .addCase(createComment.pending, (state) => {
         state.isLoadingComments = true;
         state.error = null;
@@ -290,11 +304,9 @@ const postsSlice = createSlice({
       .addCase(createComment.fulfilled, (state, action: PayloadAction<Comment>) => {
         state.isLoadingComments = false;
         state.comments.push(action.payload);
-        // Update comment count in selected post if it exists
         if (state.selectedPost) {
           state.selectedPost.comments += 1;
         }
-        // Update comment count in posts array if the post exists there
         const postIndex = state.posts.findIndex(post => post.id === action.payload.postId);
         if (postIndex !== -1) {
           state.posts[postIndex].comments += 1;
@@ -309,4 +321,4 @@ const postsSlice = createSlice({
 
 export const { clearError, resetPosts, clearSelectedPost } = postsSlice.actions;
 export default postsSlice.reducer;
-export type { PostsState };
+export type { PostsState, NormalizedPost };
