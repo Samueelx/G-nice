@@ -2,14 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Send, Heart, MessageCircle, MoreHorizontal } from "lucide-react";
-import { AppDispatch, RootState } from "@/store/store"; // Adjust path as needed
+import { AppDispatch, RootState } from "@/store/store";
 import { 
   fetchPostById, 
   fetchComments, 
   createComment, 
   clearSelectedPost, 
   Comment
-} from "@/features/posts/postsSlice"; // Adjust path as needed
+} from "@/features/posts/postsSlice";
 
 const PostDetailPage: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -29,12 +29,10 @@ const PostDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (postId) {
-      // Fetch the post and its comments
       dispatch(fetchPostById(postId));
       dispatch(fetchComments(postId));
     }
 
-    // Cleanup when component unmounts
     return () => {
       dispatch(clearSelectedPost());
     };
@@ -123,7 +121,6 @@ const PostDetailPage: React.FC = () => {
         <div className="p-3">
           <nav className="w-full">
             <div className="flex items-center justify-between gap-2">
-              {/* Back button */}
               <button
                 onClick={() => navigate(-1)}
                 className="p-2 hover:bg-purple-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -131,7 +128,6 @@ const PostDetailPage: React.FC = () => {
                 <ArrowLeft className="w-6 h-6 text-purple-600" />
               </button>
               
-              {/* Center Logo */}
               <div className="flex items-center gap-2">
                 <img
                   className="w-8 h-8 transition-transform duration-200 hover:rotate-12"
@@ -143,7 +139,6 @@ const PostDetailPage: React.FC = () => {
                 </h1>
               </div>
               
-              {/* Spacer for symmetry */}
               <div className="w-8 h-8"></div>
             </div>
           </nav>
@@ -197,10 +192,11 @@ const PostDetailPage: React.FC = () => {
                 {/* Post Content */}
                 <div className="p-4">
                   <p className="text-gray-800 mb-4">{selectedPost.body}</p>
-                  {selectedPost.imageUrl && (
+                  {/* Updated to handle imageUrls array */}
+                  {selectedPost.imageUrls && selectedPost.imageUrls.length > 0 && (
                     <div className="rounded-lg overflow-hidden mb-4">
                       <img
-                        src={selectedPost.imageUrl}
+                        src={selectedPost.imageUrls[0]}
                         alt="Post content"
                         className="w-full h-auto max-h-96 object-cover"
                       />
