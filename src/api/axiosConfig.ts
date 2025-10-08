@@ -11,7 +11,7 @@ const instance = axios.create({
 
 // Create a separate instance for form data (login/signup)
 export const formInstance = axios.create({
-    baseURL: 'http://localhost:8080/Memefest-SNAPSHOT-01/resources',
+    baseURL: 'http://localhost:8080/',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
     }
