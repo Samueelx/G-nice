@@ -10,8 +10,8 @@ interface Post {
     userId: string;
   };
   createdAt: string;
-  likes: number;
-  comments: number;
+  likes?: number; // Made optional
+  comments?: number; // Made optional
 }
 
 // Normalized Post for frontend use
@@ -97,8 +97,8 @@ const normalizePost = (post: Post): NormalizedPost => ({
   imageUrls: post.imageUrls,
   userId: post.user.userId,
   createdAt: post.createdAt,
-  likes: post.likes,
-  comments: post.comments,
+  likes: post.likes ?? 0, // Default to 0 if undefined
+  comments: post.comments ?? 0, // Default to 0 if undefined
 });
 
 // Async thunks

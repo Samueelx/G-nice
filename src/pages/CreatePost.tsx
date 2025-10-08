@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const CreatePost = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const isLoading = useAppSelector((state) => state.posts.isLoading);
   
@@ -63,6 +65,8 @@ const CreatePost = () => {
         title: 'Success',
         description: 'Post created successfully!',
       });
+      // Navigate to feeds page after successful post creation
+      navigate('/feeds');
     } catch (error) {
       toast({
         title: 'Error',
