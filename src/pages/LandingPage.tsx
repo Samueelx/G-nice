@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import SocialPost from "@/components/common/SocialPost";
-import data from "@/data.json";
 import JokeJumbotron from "@/components/templates/JokeJumbotron";
-import { Menu } from "lucide-react"; // Removed Sparkles import
+import { Menu, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
+import { fetchPosts } from "@/features/posts/postsSlice";
 
 interface LandingPageProps {
   setIsSidebarOpen: (isOpen: boolean) => void;
@@ -11,10 +12,19 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  
+  // Get posts from Redux store
+  const { posts, isLoading, error } = useAppSelector((state) => state.posts);
 
-  const handlePostClick = () => {
-    navigate(`/post/${data[0].id}`);
-  }
+  // Fetch posts on component mount
+  useEffect(() => {
+    dispatch(fetchPosts());
+  }, [dispatch]);
+
+  const handlePostClick = (postId: string) => {
+    navigate(`/post/${postId}`);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 overflow-x-hidden">
@@ -66,12 +76,52 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
           <JokeJumbotron />
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+              <p className="text-red-600">Failed to load posts: {error}</p>
+            </div>
+          </div>
+        )}
+
         {/* Posts Grid - Single column on mobile, centered on desktop */}
-        <div className="grid gap-4 grid-cols-1 max-w-2xl mx-auto cursor-pointer" onClick={handlePostClick}>
-          {data.map((post, index) => (
-            <SocialPost key={index} {...post} />
-          ))}
-        </div>
+        {!isLoading && !error && (
+          <div className="grid gap-4 grid-cols-1 max-w-2xl mx-auto">
+            {posts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No posts yet. Be the first to share!</p>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <div key={post.id} onClick={() => handlePostClick(post.id)} className="cursor-pointer">
+                  <SocialPost
+                    author={{
+                      name: post.userId, // You may want to fetch user details separately
+                      avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp", // Default avatar
+                      username: post.userId,
+                    }}
+                    content={post.body}
+                    images={post.imageUrls?.map((url, index) => ({
+                      url,
+                      alt: `Image ${index + 1}`,
+                    }))}
+                    timestamp={post.createdAt}
+                    likes={post.likes}
+                    comments={post.comments}
+                  />
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
