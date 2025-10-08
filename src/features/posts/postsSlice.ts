@@ -7,7 +7,9 @@ interface Post {
   body: string;
   imageUrls?: string[]; // Changed to match backend (array of URLs)
   user: {
-    userId: string;
+    UserId: string; // Backend uses capital U
+    Username: string; // Backend uses capital U
+    displayName?: string; // Backend provides displayName
   };
   createdAt: string;
   likes?: number; // Made optional
@@ -19,7 +21,9 @@ interface NormalizedPost {
   id: string;
   body: string;
   imageUrls?: string[];
-  userId: string; // Flattened from user.userId
+  userId: string; // Flattened from user.UserId
+  username: string; // Flattened from user.Username
+  displayName: string; // Flattened from user.displayName
   createdAt: string;
   likes: number;
   comments: number;
@@ -95,7 +99,9 @@ const normalizePost = (post: Post): NormalizedPost => ({
   id: post.id,
   body: post.body,
   imageUrls: post.imageUrls,
-  userId: post.user.userId,
+  userId: post.user.UserId,
+  username: post.user.Username,
+  displayName: post.user.displayName || post.user.Username, // Use displayName or fallback to Username
   createdAt: post.createdAt,
   likes: post.likes ?? 0, // Default to 0 if undefined
   comments: post.comments ?? 0, // Default to 0 if undefined
@@ -141,7 +147,7 @@ export const fetchPosts = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Updated to match backend endpoint
-      const response = await axiosInstance.get<Post[]>("/Post");
+      const response = await axiosInstance.get<Post[]>("/Posts");
       return response.data.map(normalizePost);
     } catch (error: any) {
       return rejectWithValue(

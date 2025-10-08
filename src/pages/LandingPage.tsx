@@ -104,9 +104,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
                 <div key={post.id} onClick={() => handlePostClick(post.id)} className="cursor-pointer">
                   <SocialPost
                     author={{
-                      name: post.userId, // You may want to fetch user details separately
-                      avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp", // Default avatar
-                      username: post.userId,
+                      name: post.displayName,
+                      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(post.displayName)}&background=9333ea&color=fff&bold=true`,
+                      username: post.username,
                     }}
                     content={post.body}
                     images={post.imageUrls?.map((url, index) => ({
