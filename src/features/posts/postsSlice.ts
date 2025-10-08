@@ -121,7 +121,7 @@ export const createPost = createAsyncThunk(
         ];
       }
 
-      const response = await axiosInstance.post<Post>("/api/posts", payload, {
+      const response = await axiosInstance.post<Post>("/Post", payload, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -141,7 +141,7 @@ export const fetchPosts = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Updated to match backend endpoint
-      const response = await axiosInstance.get<Post[]>("/resources/post/admin");
+      const response = await axiosInstance.get<Post[]>("/Posts");
       return response.data.map(normalizePost);
     } catch (error: any) {
       return rejectWithValue(
@@ -155,7 +155,7 @@ export const fetchUserPosts = createAsyncThunk(
   "posts/fetchUserPosts",
   async (userId: string, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<Post[]>(`/api/posts/user/${userId}`);
+      const response = await axiosInstance.get<Post[]>(`/Post/user/${userId}`);
       return response.data.map(normalizePost);
     } catch (error: any) {
       return rejectWithValue(
@@ -169,7 +169,7 @@ export const fetchPostById = createAsyncThunk(
   "posts/fetchPostById",
   async (postId: string, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<Post>(`/api/posts/${postId}`);
+      const response = await axiosInstance.get<Post>(`/Post/${postId}`);
       return normalizePost(response.data);
     } catch (error: any) {
       return rejectWithValue(
@@ -183,7 +183,7 @@ export const fetchComments = createAsyncThunk(
   "posts/fetchComments",
   async (postId: string, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<Comment[]>(`/api/posts/${postId}/comments`);
+      const response = await axiosInstance.get<Comment[]>(`/Post/${postId}/Comments`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -198,7 +198,7 @@ export const createComment = createAsyncThunk(
   async (commentData: CreateCommentData, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post<Comment>(
-        `/api/posts/${commentData.postId}/comments`,
+        `/Post/${commentData.postId}/Comments`,
         { body: commentData.body },
         {
           headers: {
