@@ -147,7 +147,7 @@ export const fetchPosts = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Updated to match backend endpoint
-      const response = await axiosInstance.get<Post[]>("/Posts");
+      const response = await axiosInstance.get<Post[]>("/Post");
       return response.data.map(normalizePost);
     } catch (error: any) {
       return rejectWithValue(
