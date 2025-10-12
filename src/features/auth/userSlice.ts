@@ -4,10 +4,10 @@ import { AxiosResponse } from 'axios';
 
 // Types for the registration data and response
 interface UserRegistrationData {
-  firstname: string;
-  lastname: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  username: string;
+  userName: string;
 }
 
 interface RegistrationResponse {
@@ -43,7 +43,7 @@ export const registerUser = createAsyncThunk<
       'Memefest-SNAPSHOT-01/resources/SignIn/Verify-email',
       userData
     );
-    return response.data; // Fixed: Return only the `data` property
+    return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Registration failed');
   }
@@ -65,7 +65,7 @@ const userSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.registrationResponse = action.payload; // Now `action.payload` is correctly typed as `RegistrationResponse`
+        state.registrationResponse = action.payload;
         state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {
