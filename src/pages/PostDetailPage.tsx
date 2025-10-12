@@ -282,14 +282,14 @@ const PostDetailPage: React.FC = () => {
                           <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-200 flex-shrink-0">
                             <img
                               className="w-full h-full object-cover"
-                              src={comment.userAvatar || "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"}
-                              alt={`${comment.userName}'s avatar`}
+                              src={comment.user.userAvatar || "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"}
+                              alt={`${comment.user.userName}'s avatar`}
                             />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h4 className="font-semibold text-gray-900 text-sm">
-                                {comment.userName}
+                                {comment.user.userName}
                               </h4>
                               <span className="text-xs text-gray-500">
                                 {formatTimeAgo(comment.createdAt)}

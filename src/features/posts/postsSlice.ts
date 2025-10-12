@@ -29,12 +29,15 @@ interface NormalizedPost {
   comments: number;
 }
 
+// Updated Comment interface with nested user object
 export interface Comment {
   id: string;
   postId: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string;
+  user: {
+    userId: string;
+    userName: string;
+    userAvatar?: string;
+  };
   body: string;
   createdAt: string;
   updatedAt: string;
