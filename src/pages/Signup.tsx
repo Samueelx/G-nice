@@ -11,10 +11,10 @@ const Signup: React.FC = () => {
 
   /**Form state */
   const [formData, setFormData] = useState({
-    firstname: "",
-    lastname: "",
+    firstName: "",
+    lastName: "",
     email: "",
-    username: "",
+    userName: "",
   });
 
   /**Get state from redux */
@@ -35,10 +35,10 @@ const Signup: React.FC = () => {
     e.preventDefault();
     /**Basic validation */
     if (
-      !formData.firstname ||
-      !formData.lastname ||
+      !formData.firstName ||
+      !formData.lastName ||
       !formData.email ||
-      !formData.username
+      !formData.userName
     ) {
       // You might want to add proper form validation here
       return;
@@ -92,14 +92,14 @@ const Signup: React.FC = () => {
               <input
                 type="text"
                 className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
-                name="firstname"
-                id="firstname"
+                name="firstName"
+                id="firstName"
                 placeholder=" "
-                value={formData.firstname}
+                value={formData.firstName}
                 onChange={handleChange}
               />
               <label
-                htmlFor="firstname"
+                htmlFor="firstName"
                 className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
                 peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
               >
@@ -110,14 +110,14 @@ const Signup: React.FC = () => {
               <input
                 type="text"
                 className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
-                name="lastname"
-                id="lastname"
+                name="lastName"
+                id="lastName"
                 placeholder=" "
-                value={formData.lastname}
+                value={formData.lastName}
                 onChange={handleChange}
               />
               <label
-                htmlFor="lastname"
+                htmlFor="lastName"
                 className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
                 peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
               >
@@ -146,14 +146,14 @@ const Signup: React.FC = () => {
               <input
                 type="text"
                 className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
-                name="username"
-                id="username"
+                name="userName"
+                id="userName"
                 placeholder=" "
-                value={formData.username}
+                value={formData.userName}
                 onChange={handleChange}
               />
               <label
-                htmlFor="username"
+                htmlFor="userName"
                 className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
                 peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
               >

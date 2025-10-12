@@ -3,7 +3,7 @@ import { formInstance } from '@/api/axiosConfig';
 import { AxiosResponse } from 'axios';
 
 // Types for the registration data and response
-interface UserRegistrationData {
+export interface UserRegistrationData {
   firstName: string;
   lastName: string;
   email: string;
