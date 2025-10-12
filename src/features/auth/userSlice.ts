@@ -10,11 +10,9 @@ export interface UserRegistrationData {
   userName: string;
 }
 
+// Backend returns no data, just 200 OK status
 interface RegistrationResponse {
-  success: boolean;
-  userId: string;
-  message: string;
-  // Add any other fields your API returns
+  status: number;
 }
 
 interface UserState {
@@ -35,15 +33,16 @@ export const registerUser = createAsyncThunk<
   RegistrationResponse,
   UserRegistrationData, 
   {
-    rejectValue: string; // Type for the rejection value
+    rejectValue: string;
   }
 >('user/register', async (userData: UserRegistrationData, { rejectWithValue }) => {
   try {
-    const response: AxiosResponse<RegistrationResponse> = await formInstance.put(
+    const response: AxiosResponse = await formInstance.put(
       'Memefest-SNAPSHOT-01/resources/SignIn/Verify-email',
       userData
     );
-    return response.data;
+    // Backend returns no data, just check status code
+    return { status: response.status };
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Registration failed');
   }
