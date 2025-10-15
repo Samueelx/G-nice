@@ -94,7 +94,7 @@ export const fetchProfile = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Backend uses token to identify the user
-      const response = await axiosInstance.get('/api/users/profile');
+      const response = await axiosInstance.get('/User');
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -110,7 +110,7 @@ export const fetchUserPosts = createAsyncThunk(
   'profile/fetchUserPosts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/api/users/posts');
+      const response = await axiosInstance.get('/User/posts');
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -126,7 +126,7 @@ export const fetchUserComments = createAsyncThunk(
   'profile/fetchUserComments',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/api/users/comments');
+      const response = await axiosInstance.get('/User/comments');
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
