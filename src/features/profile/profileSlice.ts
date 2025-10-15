@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
-import axiosInstance from "@/api/axiosConfig"; // Import your configured axios instance
+import axiosInstance from "@/api/axiosConfig";
 
 // Types matching your ProfilePage component
 export type UserProfile = {
@@ -77,7 +77,6 @@ export const fetchUserByUsername = createAsyncThunk(
   'profile/fetchUserByUsername',
   async (username: string, { rejectWithValue }) => {
     try {
-      // This matches your requirement: GET request to https://domain.com/users/username
       const response = await axiosInstance.get(`/users/${username}`);
       return response.data;
     } catch (error) {
@@ -89,13 +88,13 @@ export const fetchUserByUsername = createAsyncThunk(
   }
 );
 
-// Async thunk for fetching profile data
+// Async thunk for fetching profile data (token-based authentication)
 export const fetchProfile = createAsyncThunk(
   'profile/fetchProfile',
-  async (userId: string, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      // Use your configured axios instance (baseURL already set in axiosConfig)
-      const response = await axiosInstance.get(`/api/users/${userId}/profile`);
+      // Backend uses token to identify the user
+      const response = await axiosInstance.get('/api/users/profile');
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -106,12 +105,12 @@ export const fetchProfile = createAsyncThunk(
   }
 );
 
-// Async thunk for fetching user posts
+// Async thunk for fetching user posts (token-based authentication)
 export const fetchUserPosts = createAsyncThunk(
   'profile/fetchUserPosts',
-  async (userId: string, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get(`/api/users/${userId}/posts`);
+      const response = await axiosInstance.get('/api/users/posts');
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -122,12 +121,12 @@ export const fetchUserPosts = createAsyncThunk(
   }
 );
 
-// Async thunk for fetching user comments
+// Async thunk for fetching user comments (token-based authentication)
 export const fetchUserComments = createAsyncThunk(
   'profile/fetchUserComments',
-  async (userId: string, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get(`/api/users/${userId}/comments`);
+      const response = await axiosInstance.get('/api/users/comments');
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -138,12 +137,12 @@ export const fetchUserComments = createAsyncThunk(
   }
 );
 
-// Async thunk for updating profile (original - kept for backward compatibility)
+// Async thunk for updating profile (token-based authentication)
 export const updateProfile = createAsyncThunk(
   'profile/updateProfile',
   async (profileData: Partial<UserProfile>, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.put(`/api/users/${profileData.id}/profile`, profileData);
+      const response = await axiosInstance.put('/api/users/profile', profileData);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -154,10 +153,10 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
-// New async thunk for updating profile with edit form data
+// New async thunk for updating profile with edit form data (token-based authentication)
 export const updateProfileWithFormData = createAsyncThunk(
   'profile/updateProfileWithFormData',
-  async ({ userId, formData }: { userId: string; formData: EditProfileData }, { rejectWithValue }) => {
+  async (formData: EditProfileData, { rejectWithValue }) => {
     try {
       // Create FormData for multipart/form-data if avatar is a file
       const requestData = new FormData();
@@ -178,7 +177,7 @@ export const updateProfileWithFormData = createAsyncThunk(
         requestData.append('avatar', formData.avatar);
       }
 
-      const response = await axiosInstance.put(`/api/users/${userId}/profile`, requestData, {
+      const response = await axiosInstance.put('/api/users/profile', requestData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -194,15 +193,15 @@ export const updateProfileWithFormData = createAsyncThunk(
   }
 );
 
-// Async thunk for uploading avatar separately
+// Async thunk for uploading avatar separately (token-based authentication)
 export const uploadAvatar = createAsyncThunk(
   'profile/uploadAvatar',
-  async ({ userId, avatarFile }: { userId: string; avatarFile: File }, { rejectWithValue }) => {
+  async (avatarFile: File, { rejectWithValue }) => {
     try {
       const formData = new FormData();
       formData.append('avatar', avatarFile);
 
-      const response = await axiosInstance.post(`/api/users/${userId}/avatar`, formData, {
+      const response = await axiosInstance.post('/api/users/avatar', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -314,7 +313,7 @@ const profileSlice = createSlice({
         state.error = action.payload as string;
       })
     
-    // Update Profile (original)
+    // Update Profile
     builder
       .addCase(updateProfile.pending, (state) => {
         state.updating = true;
@@ -329,7 +328,7 @@ const profileSlice = createSlice({
         state.error = action.payload as string;
       })
     
-    // Update Profile with Form Data (new)
+    // Update Profile with Form Data
     builder
       .addCase(updateProfileWithFormData.pending, (state) => {
         state.updating = true;

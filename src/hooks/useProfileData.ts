@@ -1,12 +1,13 @@
-import { useAppDispatch, useAppSelector } from '@/hooks/hooks'; // Update path to your hooks file
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { 
   fetchProfile, 
   fetchUserPosts, 
-  fetchUserComments, 
+  fetchUserComments,
+  fetchUserByUsername,
   updateProfile,
   clearProfile,
   clearError
-} from '@/features/profile/profileSlice'; // Adjust import path to match your structure
+} from '@/features/profile/profileSlice';
 import { useCallback, useEffect } from 'react';
 
 export const useProfileData = (userId?: string) => {
@@ -15,14 +16,14 @@ export const useProfileData = (userId?: string) => {
     (state) => state.profile
   );
 
-  // Fetch complete profile data
+  // Fetch complete profile data for the authenticated user (token-based)
   const fetchCompleteProfile = useCallback(
-    async (id: string) => {
+    async () => {
       try {
         await Promise.all([
-          dispatch(fetchProfile(id)).unwrap(),
-          dispatch(fetchUserPosts(id)).unwrap(),
-          dispatch(fetchUserComments(id)).unwrap(),
+          dispatch(fetchProfile()).unwrap(),
+          dispatch(fetchUserPosts()).unwrap(),
+          dispatch(fetchUserComments()).unwrap(),
         ]);
       } catch (error) {
         console.error('Error fetching profile data:', error);
@@ -31,19 +32,31 @@ export const useProfileData = (userId?: string) => {
     [dispatch]
   );
 
-  // Individual fetch functions
+  // Fetch another user's profile by username
+  const fetchUserProfile = useCallback(
+    async (username: string) => {
+      try {
+        await dispatch(fetchUserByUsername(username)).unwrap();
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    },
+    [dispatch]
+  );
+
+  // Individual fetch functions for authenticated user (token-based)
   const fetchProfileData = useCallback(
-    (id: string) => dispatch(fetchProfile(id)),
+    () => dispatch(fetchProfile()),
     [dispatch]
   );
 
   const fetchPosts = useCallback(
-    (id: string) => dispatch(fetchUserPosts(id)),
+    () => dispatch(fetchUserPosts()),
     [dispatch]
   );
 
   const fetchComments = useCallback(
-    (id: string) => dispatch(fetchUserComments(id)),
+    () => dispatch(fetchUserComments()),
     [dispatch]
   );
 
@@ -62,14 +75,18 @@ export const useProfileData = (userId?: string) => {
     [dispatch]
   );
 
-  // Auto-fetch profile data when userId changes
+  // Auto-fetch profile data when component mounts or userId changes
   useEffect(() => {
     if (userId) {
-      fetchCompleteProfile(userId);
+      // If userId is provided, fetch that specific user's profile by username
+      fetchUserProfile(userId);
+    } else {
+      // If no userId, fetch the authenticated user's own profile (token-based)
+      fetchCompleteProfile();
     }
-  }, [userId, fetchCompleteProfile]);
+  }, [userId, fetchCompleteProfile, fetchUserProfile]);
 
-  // Separate cleanup effect to avoid clearing data on every userId change
+  // Cleanup effect
   useEffect(() => {
     return () => {
       // Only clear data when component unmounts
@@ -86,10 +103,11 @@ export const useProfileData = (userId?: string) => {
     error,
     
     // Actions
-    fetchCompleteProfile,
-    fetchProfileData,
-    fetchPosts,
-    fetchComments,
+    fetchCompleteProfile,      // Fetch own profile (token-based)
+    fetchUserProfile,          // Fetch another user's profile by username
+    fetchProfileData,          // Fetch own profile data only
+    fetchPosts,                // Fetch own posts
+    fetchComments,             // Fetch own comments
     updateProfileData,
     clearProfileData,
     clearErrorMessage,
