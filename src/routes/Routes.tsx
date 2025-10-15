@@ -24,7 +24,6 @@ import EditProfilePage from "@/pages/EditProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import ChangePasswordPage from "@/pages/ChangePasswordPage";
 
-
 const router = createBrowserRouter([
     {
         path: '/',
@@ -35,20 +34,12 @@ const router = createBrowserRouter([
         element: <PublicRoute><LoginPage /></PublicRoute>
     },
     {
-        path: '/profile/:userId',
-        element: <PrivateRoute><ProfilePage isOwnProfile={true}/></PrivateRoute>
-    },
-    {
         path: '/signup',
         element: <PublicRoute><Signup /></PublicRoute>
     },
     {
         path: '/password-setup',
         element: <PublicRoute><PasswordSetup /></PublicRoute>
-    },
-    {
-        path: '/feeds',
-        element: <PrivateRoute><AppLayout><LandingPage setIsSidebarOpen={() => false}/></AppLayout></PrivateRoute>
     },
     {
         path: '/reset-password',
@@ -61,6 +52,10 @@ const router = createBrowserRouter([
     {
         path: '/forgot-password',
         element: <PublicRoute><ForgotPassword/></PublicRoute>
+    },
+    {
+        path: '/feeds',
+        element: <PrivateRoute><AppLayout><LandingPage setIsSidebarOpen={() => false}/></AppLayout></PrivateRoute>
     },
     {
         path: '/events',
@@ -95,12 +90,19 @@ const router = createBrowserRouter([
         element: <PrivateRoute><PostDetailPage/></PrivateRoute>
     },
     {
-        path: '/profile/:username',
-        element: <PrivateRoute><ProfilePage isOwnProfile={false}/></PrivateRoute>
+        // Own profile - no username in URL, uses token
+        path: '/profile',
+        element: <PrivateRoute><ProfilePage isOwnProfile={true}/></PrivateRoute>
     },
     {
-        path: '/profile/edit-profile',
+        // Edit profile
+        path: '/profile/edit',
         element: <PrivateRoute><EditProfilePage/></PrivateRoute>
+    },
+    {
+        // Other users' profiles - has username in URL
+        path: '/profile/:username',
+        element: <PrivateRoute><ProfilePage isOwnProfile={false}/></PrivateRoute>
     },
     {
         path: '/settings',
