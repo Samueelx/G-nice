@@ -117,10 +117,7 @@ const EditProfilePage = () => {
       }
 
       // Dispatch the update action
-      await dispatch(updateProfileWithFormData({
-        userId: profile.id,
-        formData: updatedFormData
-      })).unwrap();
+      await dispatch(updateProfileWithFormData(updatedFormData)).unwrap();
 
       // Show success message
       setShowSuccess(true);
