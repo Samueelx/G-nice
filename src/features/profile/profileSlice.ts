@@ -110,7 +110,7 @@ export const fetchUserPosts = createAsyncThunk(
   'profile/fetchUserPosts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/User/posts');
+      const response = await axiosInstance.get('/User/Posts');
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -126,7 +126,7 @@ export const fetchUserComments = createAsyncThunk(
   'profile/fetchUserComments',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/User/comments');
+      const response = await axiosInstance.get('/User/Comments');
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
