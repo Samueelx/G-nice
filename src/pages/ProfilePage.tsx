@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Pencil, MapPin, Calendar, Briefcase, Users, ArrowLeft, AlertCircle, Loader, MoreVertical, ArrowUp, MessageSquare, Eye } from 'lucide-react';
+import { Pencil, MapPin, Calendar, Briefcase, Users, ArrowLeft, AlertCircle, Loader, MoreVertical } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useProfileData } from '../hooks/useProfileData';
 import AdvancedProfileSkeleton from '@/components/templates/AdvancedProfileSkeleton';
@@ -101,9 +101,9 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
     }
   };
 
-  // Render individual comment with Reddit-style layout
+  // Render individual comment
   const renderComment = (comment: Comment) => (
-    <div key={comment.id} className="bg-[#1a1a1b] rounded-md p-3 border-l-2 border-gray-700">
+    <div key={comment.id} className="bg-white p-3 rounded-md">
       <div className="flex items-start gap-3">
         {/* Avatar */}
         <img
@@ -115,25 +115,23 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
         {/* Comment Content */}
         <div className="flex-1 min-w-0">
           {/* Comment Header */}
-          <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
-            <span className="font-medium text-gray-300">{comment.userName}</span>
+          <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
+            <span className="font-medium text-gray-900">{comment.userName}</span>
             <span>•</span>
             <span>{formatTime(comment.createdAt)}</span>
           </div>
           
           {/* Comment Body */}
-          <p className="text-gray-200 text-sm mb-2">{comment.body}</p>
+          <p className="text-gray-800 text-sm mb-2">{comment.body}</p>
           
           {/* Comment Actions */}
-          <div className="flex items-center gap-4 text-xs text-gray-400">
-            <button className="flex items-center gap-1 hover:text-orange-500 transition-colors">
-              <ArrowUp className="w-3 h-3" />
-              <span>{comment.likes}</span>
-            </button>
-            <button className="flex items-center gap-1 hover:text-gray-300 transition-colors">
-              <MessageSquare className="w-3 h-3" />
-              <span>{comment.comments?.length || 0}</span>
-            </button>
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              👍 {comment.likes}
+            </span>
+            <span className="flex items-center gap-1">
+              💬 {comment.comments?.length || 0}
+            </span>
           </div>
         </div>
       </div>
@@ -220,54 +218,27 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                 });
 
                 return Array.from(grouped.entries()).map(([postId, postComments]) => {
-                  // Get the first comment to extract post info (you may need to fetch actual post data)
                   const firstComment = postComments[0];
                   
                   return (
-                    <div key={postId} className="bg-white rounded-lg overflow-hidden shadow-md border border-gray-200">
+                    <div key={postId} className="bg-white rounded-lg shadow-md overflow-hidden">
                       {/* "Commented on:" label */}
-                      <div className="px-4 pt-3 pb-2 bg-gray-50">
-                        <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
-                          <Eye className="w-3 h-3" />
-                          <span>Commented on:</span>
-                        </div>
+                      <div className="px-4 pt-3 pb-2">
+                        <p className="text-sm text-gray-500">
+                          Commented on: <span className="font-medium">Post Title Here</span>
+                        </p>
                       </div>
 
-                      {/* Post Section */}
-                      <div className="bg-white px-4 py-3 border-y border-gray-200">
-                        <div className="flex items-start gap-3">
-                          {/* Post metadata */}
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
-                              <span className="text-blue-600 font-medium">r/nairobi</span>
-                              <span>•</span>
-                              <span>{formatTime(firstComment.createdAt)}</span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <ArrowUp className="w-3 h-3" />
-                                1
-                              </span>
-                            </div>
-                            
-                            {/* Post title/content */}
-                            <h3 className="text-gray-900 font-medium text-base mb-1">
-                              Post Title Here
-                            </h3>
-                            
-                            {/* Post stats */}
-                            <div className="flex items-center gap-4 text-xs text-gray-600">
-                              <span className="flex items-center gap-1">
-                                <MessageSquare className="w-3 h-3" />
-                                64 views
-                              </span>
-                              <button className="hover:text-blue-600 transition-colors">See More Insights</button>
-                            </div>
-                          </div>
+                      {/* Post preview section */}
+                      <div className="px-4 py-2 bg-gray-50 border-t border-b border-gray-200">
+                        <div className="text-xs text-gray-500 mb-1">
+                          r/nairobi • {formatTime(firstComment.createdAt)} • ↑ 1
                         </div>
+                        <p className="text-sm text-gray-700">Post content preview or title goes here...</p>
                       </div>
 
-                      {/* User's Comments Section */}
-                      <div className="px-4 py-3 space-y-3 bg-gray-50">
+                      {/* User's Comments */}
+                      <div className="px-4 py-3 space-y-3">
                         {postComments.map(renderComment)}
                       </div>
                     </div>
