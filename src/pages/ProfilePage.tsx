@@ -205,8 +205,8 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                 <p className="text-gray-600">Loading comments...</p>
               </div>
             ) : comments.length === 0 ? (
-              <div className="text-center py-12 bg-[#1a1a1b] rounded-lg border border-gray-800">
-                <p className="text-gray-400">No comments yet</p>
+              <div className="text-center py-12 bg-white rounded-lg shadow-md">
+                <p className="text-gray-500">No comments yet</p>
               </div>
             ) : (
               // Group comments by post
@@ -224,22 +224,22 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                   const firstComment = postComments[0];
                   
                   return (
-                    <div key={postId} className="bg-[#0d0d0e] rounded-lg overflow-hidden border border-gray-800">
+                    <div key={postId} className="bg-white rounded-lg overflow-hidden shadow-md border border-gray-200">
                       {/* "Commented on:" label */}
-                      <div className="px-4 pt-3 pb-2">
-                        <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
+                      <div className="px-4 pt-3 pb-2 bg-gray-50">
+                        <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
                           <Eye className="w-3 h-3" />
                           <span>Commented on:</span>
                         </div>
                       </div>
 
-                      {/* Post Section (Reddit-style) */}
-                      <div className="bg-[#1a1a1b] px-4 py-3 border-y border-gray-800">
+                      {/* Post Section */}
+                      <div className="bg-white px-4 py-3 border-y border-gray-200">
                         <div className="flex items-start gap-3">
                           {/* Post metadata */}
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
-                              <span className="text-gray-300 font-medium">r/nairobi</span>
+                            <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
+                              <span className="text-blue-600 font-medium">r/nairobi</span>
                               <span>•</span>
                               <span>{formatTime(firstComment.createdAt)}</span>
                               <span>•</span>
@@ -250,24 +250,24 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                             </div>
                             
                             {/* Post title/content */}
-                            <h3 className="text-white font-medium text-base mb-1">
+                            <h3 className="text-gray-900 font-medium text-base mb-1">
                               Post Title Here
                             </h3>
                             
                             {/* Post stats */}
-                            <div className="flex items-center gap-4 text-xs text-gray-400">
+                            <div className="flex items-center gap-4 text-xs text-gray-600">
                               <span className="flex items-center gap-1">
                                 <MessageSquare className="w-3 h-3" />
                                 64 views
                               </span>
-                              <button className="hover:text-gray-300">See More Insights</button>
+                              <button className="hover:text-blue-600 transition-colors">See More Insights</button>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* User's Comments Section */}
-                      <div className="px-4 py-3 space-y-3">
+                      <div className="px-4 py-3 space-y-3 bg-gray-50">
                         {postComments.map(renderComment)}
                       </div>
                     </div>
