@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Pencil, MapPin, Calendar, Briefcase, Users, ArrowLeft, AlertCircle, Loader, MoreVertical } from 'lucide-react';
+import { Pencil, MapPin, Calendar, Briefcase, Users, ArrowLeft, AlertCircle, Loader, MoreVertical, ArrowUp, MessageSquare, Eye } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useProfileData } from '../hooks/useProfileData'; // Adjust import path
+import { useProfileData } from '../hooks/useProfileData';
 import AdvancedProfileSkeleton from '@/components/templates/AdvancedProfileSkeleton';
+import type { Comment } from '@/features/profile/profileSlice';
 
 type ProfilePageProps = {
   isOwnProfile?: boolean;
@@ -16,26 +17,22 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
   
-  // Debug logging
-  console.log('ProfilePage - userId from params:', userId);
-  
   const {
     profile,
     posts,
     comments,
+    //commentsByPost,
     loading,
     error,
     clearErrorMessage
   } = useProfileData(userId);
 
   useEffect(() => {
-    // Clear any previous errors when component mounts
     if (error) {
       clearErrorMessage();
     }
   }, [clearErrorMessage, error]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -49,14 +46,26 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
     };
   }, []);
 
-  // Loading state
+  // Helper function to format time
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    const diffMonths = Math.floor(diffMs / 2592000000);
+    
+    if (diffMins < 60) return `${diffMins}mo`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 30) return `${diffDays}d`;
+    return `${diffMonths}mo`;
+  };
+
   if (loading && !profile) {
-    return (
-      <AdvancedProfileSkeleton />
-    );
+    return <AdvancedProfileSkeleton />;
   }
 
-  // Error state
   if (error && !profile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -75,7 +84,6 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
     );
   }
 
-  // No profile data
   if (!profile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -92,6 +100,45 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
       onEditProfile();
     }
   };
+
+  // Render individual comment with Reddit-style layout
+  const renderComment = (comment: Comment) => (
+    <div key={comment.id} className="bg-[#1a1a1b] rounded-md p-3 border-l-2 border-gray-700">
+      <div className="flex items-start gap-3">
+        {/* Avatar */}
+        <img
+          src={comment.userAvatar || profile.avatar}
+          alt={comment.userName}
+          className="w-8 h-8 rounded-full flex-shrink-0"
+        />
+        
+        {/* Comment Content */}
+        <div className="flex-1 min-w-0">
+          {/* Comment Header */}
+          <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+            <span className="font-medium text-gray-300">{comment.userName}</span>
+            <span>•</span>
+            <span>{formatTime(comment.createdAt)}</span>
+          </div>
+          
+          {/* Comment Body */}
+          <p className="text-gray-200 text-sm mb-2">{comment.body}</p>
+          
+          {/* Comment Actions */}
+          <div className="flex items-center gap-4 text-xs text-gray-400">
+            <button className="flex items-center gap-1 hover:text-orange-500 transition-colors">
+              <ArrowUp className="w-3 h-3" />
+              <span>{comment.likes}</span>
+            </button>
+            <button className="flex items-center gap-1 hover:text-gray-300 transition-colors">
+              <MessageSquare className="w-3 h-3" />
+              <span>{comment.comments?.length || 0}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -113,7 +160,6 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                   key={post.id}
                   className="bg-white p-4 rounded-lg shadow-md flex flex-col gap-2"
                 >
-                  {/* Post Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <img
@@ -129,10 +175,8 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                     <button className="text-gray-500 hover:text-gray-700">⋮</button>
                   </div>
 
-                  {/* Post Content */}
                   <p className="text-gray-900">{post.content}</p>
 
-                  {/* Post Footer */}
                   <div className="flex justify-between items-center text-sm text-gray-500">
                     <div className="flex items-center gap-4">
                       <button className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors">
@@ -161,19 +205,75 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                 <p className="text-gray-600">Loading comments...</p>
               </div>
             ) : comments.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg shadow-md">
-                <p className="text-gray-500">No comments yet</p>
+              <div className="text-center py-12 bg-[#1a1a1b] rounded-lg border border-gray-800">
+                <p className="text-gray-400">No comments yet</p>
               </div>
             ) : (
-              comments.map((comment) => (
-                <div key={comment.id} className="bg-white p-4 rounded-lg shadow-md">
-                  <p className="text-sm text-gray-500 mb-2">
-                    Commented on: <span className="font-medium">{comment.postTitle}</span>
-                  </p>
-                  <p className="text-gray-800">{comment.content}</p>
-                  <p className="text-sm text-gray-500 mt-2">{comment.timestamp}</p>
-                </div>
-              ))
+              // Group comments by post
+              (() => {
+                const grouped = new Map<string, Comment[]>();
+                comments.forEach((comment) => {
+                  if (!grouped.has(comment.postId)) {
+                    grouped.set(comment.postId, []);
+                  }
+                  grouped.get(comment.postId)!.push(comment);
+                });
+
+                return Array.from(grouped.entries()).map(([postId, postComments]) => {
+                  // Get the first comment to extract post info (you may need to fetch actual post data)
+                  const firstComment = postComments[0];
+                  
+                  return (
+                    <div key={postId} className="bg-[#0d0d0e] rounded-lg overflow-hidden border border-gray-800">
+                      {/* "Commented on:" label */}
+                      <div className="px-4 pt-3 pb-2">
+                        <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
+                          <Eye className="w-3 h-3" />
+                          <span>Commented on:</span>
+                        </div>
+                      </div>
+
+                      {/* Post Section (Reddit-style) */}
+                      <div className="bg-[#1a1a1b] px-4 py-3 border-y border-gray-800">
+                        <div className="flex items-start gap-3">
+                          {/* Post metadata */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
+                              <span className="text-gray-300 font-medium">r/nairobi</span>
+                              <span>•</span>
+                              <span>{formatTime(firstComment.createdAt)}</span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <ArrowUp className="w-3 h-3" />
+                                1
+                              </span>
+                            </div>
+                            
+                            {/* Post title/content */}
+                            <h3 className="text-white font-medium text-base mb-1">
+                              Post Title Here
+                            </h3>
+                            
+                            {/* Post stats */}
+                            <div className="flex items-center gap-4 text-xs text-gray-400">
+                              <span className="flex items-center gap-1">
+                                <MessageSquare className="w-3 h-3" />
+                                64 views
+                              </span>
+                              <button className="hover:text-gray-300">See More Insights</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* User's Comments Section */}
+                      <div className="px-4 py-3 space-y-3">
+                        {postComments.map(renderComment)}
+                      </div>
+                    </div>
+                  );
+                });
+              })()
             )}
           </div>
         );
@@ -181,7 +281,6 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
       case 'about':
         return (
           <div className="bg-white p-6 rounded-lg shadow-md space-y-6 relative">
-            {/* Three-dot menu for About tab - only show if it's user's own profile */}
             {isOwnProfile && (
               <div className="absolute top-4 right-4" ref={dropdownRef}>
                 <button
@@ -192,7 +291,6 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                   <MoreVertical className="w-5 h-5 text-gray-500" />
                 </button>
                 
-                {/* Dropdown Menu */}
                 {showDropdown && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                     <button
@@ -248,7 +346,6 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Error Toast */}
       {error && (
         <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50">
           <div className="flex items-center gap-2">
@@ -264,10 +361,8 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
         </div>
       )}
 
-      {/* Profile Header */}
       <div className="bg-gray-900 pb-32 pt-8">
         <div className="relative max-w-4xl mx-auto px-4">
-          {/* Back Button */}
           <div className="absolute -top-8 left-1 p-4">
             <button 
               onClick={() => navigate(-1)}
@@ -277,7 +372,6 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
             </button>
           </div>
           
-          {/* Avatar and Status */}
           <div className="absolute -bottom-16 right-4">
             <div className="relative">
               <img
@@ -291,9 +385,7 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
         </div>
       </div>
 
-      {/* Profile Content */}
       <div className="max-w-4xl mx-auto px-4 pt-6">
-        {/* User Info */}
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{profile.username}</h1>
@@ -315,7 +407,6 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
           )}
         </div>
 
-        {/* Tabs */}
         <div className="mb-6 border-b border-gray-200">
           <div className="flex gap-8 justify-evenly">
             {(['posts', 'comments', 'about'] as const).map((tab) => (
@@ -329,7 +420,6 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                 }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                {/* Show count badges */}
                 {tab === 'posts' && posts.length > 0 && (
                   <span className="absolute -top-1 -right-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {posts.length}
@@ -345,7 +435,6 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
           </div>
         </div>
 
-        {/* Tab Content */}
         <div className="pb-12">{renderTabContent()}</div>
       </div>
     </div>

@@ -30,11 +30,31 @@ export type Post = {
   comments: number;
 };
 
+// Updated Comment type to match backend response
 export type Comment = {
   id: string;
-  content: string;
+  postId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  body: string;
+  createdAt: string;
+  comments: Comment[]; // Nested comments (replies)
+  likes: number;
+  taggedUsers: any[];
+  downvotes: number;
+};
+
+// Type for grouped comments by post
+export type CommentsByPost = {
+  postId: string;
   postTitle: string;
-  timestamp: string;
+  postContent: string;
+  postAuthor?: string;
+  postTimestamp?: string;
+  postSubreddit?: string;
+  postLikes?: number;
+  userComments: Comment[];
 };
 
 // Edit Profile Form Data Type
@@ -55,6 +75,7 @@ interface ProfileState {
   profile: UserProfile | null;
   posts: Post[];
   comments: Comment[];
+  commentsByPost: CommentsByPost[]; // Grouped comments for display
   loading: boolean;
   error: string | null;
   // Loading states for different operations
@@ -66,6 +87,7 @@ const initialState: ProfileState = {
   profile: null,
   posts: [],
   comments: [],
+  commentsByPost: [],
   loading: false,
   error: null,
   updating: false,
@@ -228,6 +250,7 @@ const profileSlice = createSlice({
       state.profile = null;
       state.posts = [];
       state.comments = [];
+      state.commentsByPost = [];
       state.error = null;
     },
     clearError: (state) => {
@@ -298,7 +321,7 @@ const profileSlice = createSlice({
         state.error = action.payload as string;
       })
     
-    // Fetch User Comments
+    // Fetch User Comments - Updated to group by post
     builder
       .addCase(fetchUserComments.pending, (state) => {
         state.loading = true;
@@ -307,6 +330,23 @@ const profileSlice = createSlice({
       .addCase(fetchUserComments.fulfilled, (state, action) => {
         state.loading = false;
         state.comments = action.payload;
+        
+        // Group comments by postId
+        const grouped = new Map<string, CommentsByPost>();
+        
+        action.payload.forEach((comment: Comment) => {
+          if (!grouped.has(comment.postId)) {
+            grouped.set(comment.postId, {
+              postId: comment.postId,
+              postTitle: '', // Will need to fetch or have backend provide this
+              postContent: '', 
+              userComments: []
+            });
+          }
+          grouped.get(comment.postId)!.userComments.push(comment);
+        });
+        
+        state.commentsByPost = Array.from(grouped.values());
       })
       .addCase(fetchUserComments.rejected, (state, action) => {
         state.loading = false;

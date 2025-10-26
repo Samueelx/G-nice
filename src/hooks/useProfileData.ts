@@ -1,7 +1,7 @@
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
-import { 
-  fetchProfile, 
-  fetchUserPosts, 
+import {
+  fetchProfile,
+  fetchUserPosts,
   fetchUserComments,
   fetchUserByUsername,
   updateProfile,
@@ -12,7 +12,7 @@ import { useCallback, useEffect } from 'react';
 
 export const useProfileData = (userId?: string) => {
   const dispatch = useAppDispatch();
-  const { profile, posts, comments, loading, error } = useAppSelector(
+  const { profile, posts, comments, commentsByPost, loading, error } = useAppSelector(
     (state) => state.profile
   );
 
@@ -99,9 +99,10 @@ export const useProfileData = (userId?: string) => {
     profile,
     posts,
     comments,
+    commentsByPost, // Added for grouped comments display
     loading,
     error,
-    
+   
     // Actions
     fetchCompleteProfile,      // Fetch own profile (token-based)
     fetchUserProfile,          // Fetch another user's profile by username
