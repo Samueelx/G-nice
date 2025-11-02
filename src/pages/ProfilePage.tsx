@@ -1,22 +1,37 @@
-import { useState, useEffect, useRef } from 'react';
-import { Pencil, MapPin, Calendar, Briefcase, Users, ArrowLeft, AlertCircle, Loader, MoreVertical } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useProfileData } from '../hooks/useProfileData';
-import AdvancedProfileSkeleton from '@/components/templates/AdvancedProfileSkeleton';
-import type { Comment } from '@/features/profile/profileSlice';
+import { useState, useEffect, useRef } from "react";
+import {
+  Pencil,
+  MapPin,
+  Calendar,
+  Briefcase,
+  Users,
+  ArrowLeft,
+  AlertCircle,
+  Loader,
+  MoreVertical,
+} from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useProfileData } from "../hooks/useProfileData";
+import AdvancedProfileSkeleton from "@/components/templates/AdvancedProfileSkeleton";
+import type { Comment } from "@/features/profile/profileSlice";
 
 type ProfilePageProps = {
   isOwnProfile?: boolean;
   onEditProfile?: () => void;
 };
 
-const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) => {
-  const [activeTab, setActiveTab] = useState<'posts' | 'comments' | 'about'>('posts');
+const ProfilePage = ({
+  isOwnProfile = false,
+  onEditProfile,
+}: ProfilePageProps) => {
+  const [activeTab, setActiveTab] = useState<"posts" | "comments" | "about">(
+    "posts"
+  );
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
-  
+
   const {
     profile,
     posts,
@@ -24,7 +39,7 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
     //commentsByPost,
     loading,
     error,
-    clearErrorMessage
+    clearErrorMessage,
   } = useProfileData(userId);
 
   useEffect(() => {
@@ -35,14 +50,17 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setShowDropdown(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -55,7 +73,7 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
     const diffMonths = Math.floor(diffMs / 2592000000);
-    
+
     if (diffMins < 60) return `${diffMins}mo`;
     if (diffHours < 24) return `${diffHours}h`;
     if (diffDays < 30) return `${diffDays}d`;
@@ -71,7 +89,9 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Profile Not Found</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Profile Not Found
+          </h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => navigate(-1)}
@@ -111,24 +131,24 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
           alt={comment.userName}
           className="w-8 h-8 rounded-full flex-shrink-0"
         />
-        
+
         {/* Comment Content */}
         <div className="flex-1 min-w-0">
           {/* Comment Header */}
           <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
-            <span className="font-medium text-gray-900">{comment.userName}</span>
+            <span className="font-medium text-gray-900">
+              {comment.userName}
+            </span>
             <span>•</span>
             <span>{formatTime(comment.createdAt)}</span>
           </div>
-          
+
           {/* Comment Body */}
           <p className="text-gray-800 text-sm mb-2">{comment.body}</p>
-          
+
           {/* Comment Actions */}
           <div className="flex items-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              👍 {comment.likes}
-            </span>
+            <span className="flex items-center gap-1">👍 {comment.likes}</span>
             <span className="flex items-center gap-1">
               💬 {comment.comments?.length || 0}
             </span>
@@ -140,7 +160,7 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'posts':
+      case "posts":
         return (
           <div className="space-y-4">
             {loading && posts.length === 0 ? (
@@ -166,11 +186,17 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                         className="w-8 h-8 rounded-full"
                       />
                       <div>
-                        <p className="text-sm font-semibold text-gray-800">{profile.handle}</p>
-                        <p className="text-xs text-gray-500">{post.timestamp}</p>
+                        <p className="text-sm font-semibold text-gray-800">
+                          {profile.handle}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {post.timestamp}
+                        </p>
                       </div>
                     </div>
-                    <button className="text-gray-500 hover:text-gray-700">⋮</button>
+                    <button className="text-gray-500 hover:text-gray-700">
+                      ⋮
+                    </button>
                   </div>
 
                   <p className="text-gray-900">{post.content}</p>
@@ -193,8 +219,8 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
             )}
           </div>
         );
-      
-      case 'comments':
+
+      case "comments":
         return (
           <div className="space-y-4">
             {loading && comments.length === 0 ? (
@@ -217,39 +243,35 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                   grouped.get(comment.postId)!.push(comment);
                 });
 
-                return Array.from(grouped.entries()).map(([postId, postComments]) => {
-                  const firstComment = postComments[0];
-                  
-                  return (
-                    <div key={postId} className="bg-white rounded-lg shadow-md overflow-hidden">
-                      {/* "Commented on:" label */}
-                      <div className="px-4 pt-3 pb-2">
-                        <p className="text-sm text-gray-500">
-                          Commented on: <span className="font-medium">Post Title Here</span>
-                        </p>
-                      </div>
-
-                      {/* Post preview section */}
-                      <div className="px-4 py-2 bg-gray-50 border-t border-b border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">
-                          r/nairobi • {formatTime(firstComment.createdAt)} • ↑ 1
+                return Array.from(grouped.entries()).map(
+                  ([postId, postComments]) => {
+                    return (
+                      <div
+                        key={postId}
+                        className="bg-white rounded-lg shadow-md overflow-hidden"
+                      >
+                        {/* "Commented on:" label */}
+                        <div className="px-4 pt-3 pb-2">
+                          <p className="text-sm text-gray-500">
+                            Commented on:{" "}
+                            <span className="font-medium">Post Title Here</span>
+                          </p>
                         </div>
-                        <p className="text-sm text-gray-700">Post content preview or title goes here...</p>
-                      </div>
 
-                      {/* User's Comments */}
-                      <div className="px-4 py-3 space-y-3">
-                        {postComments.map(renderComment)}
+                        {/* User's Comments - directly after the label, no post preview */}
+                        <div className="px-4 py-3 space-y-3 border-t border-gray-200">
+                          {postComments.map(renderComment)}
+                        </div>
                       </div>
-                    </div>
-                  );
-                });
+                    );
+                  }
+                );
               })()
             )}
           </div>
         );
-      
-      case 'about':
+
+      case "about":
         return (
           <div className="bg-white p-6 rounded-lg shadow-md space-y-6 relative">
             {isOwnProfile && (
@@ -261,7 +283,7 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
                 >
                   <MoreVertical className="w-5 h-5 text-gray-500" />
                 </button>
-                
+
                 {showDropdown && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                     <button
@@ -302,14 +324,14 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
               <div className="flex items-center gap-3 text-gray-600">
                 <Users className="w-5 h-5" />
                 <span>
-                  <strong>{profile.followers}</strong> followers ·{' '}
+                  <strong>{profile.followers}</strong> followers ·{" "}
                   <strong>{profile.following}</strong> following
                 </span>
               </div>
             </div>
           </div>
         );
-      
+
       default:
         return null;
     }
@@ -335,14 +357,14 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
       <div className="bg-gray-900 pb-32 pt-8">
         <div className="relative max-w-4xl mx-auto px-4">
           <div className="absolute -top-8 left-1 p-4">
-            <button 
+            <button
               onClick={() => navigate(-1)}
               className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors"
             >
               <ArrowLeft className="w-6 h-6 text-white" />
             </button>
           </div>
-          
+
           <div className="absolute -bottom-16 right-4">
             <div className="relative">
               <img
@@ -359,7 +381,9 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
       <div className="max-w-4xl mx-auto px-4 pt-6">
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{profile.username}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {profile.username}
+            </h1>
             <p className="text-gray-600">{profile.handle}</p>
           </div>
           {isOwnProfile && (
@@ -380,23 +404,23 @@ const ProfilePage = ({ isOwnProfile = false, onEditProfile }: ProfilePageProps) 
 
         <div className="mb-6 border-b border-gray-200">
           <div className="flex gap-8 justify-evenly">
-            {(['posts', 'comments', 'about'] as const).map((tab) => (
+            {(["posts", "comments", "about"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`pb-4 px-2 text-sm font-medium transition-colors relative ${
                   activeTab === tab
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? "border-b-2 border-blue-600 text-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                {tab === 'posts' && posts.length > 0 && (
+                {tab === "posts" && posts.length > 0 && (
                   <span className="absolute -top-1 -right-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {posts.length}
                   </span>
                 )}
-                {tab === 'comments' && comments.length > 0 && (
+                {tab === "comments" && comments.length > 0 && (
                   <span className="absolute -top-1 -right-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {comments.length}
                   </span>
