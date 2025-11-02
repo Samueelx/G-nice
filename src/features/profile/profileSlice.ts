@@ -22,6 +22,22 @@ export type UserProfile = {
   dateOfBirth?: string;
 };
 
+// Add this type for the backend response
+type BackendPost = {
+  id: number;
+  body: string;
+  createdAt: string;
+  likes: number;
+  user: {
+    userName: string;
+    userId: number;
+    verified: boolean;
+    avatar: string;
+    displayName: string;
+  };
+  taggedUsers: any[];
+};
+
 export type Post = {
   id: string;
   content: string;
@@ -127,13 +143,23 @@ export const fetchProfile = createAsyncThunk(
   }
 );
 
-// Async thunk for fetching user posts (token-based authentication)
+// Update the fetchUserPosts thunk to transform the data
 export const fetchUserPosts = createAsyncThunk(
   'profile/fetchUserPosts',
   async (_, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get('/User/Posts');
-      return response.data;
+      
+      // Transform backend data to match frontend Post type
+      const transformedPosts = response.data.map((post: BackendPost) => ({
+        id: post.id.toString(),
+        content: post.body,
+        timestamp: post.createdAt,
+        likes: post.likes,
+        comments: 0 // Backend doesn't provide this, set to 0 or fetch separately
+      }));
+      
+      return transformedPosts;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         return rejectWithValue(error.response?.data?.message || 'Failed to fetch posts');
@@ -142,6 +168,7 @@ export const fetchUserPosts = createAsyncThunk(
     }
   }
 );
+
 
 // Async thunk for fetching user comments (token-based authentication)
 export const fetchUserComments = createAsyncThunk(
