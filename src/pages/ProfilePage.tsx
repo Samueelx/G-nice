@@ -13,7 +13,6 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import { useProfileData } from "../hooks/useProfileData";
 import AdvancedProfileSkeleton from "@/components/templates/AdvancedProfileSkeleton";
-import type { Comment } from "@/features/profile/profileSlice";
 
 type ProfilePageProps = {
   isOwnProfile?: boolean;
@@ -24,9 +23,7 @@ const ProfilePage = ({
   isOwnProfile = false,
   onEditProfile,
 }: ProfilePageProps) => {
-  const [activeTab, setActiveTab] = useState<"posts" | "comments" | "about">(
-    "posts"
-  );
+  const [activeTab, setActiveTab] = useState<"posts" | "about">("posts");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -35,8 +32,6 @@ const ProfilePage = ({
   const {
     profile,
     posts,
-    comments,
-    //commentsByPost,
     loading,
     error,
     clearErrorMessage,
@@ -63,22 +58,6 @@ const ProfilePage = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  // Helper function to format time
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    const diffMonths = Math.floor(diffMs / 2592000000);
-
-    if (diffMins < 60) return `${diffMins}mo`;
-    if (diffHours < 24) return `${diffHours}h`;
-    if (diffDays < 30) return `${diffDays}d`;
-    return `${diffMonths}mo`;
-  };
 
   if (loading && !profile) {
     return <AdvancedProfileSkeleton />;
@@ -120,43 +99,6 @@ const ProfilePage = ({
       onEditProfile();
     }
   };
-
-  // Render individual comment
-  const renderComment = (comment: Comment) => (
-    <div key={comment.id} className="bg-white p-3 rounded-md">
-      <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <img
-          src={comment.userAvatar || profile.avatar}
-          alt={comment.userName}
-          className="w-8 h-8 rounded-full flex-shrink-0"
-        />
-
-        {/* Comment Content */}
-        <div className="flex-1 min-w-0">
-          {/* Comment Header */}
-          <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
-            <span className="font-medium text-gray-900">
-              {comment.userName}
-            </span>
-            <span>•</span>
-            <span>{formatTime(comment.createdAt)}</span>
-          </div>
-
-          {/* Comment Body */}
-          <p className="text-gray-800 text-sm mb-2">{comment.body}</p>
-
-          {/* Comment Actions */}
-          <div className="flex items-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">👍 {comment.likes}</span>
-            <span className="flex items-center gap-1">
-              💬 {comment.comments?.length || 0}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -216,57 +158,6 @@ const ProfilePage = ({
                   </div>
                 </div>
               ))
-            )}
-          </div>
-        );
-
-      case "comments":
-        return (
-          <div className="space-y-4">
-            {loading && comments.length === 0 ? (
-              <div className="text-center py-8">
-                <Loader className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
-                <p className="text-gray-600">Loading comments...</p>
-              </div>
-            ) : comments.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg shadow-md">
-                <p className="text-gray-500">No comments yet</p>
-              </div>
-            ) : (
-              // Group comments by post
-              (() => {
-                const grouped = new Map<string, Comment[]>();
-                comments.forEach((comment) => {
-                  if (!grouped.has(comment.postId)) {
-                    grouped.set(comment.postId, []);
-                  }
-                  grouped.get(comment.postId)!.push(comment);
-                });
-
-                return Array.from(grouped.entries()).map(
-                  ([postId, postComments]) => {
-                    return (
-                      <div
-                        key={postId}
-                        className="bg-white rounded-lg shadow-md overflow-hidden"
-                      >
-                        {/* "Commented on:" label */}
-                        <div className="px-4 pt-3 pb-2">
-                          <p className="text-sm text-gray-500">
-                            Commented on:{" "}
-                            <span className="font-medium">Post Title Here</span>
-                          </p>
-                        </div>
-
-                        {/* User's Comments - directly after the label, no post preview */}
-                        <div className="px-4 py-3 space-y-3 border-t border-gray-200">
-                          {postComments.map(renderComment)}
-                        </div>
-                      </div>
-                    );
-                  }
-                );
-              })()
             )}
           </div>
         );
@@ -404,7 +295,7 @@ const ProfilePage = ({
 
         <div className="mb-6 border-b border-gray-200">
           <div className="flex gap-8 justify-evenly">
-            {(["posts", "comments", "about"] as const).map((tab) => (
+            {(["posts", "about"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -418,11 +309,6 @@ const ProfilePage = ({
                 {tab === "posts" && posts.length > 0 && (
                   <span className="absolute -top-1 -right-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {posts.length}
-                  </span>
-                )}
-                {tab === "comments" && comments.length > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {comments.length}
                   </span>
                 )}
               </button>
