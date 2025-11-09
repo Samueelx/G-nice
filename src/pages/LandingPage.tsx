@@ -13,7 +13,7 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  
+
   // Get posts from Redux store
   const { posts, isLoading, error } = useAppSelector((state) => state.posts);
 
@@ -35,7 +35,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
           <nav className="w-full">
             <div className="flex items-center justify-between gap-2">
               {/* Menu trigger for mobile */}
-              <button 
+              <button
                 onClick={() => setIsSidebarOpen(true)}
                 className="p-2 hover:bg-purple-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
@@ -97,15 +97,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
           <div className="grid gap-4 grid-cols-1 max-w-2xl mx-auto">
             {posts.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500">No posts yet. Be the first to share!</p>
+                <p className="text-gray-500">
+                  No posts yet. Be the first to share!
+                </p>
               </div>
             ) : (
               posts.map((post) => (
-                <div key={post.id} onClick={() => handlePostClick(post.id)} className="cursor-pointer">
+                <div
+                  key={post.id}
+                  onClick={() => handlePostClick(post.id)}
+                  className="cursor-pointer"
+                >
                   <SocialPost
+                    postId={post.id} // Add this
                     author={{
                       name: post.displayName,
-                      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(post.displayName)}&background=9333ea&color=fff&bold=true`,
+                      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        post.displayName
+                      )}&background=9333ea&color=fff&bold=true`,
                       username: post.username,
                     }}
                     content={post.body}
@@ -116,6 +125,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
                     timestamp={post.createdAt}
                     likes={post.likes}
                     comments={post.comments}
+                    isLiked={post.isLiked} // Add this
                   />
                 </div>
               ))

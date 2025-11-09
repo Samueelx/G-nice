@@ -1,11 +1,16 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MoreVertical, Heart, MessageCircle, Share2 } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import { MoreVertical, Heart, MessageCircle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { useAppDispatch } from "@/hooks/hooks";
 import { fetchUserByUsername } from "@/features/profile/profileSlice";
+import { toggleLike } from "@/features/posts/postsSlice";
 
 type PostImage = {
   url: string;
@@ -18,6 +23,7 @@ type UserTag = {
 };
 
 type PostProps = {
+  postId: string; // Add this
   author: {
     name: string;
     avatar: string;
@@ -29,9 +35,11 @@ type PostProps = {
   likes: number;
   comments: number;
   taggedUsers?: UserTag[];
+  isLiked?: boolean; // Add this
 };
 
 const SocialPost = ({
+  postId, // Add this
   author,
   content,
   images = [],
@@ -39,8 +47,8 @@ const SocialPost = ({
   likes,
   comments,
   taggedUsers = [],
+  isLiked = false, // Add this with default
 }: PostProps) => {
-  const [isLiked, setIsLiked] = useState(false);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
@@ -48,17 +56,24 @@ const SocialPost = ({
     try {
       // Dispatch the action to fetch user data by username
       const resultAction = await dispatch(fetchUserByUsername(author.username));
-      
+
       // Check if the request was successful
       if (fetchUserByUsername.fulfilled.match(resultAction)) {
         // Navigate to the profile page with the username
         navigate(`/profile/${author.username}`);
       } else {
         // Handle error if needed
-        console.error('Failed to fetch user profile:', resultAction.payload);
+        console.error("Failed to fetch user profile:", resultAction.payload);
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error("Error fetching user profile:", error);
+    }
+  };
+  const handleLikeClick = async () => {
+    try {
+      await dispatch(toggleLike(postId)).unwrap();
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
     }
   };
 
@@ -66,7 +81,7 @@ const SocialPost = ({
     <Card className="w-full bg-white/80 backdrop-blur-sm border border-purple-100 hover:border-purple-200 transition-all duration-300 hover:shadow-lg">
       <CardHeader className="p-4">
         <div className="flex items-center justify-between">
-          <div 
+          <div
             className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors flex-1"
             onClick={handleAvatarClick}
           >
@@ -84,7 +99,11 @@ const SocialPost = ({
               <p className="text-sm text-purple-600">{timestamp}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-700">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-500 hover:text-gray-700"
+          >
             <MoreVertical className="w-5 h-5" />
           </Button>
         </div>
@@ -99,9 +118,9 @@ const SocialPost = ({
               <span className="text-purple-500 font-medium">
                 {taggedUsers.map((user, index) => (
                   <span key={user.username}>
-                    {' '}
+                    {" "}
                     @{user.displayName}
-                    {index < taggedUsers.length - 1 ? ',' : ''}
+                    {index < taggedUsers.length - 1 ? "," : ""}
                   </span>
                 ))}
               </span>
@@ -111,13 +130,20 @@ const SocialPost = ({
 
         {/* Images grid */}
         {images.length > 0 && (
-          <div className={`grid gap-2 mb-4 ${
-            images.length === 1 ? 'grid-cols-1' : 
-            images.length === 2 ? 'grid-cols-2' :
-            'grid-cols-2 md:grid-cols-3'
-          }`}>
+          <div
+            className={`grid gap-2 mb-4 ${
+              images.length === 1
+                ? "grid-cols-1"
+                : images.length === 2
+                ? "grid-cols-2"
+                : "grid-cols-2 md:grid-cols-3"
+            }`}
+          >
             {images.map((image, index) => (
-              <div key={index} className="relative group rounded-lg overflow-hidden">
+              <div
+                key={index}
+                className="relative group rounded-lg overflow-hidden"
+              >
                 <img
                   src={image.url}
                   alt={image.alt}
@@ -136,11 +162,13 @@ const SocialPost = ({
               variant="ghost"
               size="sm"
               className={`flex items-center gap-1.5 ${
-                isLiked ? 'text-pink-500 hover:text-pink-600' : 'text-gray-500 hover:text-gray-700'
+                isLiked
+                  ? "text-pink-500 hover:text-pink-600"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
-              onClick={() => setIsLiked(!isLiked)}
+              onClick={handleLikeClick}
             >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+              <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
               <span className="text-sm font-medium">{likes}</span>
             </Button>
             <Button
