@@ -7,7 +7,8 @@ import {
   fetchPostById, 
   fetchComments, 
   createComment, 
-  clearSelectedPost, 
+  clearSelectedPost,
+  toggleLike,
   Comment
 } from "@/features/posts/postsSlice";
 
@@ -18,6 +19,7 @@ const PostDetailPage: React.FC = () => {
   
   const [commentBody, setCommentBody] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isTogglingLike, setIsTogglingLike] = useState(false);
 
   const { 
     selectedPost, 
@@ -53,6 +55,19 @@ const PostDetailPage: React.FC = () => {
       console.error("Failed to submit comment:", error);
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  const handleToggleLike = async () => {
+    if (!postId || isTogglingLike) return;
+
+    setIsTogglingLike(true);
+    try {
+      await dispatch(toggleLike(postId)).unwrap();
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+    } finally {
+      setIsTogglingLike(false);
     }
   };
 
@@ -207,8 +222,20 @@ const PostDetailPage: React.FC = () => {
                 {/* Post Actions */}
                 <div className="px-4 py-3 border-t border-purple-50">
                   <div className="flex items-center gap-6">
-                    <button className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors">
-                      <Heart className="w-5 h-5" />
+                    <button 
+                      onClick={handleToggleLike}
+                      disabled={isTogglingLike}
+                      className={`flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                        selectedPost.isLiked 
+                          ? 'text-red-500' 
+                          : 'text-gray-600 hover:text-red-500'
+                      }`}
+                    >
+                      <Heart 
+                        className={`w-5 h-5 transition-all ${
+                          selectedPost.isLiked ? 'fill-current' : ''
+                        }`}
+                      />
                       <span className="text-sm font-medium">{selectedPost.likes}</span>
                     </button>
                     <button className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors">
