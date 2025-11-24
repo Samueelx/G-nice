@@ -16,10 +16,11 @@ export interface Comment {
 
 interface Joke {
   id: string;
-  setup?: string;
-  punchline: string;
-  author?: string;
-  date?: string;
+  joke: string; // Changed from setup/punchline
+  author: {    // Changed from string to object
+    name: string;
+  };
+  date: string; // Now required
   likes: number;
   comments: Comment[];
 }
@@ -274,4 +275,4 @@ const jokeSlice = createSlice({
 // Export actions and reducer
 export const { setCurrentJoke, addLocalComment, likeLocalComment, likeLocalJoke } = jokeSlice.actions;
 export default jokeSlice.reducer;
-export type { JokeState };
+export type { JokeState, Joke };

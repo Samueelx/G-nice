@@ -20,7 +20,7 @@ const JokeJumbotron: React.FC = () => {
   // Fetch joke of the day on component mount
   useEffect(() => {
     dispatch(fetchJokeOfTheDay());
-  }, [dispatch]); // Removed joke from dependency array to avoid infinite loop
+  }, [dispatch]);
   
   const handleLikeClick = async () => {
     if (joke) {
@@ -49,7 +49,8 @@ const JokeJumbotron: React.FC = () => {
   
   const handleShareClick = () => {
     if (joke) {
-      const jokeText = `${joke.setup ? joke.setup + ' ' : ''}${joke.punchline}`;
+      // Updated to use joke.joke instead of setup/punchline
+      const jokeText = joke.joke;
       
       if (navigator.share) {
         navigator.share({
@@ -120,10 +121,10 @@ const JokeJumbotron: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
-          {joke.setup && (
-            <p className="text-md font-medium text-gray-800">{joke.setup}</p>
-          )}
-          <p className="text-xl font-semibold text-gray-900">{joke.punchline}</p>
+          {/* Updated to display joke.joke instead of setup/punchline */}
+          <p className="text-xl font-semibold text-gray-900 whitespace-pre-wrap">
+            {joke.joke}
+          </p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4 border-t border-gray-300 pt-4">
           <div className="flex justify-between items-center w-full">
@@ -160,9 +161,10 @@ const JokeJumbotron: React.FC = () => {
               Share
             </Button>
           </div>
-          {joke.author && (
+          {/* Updated to display joke.author.name instead of joke.author */}
+          {joke.author?.name && (
             <p className="text-sm text-gray-600 w-full text-left">
-              Powered by {joke.author}
+              Powered by {joke.author.name}
             </p>
           )}
         </CardFooter>
