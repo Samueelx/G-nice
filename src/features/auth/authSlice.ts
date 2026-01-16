@@ -25,7 +25,7 @@ export const loginUser = createAsyncThunk<
     try {
       /**Create Base64 encoded credentials for Basic Auth */
       //const encodedCredentials = btoa(`${credentials.username}:${credentials.password}`);
-      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/login', {
+      const response = await fetch('http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/SignIn/login', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -76,7 +76,7 @@ export const googleSignIn = createAsyncThunk<
       console.log("Google sign in data: ", googleUserInfo);
 
       /**Send user info to your backend */
-      const backendResponse = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/google-login', {
+      const backendResponse = await fetch('http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/SignIn/google-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ export const resetPassword = createAsyncThunk<
     {rejectWithValue}
   ) => {
     try {
-      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/reset-password', {
+      const response = await fetch('http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/SignIn/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -150,7 +150,7 @@ export const forgotPassword = createAsyncThunk<
   'auth/forgotPassword',
   async (email: string, { rejectWithValue }) => {
     try {
-      const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/ResetPassword', {
+      const response = await fetch('http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/SignIn/ResetPassword', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

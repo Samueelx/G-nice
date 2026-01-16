@@ -29,7 +29,7 @@ export const setupPassword = createAsyncThunk(
         {rejectWithValue}
     ) => {
         try {
-            const response = await fetch('http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/Sign-Up', {
+            const response = await fetch('http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/SignIn/Sign-Up', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -47,7 +47,7 @@ const ResetPassword: React.FC = () => {
             return false;
         }
         if (formData.newPassword.length < 8) {
-            setPasswordError('Password must be 8 characters long');
+            setPasswordError('Password must be at least 8 characters long');
             return false;
         }
 
@@ -57,7 +57,8 @@ const ResetPassword: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!validatePassword) {
+        // FIXED: Call the function with parentheses
+        if (!validatePassword()) {
             return;
         }
 
@@ -66,7 +67,9 @@ const ResetPassword: React.FC = () => {
                 const resultAction = await dispatch(resetPassword({
                     token: resetToken,
                     newPassword: formData.newPassword
-                }) as any);
+                }));
+                
+                // Check if the action was fulfilled
                 if (resetPassword.fulfilled.match(resultAction)) {
                     navigate('/login', {
                         state: {
@@ -75,7 +78,7 @@ const ResetPassword: React.FC = () => {
                     });
                 }
             } catch (error) {
-                console.log('Unexpected error occured during password reset', error)
+                console.log('Unexpected error occurred during password reset', error)
             }
         }
     };
@@ -108,6 +111,7 @@ const ResetPassword: React.FC = () => {
                                 placeholder="New Password"
                                 value={formData.newPassword}
                                 onChange={handleInputChange}
+                                required
                             />
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -131,6 +135,7 @@ const ResetPassword: React.FC = () => {
                                 placeholder="Confirm New Password"
                                 value={formData.confirmPassword}
                                 onChange={handleInputChange}
+                                required
                             />
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -148,7 +153,7 @@ const ResetPassword: React.FC = () => {
 
                         <button
                             type='submit'
-                            className="bg-[#FEC5D8] rounded-xl py-2 hover:bg-[#feb5ce] transition-colors"
+                            className="bg-[#FEC5D8] rounded-xl py-2 hover:bg-[#feb5ce] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isLoading}
                         >
                             {isLoading ? 'Resetting Password...' : 'Reset Password'}
@@ -158,7 +163,7 @@ const ResetPassword: React.FC = () => {
                     <div className="mt-10 text-xs flex justify-between items-center">
                         <p>Remembered your password?</p>
                         <button
-                            className="py-2 px-5 bg-white border rounded-xl"
+                            className="py-2 px-5 bg-white border rounded-xl hover:bg-gray-50 transition-colors"
                             onClick={() => navigate('/login')}
                         >
                             Log In
