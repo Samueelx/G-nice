@@ -140,7 +140,7 @@ const transformFrontendParamsToBackend = (frontendParams: EventsQueryParams): Ba
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.API_BASE_URL || "http://localhost:8080/Memefest-SNAPSHOT-01/resources",
+    baseUrl: import.meta.env.API_BASE_URL || "http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources",
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as any).auth?.token;
       if (token) {

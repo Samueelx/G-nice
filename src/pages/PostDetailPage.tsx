@@ -194,7 +194,7 @@ const PostDetailPage: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">Amanda Haydenson</h3>
+                        <h3 className="font-semibold text-gray-900">{selectedPost.displayName}</h3>
                         <p className="text-sm text-gray-500">{formatTimeAgo(selectedPost.createdAt)}</p>
                       </div>
                     </div>
