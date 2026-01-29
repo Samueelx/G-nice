@@ -162,11 +162,11 @@ const JokeJumbotron: React.FC = () => {
             </Button>
           </div>
           {/* Updated to display joke.author.name instead of joke.author */}
-          {joke.author?.name && (
-            <p className="text-sm text-gray-600 w-full text-left">
-              Powered by {joke.author.name}
-            </p>
-          )}
+          {joke.sponsor?.name && (
+  <p className="text-sm text-gray-600 w-full text-left">
+    Powered by {joke.sponsor.name}
+  </p>
+)}
         </CardFooter>
       </Card>
       

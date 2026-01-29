@@ -4,10 +4,12 @@ import instance from '@/api/axiosConfig';
 
 // Types
 export interface Comment {
-  id: string;
-  authorId: string;
-  authorName: string;
-  authorAvatar: string;
+  commentId: string;
+  user: {
+    userId: string;
+    userName: string;
+    avatar: string;
+  };
   content: string;
   likes: number;
   replies: number;
@@ -16,11 +18,11 @@ export interface Comment {
 
 interface Joke {
   id: string;
-  joke: string; // Changed from setup/punchline
-  author: {    // Changed from string to object
+  joke: string;
+  sponsor: {
     name: string;
   };
-  date: string; // Now required
+  date: string;
   likes: number;
   comments: Comment[];
 }
@@ -40,12 +42,8 @@ const initialState: JokeState = {
   error: null
 };
 
-// Async thunks - properly typed
-export const fetchJokeOfTheDay = createAsyncThunk<
-  Joke,
-  void,
-  { rejectValue: string }
->(
+// Async thunks
+export const fetchJokeOfTheDay = createAsyncThunk<Joke, void, { rejectValue: string }>(
   'jokes/fetchJokeOfTheDay',
   async (_, { rejectWithValue }) => {
     try {
@@ -60,11 +58,7 @@ export const fetchJokeOfTheDay = createAsyncThunk<
   }
 );
 
-export const fetchJokeComments = createAsyncThunk<
-  { jokeId: string; comments: Comment[] },
-  string,
-  { rejectValue: string }
->(
+export const fetchJokeComments = createAsyncThunk<{ jokeId: string; comments: Comment[] }, string, { rejectValue: string }>(
   'jokes/fetchJokeComments',
   async (jokeId: string, { rejectWithValue }) => {
     try {
@@ -79,18 +73,14 @@ export const fetchJokeComments = createAsyncThunk<
   }
 );
 
-export const addJokeComment = createAsyncThunk<
-  { jokeId: string; comment: Comment },
-  { jokeId: string; content: string; user: any },
-  { rejectValue: string }
->(
+export const addJokeComment = createAsyncThunk<{ jokeId: string; comment: Comment }, { jokeId: string; content: string; user: any }, { rejectValue: string }>(
   'jokes/addJokeComment',
   async ({ jokeId, content, user }, { rejectWithValue }) => {
     try {
       const commentData = {
-        authorId: user.id,
-        authorName: user.name,
-        authorAvatar: user.avatar,
+        userId: user.id,
+        userName: user.name,
+        avatar: user.avatar,
         content,
       };
       
@@ -105,11 +95,7 @@ export const addJokeComment = createAsyncThunk<
   }
 );
 
-export const likeJoke = createAsyncThunk<
-  Joke,
-  string,
-  { rejectValue: string }
->(
+export const likeJoke = createAsyncThunk<Joke, string, { rejectValue: string }>(
   'jokes/likeJoke',
   async (jokeId: string, { rejectWithValue }) => {
     try {
@@ -124,11 +110,7 @@ export const likeJoke = createAsyncThunk<
   }
 );
 
-export const likeComment = createAsyncThunk<
-  { jokeId: string; commentId: string; data: any },
-  { jokeId: string; commentId: string },
-  { rejectValue: string }
->(
+export const likeComment = createAsyncThunk<{ jokeId: string; commentId: string; data: any }, { jokeId: string; commentId: string }, { rejectValue: string }>(
   'jokes/likeComment',
   async ({ jokeId, commentId }, { rejectWithValue }) => {
     try {
@@ -148,7 +130,6 @@ const jokeSlice = createSlice({
   name: 'jokes',
   initialState,
   reducers: {
-    // For local state updates without API calls
     setCurrentJoke: (state, action: PayloadAction<Joke>) => {
       state.currentJoke = action.payload;
     },
@@ -159,7 +140,7 @@ const jokeSlice = createSlice({
     },
     likeLocalComment: (state, action: PayloadAction<{ commentId: string }>) => {
       if (state.currentJoke) {
-        const comment = state.currentJoke.comments.find(c => c.id === action.payload.commentId);
+        const comment = state.currentJoke.comments.find(c => c.commentId === action.payload.commentId);
         if (comment) {
           comment.likes += 1;
         }
@@ -173,7 +154,6 @@ const jokeSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Joke of the Day
       .addCase(fetchJokeOfTheDay.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -181,7 +161,6 @@ const jokeSlice = createSlice({
       .addCase(fetchJokeOfTheDay.fulfilled, (state, action) => {
         state.loading = false;
         state.currentJoke = action.payload;
-        // Add to history if not already there
         if (!state.jokeHistory.some(joke => joke.id === action.payload.id)) {
           state.jokeHistory.push(action.payload);
         }
@@ -190,8 +169,6 @@ const jokeSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
-      // Fetch Joke Comments
       .addCase(fetchJokeComments.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -200,12 +177,10 @@ const jokeSlice = createSlice({
         state.loading = false;
         const { jokeId, comments } = action.payload;
         
-        // Update current joke if it matches
         if (state.currentJoke && state.currentJoke.id === jokeId) {
           state.currentJoke.comments = comments;
         }
         
-        // Update joke in history if it exists
         const jokeInHistory = state.jokeHistory.find(joke => joke.id === jokeId);
         if (jokeInHistory) {
           jokeInHistory.comments = comments;
@@ -215,55 +190,43 @@ const jokeSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
-      // Add Joke Comment
       .addCase(addJokeComment.fulfilled, (state, action) => {
         const { jokeId, comment } = action.payload;
         
-        // Update current joke if it matches
         if (state.currentJoke && state.currentJoke.id === jokeId) {
           state.currentJoke.comments.unshift(comment);
         }
         
-        // Update joke in history if it exists
         const jokeInHistory = state.jokeHistory.find(joke => joke.id === jokeId);
         if (jokeInHistory) {
           jokeInHistory.comments.unshift(comment);
         }
       })
-      
-      // Like Joke
       .addCase(likeJoke.fulfilled, (state, action) => {
         const updatedJoke = action.payload;
         
-        // Update current joke if it matches
         if (state.currentJoke && state.currentJoke.id === updatedJoke.id) {
           state.currentJoke.likes = updatedJoke.likes;
         }
         
-        // Update joke in history if it exists
         const jokeInHistory = state.jokeHistory.find(joke => joke.id === updatedJoke.id);
         if (jokeInHistory) {
           jokeInHistory.likes = updatedJoke.likes;
         }
       })
-      
-      // Like Comment
       .addCase(likeComment.fulfilled, (state, action) => {
         const { jokeId, commentId } = action.payload;
         
-        // Update in current joke if it matches
         if (state.currentJoke && state.currentJoke.id === jokeId) {
-          const comment = state.currentJoke.comments.find(c => c.id === commentId);
+          const comment = state.currentJoke.comments.find(c => c.commentId === commentId);
           if (comment) {
             comment.likes += 1;
           }
         }
         
-        // Update in joke history if it exists
         const jokeInHistory = state.jokeHistory.find(joke => joke.id === jokeId);
         if (jokeInHistory) {
-          const comment = jokeInHistory.comments.find(c => c.id === commentId);
+          const comment = jokeInHistory.comments.find(c => c.commentId === commentId);
           if (comment) {
             comment.likes += 1;
           }
@@ -272,7 +235,6 @@ const jokeSlice = createSlice({
   }
 });
 
-// Export actions and reducer
 export const { setCurrentJoke, addLocalComment, likeLocalComment, likeLocalJoke } = jokeSlice.actions;
 export default jokeSlice.reducer;
 export type { JokeState, Joke };

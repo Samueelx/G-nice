@@ -19,20 +19,17 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
   const dispatch = useAppDispatch();
   const [newComment, setNewComment] = useState("");
   
-  // Get current joke and state from Redux store
   const currentJoke = useAppSelector(state => state.jokes.currentJoke);
   const comments = currentJoke?.comments || dummyJoke.comments;
   const loading = useAppSelector(state => state.jokes.loading);
   const error = useAppSelector(state => state.jokes.error);
   
-  // Get current user (this would come from your auth state)
   const currentUser = {
     id: "currentUser",
     name: "Current User",
     avatar: "/avatars/default.png"
   };
   
-  // Fetch comments when the modal opens
   useEffect(() => {
     if (open && jokeId) {
       dispatch(fetchJokeComments(jokeId));
@@ -41,29 +38,28 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
   
   const handleAddComment = async () => {
     if (newComment.trim()) {
-      // Validate comment length
       if (newComment.length > 500) {
         alert("Comment is too long. Maximum 500 characters allowed.");
         return;
       }
       
-      // For optimistic UI updates
-      const tempComment = {
-        id: `temp-${Date.now()}`,
-        authorId: currentUser.id,
-        authorName: currentUser.name,
-        authorAvatar: currentUser.avatar,
+      // Updated temp comment structure
+      const tempComment: Comment = {
+        commentId: `temp-${Date.now()}`,
+        user: {
+          userId: currentUser.id,
+          userName: currentUser.name,
+          avatar: currentUser.avatar,
+        },
         content: newComment,
         likes: 0,
         replies: 0,
         timestamp: "Just now"
       };
       
-      // Update local state immediately for a responsive UI
       dispatch(addLocalComment({ comment: tempComment }));
       
       try {
-        // Make the API call
         await dispatch(addJokeComment({ 
           jokeId, 
           content: newComment, 
@@ -72,8 +68,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
         
         setNewComment("");
       } catch (error) {
-        // Revert optimistic update on failure
-        dispatch(likeLocalComment({ commentId: tempComment.id })); // Remove temporary comment
+        // Remove the temporary comment on error
+        // You might want to add a removeLocalComment action for this
         console.error("Failed to add comment:", error);
         alert("Failed to add comment. Please try again.");
       }
@@ -81,20 +77,16 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
   };
   
   const handleLike = async (commentId: string) => {
-    // Optimistic update
     dispatch(likeLocalComment({ commentId }));
     
     try {
-      // Make the API call
       await dispatch(likeComment({ jokeId, commentId })).unwrap();
     } catch (error) {
-      // Revert optimistic update on failure
       dispatch(likeLocalComment({ commentId }));
       console.error("Failed to like comment:", error);
     }
   };
   
-  // If we have no joke data yet
   if (!currentJoke && !loading) {
     return null;
   }
@@ -126,16 +118,16 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
         ) : (
           <div className="max-h-80 overflow-y-auto mb-4">
             {comments.map((comment: Comment) => (
-              <div key={comment.id} className="mb-4">
+              <div key={comment.commentId} className="mb-4">
                 <div className="flex items-start gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={comment.authorAvatar} alt={comment.authorName} />
-                    <AvatarFallback>{comment.authorName.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={comment.user.avatar} alt={comment.user.userName} />
+                    <AvatarFallback>{comment.user.userName.charAt(0)}</AvatarFallback>
                   </Avatar>
                   
                   <div className="flex-1">
                     <div className="flex justify-between">
-                      <h4 className="font-medium text-sm">{comment.authorName}</h4>
+                      <h4 className="font-medium text-sm">{comment.user.userName}</h4>
                       <span className="text-xs text-gray-500">{comment.timestamp}</span>
                     </div>
                     
@@ -144,8 +136,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
                     <div className="flex items-center mt-2 gap-4">
                       <button 
                         className="flex items-center gap-1 text-xs text-gray-600"
-                        onClick={() => handleLike(comment.id)}
-                        aria-label={`Like comment by ${comment.authorName}`}
+                        onClick={() => handleLike(comment.commentId)}
+                        aria-label={`Like comment by ${comment.user.userName}`}
                       >
                         <HeartIcon size={16} className={comment.likes > 0 ? "text-red-500 fill-red-500" : ""} />
                         <span>{comment.likes}</span>
@@ -153,7 +145,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
                       
                       <button 
                         className="flex items-center gap-1 text-xs text-gray-600"
-                        aria-label={`Reply to comment by ${comment.authorName}`}
+                        aria-label={`Reply to comment by ${comment.user.userName}`}
                       >
                         <MessageSquare size={16} />
                         <span>{comment.replies}</span>
@@ -161,7 +153,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
                       
                       <button 
                         className="flex items-center text-xs text-gray-600 ml-auto"
-                        aria-label={`Share comment by ${comment.authorName}`}
+                        aria-label={`Share comment by ${comment.user.userName}`}
                       >
                         <Share2 size={16} />
                       </button>
