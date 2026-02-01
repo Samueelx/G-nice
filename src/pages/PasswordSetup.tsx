@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { useNavigate, useLocation } from "react-router-dom";
-import { setupPassword, resetPasswordSetupState } from "@/features/auth/passwordSetupSlice";
+import { setupPassword, clearMessage } from "@/features/auth/authSlice"; // Fixed imports
 import { UnknownAction } from "@reduxjs/toolkit";
 
 const PasswordSetup: React.FC = () => {
@@ -22,10 +22,9 @@ const PasswordSetup: React.FC = () => {
   // Get token from the url 
   const searchParams = new URLSearchParams(location.search);
   const accessTkn = searchParams.get('token');
-  const refreshTkn = searchParams.get('refreshToken'); // Add refresh token parameter
 
   // Select state from redux store
-  const { loading, error } = useAppSelector((state) => state.passwordSetup);
+  const { isLoading: loading, error } = useAppSelector((state) => state.auth);
 
   // Validate password 
   const validatePassword = (pass: string) => {
@@ -65,11 +64,11 @@ const PasswordSetup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     // Validate inputs
     const passwordError = validatePassword(password);
     const confirmPasswordError = password !== confirmPassword ? "Passwords do not match" : "";
-    
+
     // Update errors
     setErrors({
       password: passwordError,
@@ -88,11 +87,10 @@ const PasswordSetup: React.FC = () => {
 
     // Dispatch password setup action
     try {
-      const resultAction = await dispatch(setupPassword({ 
-        accessTkn, 
-        refreshTkn: refreshTkn || '',
-        password 
-      }) as unknown as  UnknownAction);
+      const resultAction = await dispatch(setupPassword({
+        accessTkn,
+        password
+      }) as unknown as UnknownAction);
 
       // Check if action was successful
       if (setupPassword.fulfilled.match(resultAction)) {
@@ -108,7 +106,7 @@ const PasswordSetup: React.FC = () => {
   // Reset error state on component unmount
   useEffect(() => {
     return () => {
-      dispatch(resetPasswordSetupState());
+      dispatch(clearMessage());
     }
   }, [dispatch]);
 

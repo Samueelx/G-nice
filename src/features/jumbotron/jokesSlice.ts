@@ -47,7 +47,7 @@ export const fetchJokeOfTheDay = createAsyncThunk<Joke, void, { rejectValue: str
   'jokes/fetchJokeOfTheDay',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await instance.get(`/jokes/daily`);
+      const response = await instance.get(`/Joke`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {

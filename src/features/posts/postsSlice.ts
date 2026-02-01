@@ -2,18 +2,27 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axiosInstance from "@/api/axiosConfig";
 
 // Types matching backend response
+// In postsSlice.ts
+// Types matching backend response
 interface Post {
-  id: string;
+  id: number | string;  // Backend returns number, you convert to string
   body: string;
-  imageUrls?: string[]; // Changed to match backend (array of URLs)
+  imageUrls?: string[];
+  images?: any[];  // Add this - backend returns "images" or "Images"
+  Images?: any[];  // Add this as fallback
   user: {
-    UserId: string; // Backend uses capital U
-    Username: string; // Backend uses capital U
-    displayName?: string; // Backend provides displayName
+    userId: string | null;        // ✅ Match backend (lowercase, nullable)
+    userName: string;              // ✅ Match backend (camelCase)
+    displayName: string | null;    // ✅ Nullable
+    avatar: string | null;         // Add this
+    verified?: boolean;
+    isFollowed?: boolean;
   };
   createdAt: string;
-  likes?: number; // Made optional
-  comments?: number; // Made optional
+  likes: number;
+  comments?: number;
+  isLiked?: boolean;
+  taggedUsers?: any[] | null;  // Add this
 }
 
 // Normalized Post for frontend use
@@ -104,17 +113,18 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 // Helper function to normalize backend post to frontend format
+// In postsSlice.ts
 const normalizePost = (post: Post): NormalizedPost => ({
-  id: post.id,
+  id: post.id.toString(),  // Convert to string if it's a number
   body: post.body,
-  imageUrls: post.imageUrls,
-  userId: post.user.UserId,
-  username: post.user.Username,
-  displayName: post.user.displayName || post.user.Username,
+  imageUrls: post.imageUrls || post.images || post.Images || [],  // Handle all cases
+  userId: post.user.userId || '',
+  username: post.user.userName,
+  displayName: post.user.displayName || post.user.userName,  // Fallback to userName
   createdAt: post.createdAt,
   likes: post.likes ?? 0,
   comments: post.comments ?? 0,
-  isLiked: false, // Default to false, backend should provide this
+  isLiked: post.isLiked ?? false,
 });
 
 // Async thunks

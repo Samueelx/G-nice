@@ -1,33 +1,34 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { ArrowLeft, Send, Heart, MessageCircle, MoreHorizontal } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  Heart,
+  MessageCircle,
+  MoreHorizontal,
+} from "lucide-react";
 import { AppDispatch, RootState } from "@/store/store";
-import { 
-  fetchPostById, 
-  fetchComments, 
-  createComment, 
+import {
+  fetchPostById,
+  fetchComments,
+  createComment,
   clearSelectedPost,
   toggleLike,
-  Comment
+  Comment,
 } from "@/features/posts/postsSlice";
 
 const PostDetailPage: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   const [commentBody, setCommentBody] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
 
-  const { 
-    selectedPost, 
-    comments, 
-    isLoadingPost, 
-    isLoadingComments, 
-    error 
-  } = useSelector((state: RootState) => state.posts);
+  const { selectedPost, comments, isLoadingPost, isLoadingComments, error } =
+    useSelector((state: RootState) => state.posts);
 
   useEffect(() => {
     if (postId) {
@@ -46,10 +47,12 @@ const PostDetailPage: React.FC = () => {
 
     setIsSubmittingComment(true);
     try {
-      await dispatch(createComment({
-        postId,
-        body: commentBody.trim()
-      })).unwrap();
+      await dispatch(
+        createComment({
+          postId,
+          body: commentBody.trim(),
+        }),
+      ).unwrap();
       setCommentBody("");
     } catch (error) {
       console.error("Failed to submit comment:", error);
@@ -76,11 +79,12 @@ const PostDetailPage: React.FC = () => {
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    
+
     if (diffInHours < 1) return "Just now";
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    if (diffInHours < 24)
+      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
     const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
   };
 
   if (error) {
@@ -114,7 +118,9 @@ const PostDetailPage: React.FC = () => {
         <main className="w-full px-3 py-4">
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-lg border border-red-200 p-6 text-center">
-              <h2 className="text-xl font-semibold text-red-600 mb-2">Post Not Found</h2>
+              <h2 className="text-xl font-semibold text-red-600 mb-2">
+                Post Not Found
+              </h2>
               <p className="text-gray-600 mb-4">{error}</p>
               <button
                 onClick={() => navigate("/feeds")}
@@ -142,7 +148,7 @@ const PostDetailPage: React.FC = () => {
               >
                 <ArrowLeft className="w-6 h-6 text-purple-600" />
               </button>
-              
+
               <div className="flex items-center gap-2">
                 <img
                   className="w-8 h-8 transition-transform duration-200 hover:rotate-12"
@@ -153,7 +159,7 @@ const PostDetailPage: React.FC = () => {
                   Gnice
                 </h1>
               </div>
-              
+
               <div className="w-8 h-8"></div>
             </div>
           </nav>
@@ -194,8 +200,12 @@ const PostDetailPage: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">{selectedPost.displayName}</h3>
-                        <p className="text-sm text-gray-500">{formatTimeAgo(selectedPost.createdAt)}</p>
+                        <h3 className="font-semibold text-gray-900">
+                          {selectedPost.displayName}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {formatTimeAgo(selectedPost.createdAt)}
+                        </p>
                       </div>
                     </div>
                     <button className="p-1 hover:bg-gray-100 rounded-full transition-colors">
@@ -208,39 +218,44 @@ const PostDetailPage: React.FC = () => {
                 <div className="p-4">
                   <p className="text-gray-800 mb-4">{selectedPost.body}</p>
                   {/* Updated to handle imageUrls array */}
-                  {selectedPost.imageUrls && selectedPost.imageUrls.length > 0 && (
-                    <div className="rounded-lg overflow-hidden mb-4">
-                      <img
-                        src={selectedPost.imageUrls[0]}
-                        alt="Post content"
-                        className="w-full h-auto max-h-96 object-cover"
-                      />
-                    </div>
-                  )}
+                  {selectedPost.imageUrls &&
+                    selectedPost.imageUrls.length > 0 && (
+                      <div className="rounded-lg overflow-hidden mb-4">
+                        <img
+                          src={selectedPost.imageUrls[0]}
+                          alt="Post content"
+                          className="w-full h-auto max-h-96 object-cover"
+                        />
+                      </div>
+                    )}
                 </div>
 
                 {/* Post Actions */}
                 <div className="px-4 py-3 border-t border-purple-50">
                   <div className="flex items-center gap-6">
-                    <button 
+                    <button
                       onClick={handleToggleLike}
                       disabled={isTogglingLike}
                       className={`flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                        selectedPost.isLiked 
-                          ? 'text-red-500' 
-                          : 'text-gray-600 hover:text-red-500'
+                        selectedPost.isLiked
+                          ? "text-red-500"
+                          : "text-gray-600 hover:text-red-500"
                       }`}
                     >
-                      <Heart 
+                      <Heart
                         className={`w-5 h-5 transition-all ${
-                          selectedPost.isLiked ? 'fill-current' : ''
+                          selectedPost.isLiked ? "fill-current" : ""
                         }`}
                       />
-                      <span className="text-sm font-medium">{selectedPost.likes}</span>
+                      <span className="text-sm font-medium">
+                        {selectedPost.likes}
+                      </span>
                     </button>
                     <button className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors">
                       <MessageCircle className="w-5 h-5" />
-                      <span className="text-sm font-medium">{selectedPost.comments}</span>
+                      <span className="text-sm font-medium">
+                        {selectedPost.comments}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -304,12 +319,18 @@ const PostDetailPage: React.FC = () => {
                     </div>
                   ) : comments.length > 0 ? (
                     comments.map((comment: Comment) => (
-                      <div key={comment.id} className="p-4 hover:bg-purple-25 transition-colors">
+                      <div
+                        key={comment.id}
+                        className="p-4 hover:bg-purple-25 transition-colors"
+                      >
                         <div className="flex gap-3">
                           <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-200 flex-shrink-0">
                             <img
                               className="w-full h-full object-cover"
-                              src={comment.user.userAvatar || "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"}
+                              src={
+                                comment.user.userAvatar ||
+                                "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+                              }
                               alt={`${comment.user.userName}'s avatar`}
                             />
                           </div>
@@ -333,7 +354,9 @@ const PostDetailPage: React.FC = () => {
                     <div className="p-8 text-center">
                       <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                       <p className="text-gray-500">No comments yet.</p>
-                      <p className="text-gray-400 text-sm">Be the first to comment!</p>
+                      <p className="text-gray-400 text-sm">
+                        Be the first to comment!
+                      </p>
                     </div>
                   )}
                 </div>

@@ -4,7 +4,6 @@ import authReducer from "../features/auth/authSlice";
 import postsReducer from "../features/posts/postsSlice";
 import profileReducer from "../features/profile/profileSlice";
 import userReducer from "../features/auth/userSlice";
-import passwordSetupReducer from "../features/auth/passwordSetupSlice";
 import chatsReducer from "../features/chats/chatsSlice";
 import searchReducer from "../features/search/searchSlice";
 import jokesReducer from "../features/jumbotron/jokesSlice";
@@ -20,7 +19,6 @@ export const store = configureStore({
     posts: postsReducer,
     profile: profileReducer,
     user: userReducer,
-    passwordSetup: passwordSetupReducer,
     chats: chatsReducer,
     search: searchReducer,
     jokes: jokesReducer,

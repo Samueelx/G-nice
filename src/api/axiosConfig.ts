@@ -22,13 +22,13 @@ instance.interceptors.request.use(
     (config) => {
         // Get the current state and token
         const state = store.getState() as any;
-        const token = state.auth?.token;
-        
+        const token = state.auth?.accessToken;
+
         // Add Authorization header if token exists
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
-        
+
         return config;
     },
     (error) => {
@@ -57,12 +57,12 @@ const responseErrorInterceptor = (error: any) => {
     if (error.response?.status === 401) {
         // You can dispatch a logout action here if needed
         // store.dispatch(logout());
-        
+
         // Optionally redirect to login page
         // window.location.href = '/login';
         console.log('Token expired or invalid');
     }
-    
+
     return Promise.reject(error);
 };
 
