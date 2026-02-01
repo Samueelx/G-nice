@@ -201,9 +201,9 @@ export const refreshAccessToken = createAsyncThunk<
       }
 
       const response = await fetch(
-        'http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/auth/refresh',
+        'http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/Refresh/Access',
         {
-          method: 'POST',
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },

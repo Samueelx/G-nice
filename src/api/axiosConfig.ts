@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 import { store } from '@/store/store'; // Import your Redux store
 
 // Create the main instance with JSON content type (for most API calls)
@@ -52,15 +52,46 @@ const responseInterceptor = (response: any) => {
     return response;
 };
 
-const responseErrorInterceptor = (error: any) => {
-    // Handle 401 unauthorized responses (token expired/invalid)
-    if (error.response?.status === 401) {
-        // You can dispatch a logout action here if needed
-        // store.dispatch(logout());
+// Custom type for AxiosRequestConfig to include _retry property
+interface ValidAxiosRequestConfig extends InternalAxiosRequestConfig {
+    _retry?: boolean;
+}
 
-        // Optionally redirect to login page
-        // window.location.href = '/login';
-        console.log('Token expired or invalid');
+const responseErrorInterceptor = async (error: any) => {
+    const originalRequest = error.config as ValidAxiosRequestConfig;
+
+    // Handle 401 unauthorized responses (token expired/invalid)
+    if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+
+        try {
+            // Import dynamically to avoid circular dependency issues if any
+            const { refreshAccessToken, logout } = await import('@/features/auth/authSlice');
+
+            // Dispatch refresh token action
+            // @ts-ignore - Dispatch typing can be tricky with thunks outside components
+            const resultAction = await store.dispatch(refreshAccessToken());
+
+            if (refreshAccessToken.fulfilled.match(resultAction)) {
+                // Get the new token from the result
+                const newToken = resultAction.payload.accessTkn;
+
+                // Update header and retry original request
+                if (originalRequest.headers) {
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                }
+
+                return instance(originalRequest);
+            } else {
+                // Refresh failed - logout user
+                // @ts-ignore
+                store.dispatch(logout());
+                return Promise.reject(error);
+            }
+        } catch (refreshError) {
+            // Handle refresh errors
+            return Promise.reject(refreshError);
+        }
     }
 
     return Promise.reject(error);
