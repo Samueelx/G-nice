@@ -13,7 +13,7 @@ const CreatePost = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isLoading = useAppSelector((state) => state.posts.isLoading);
-  
+
   const [body, setBody] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -85,14 +85,17 @@ const CreatePost = () => {
             value={body}
             onChange={(e) => setBody(e.target.value)}
             className="min-h-[150px]"
-            maxLength={40000}
+            maxLength={240}
           />
+          <div className="text-right text-sm text-gray-500">
+            {body.length}/240
+          </div>
 
           {imagePreview && (
             <div className="relative">
-              <img 
-                src={imagePreview} 
-                alt="Preview" 
+              <img
+                src={imagePreview}
+                alt="Preview"
                 className="max-h-96 w-full object-cover rounded-md"
               />
               <Button
@@ -135,7 +138,7 @@ const CreatePost = () => {
               <Link className="w-5 h-5" />
             </Button>
           </div>
-         
+
           <Button
             type="submit"
             disabled={isLoading || !body.trim()}
