@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { ArrowLeft, ChevronRight, Lock, FileText, LogOut, Trash2 } from 'lucide-react';
 import { RootState } from '@/store/store'; // Adjust this import path to match your store setup
 import { useNavigate } from 'react-router-dom';
+import { logout } from '@/features/auth/authSlice';
 
 const SettingsPage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { profile } = useSelector((state: RootState) => state.profile);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -27,7 +29,8 @@ const SettingsPage = () => {
 
   const handleLogOut = () => {
     console.log('Log out user');
-    // Add logout logic here
+    dispatch(logout());
+    navigate('/login');
   };
 
   const handleDeleteAccount = () => {
@@ -76,7 +79,7 @@ const SettingsPage = () => {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-md mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={handleGoBack}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
