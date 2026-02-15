@@ -10,6 +10,7 @@ import {
   Loader,
   MoreVertical,
 } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate, useParams } from "react-router-dom";
 import { useProfileData } from "../hooks/useProfileData";
 import AdvancedProfileSkeleton from "@/components/templates/AdvancedProfileSkeleton";
@@ -122,11 +123,10 @@ const ProfilePage = ({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={profile.avatar}
-                        alt={`${profile.username}'s avatar`}
-                        className="w-8 h-8 rounded-full"
-                      />
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={profile.avatar} alt={`${profile.username}'s avatar`} />
+                        <AvatarFallback>{profile.username.charAt(0).toUpperCase()}</AvatarFallback>
+                      </Avatar>
                       <div>
                         <p className="text-sm font-semibold text-gray-800">
                           {profile.handle}
@@ -258,11 +258,10 @@ const ProfilePage = ({
 
           <div className="absolute -bottom-16 right-4">
             <div className="relative">
-              <img
-                src={profile.avatar}
-                alt={profile.username}
-                className="w-32 h-32 rounded-full border-4 border-white"
-              />
+              <Avatar className="w-32 h-32 border-4 border-white">
+                <AvatarImage src={profile.avatar} alt={profile.username} />
+                <AvatarFallback className="text-4xl">{profile.username.charAt(0).toUpperCase()}</AvatarFallback>
+              </Avatar>
               <div className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-green-500 border-4 border-white" />
             </div>
           </div>
@@ -299,11 +298,10 @@ const ProfilePage = ({
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-4 px-2 text-sm font-medium transition-colors relative ${
-                  activeTab === tab
+                className={`pb-4 px-2 text-sm font-medium transition-colors relative ${activeTab === tab
                     ? "border-b-2 border-blue-600 text-blue-600"
                     : "text-gray-500 hover:text-gray-700"
-                }`}
+                  }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {tab === "posts" && posts.length > 0 && (

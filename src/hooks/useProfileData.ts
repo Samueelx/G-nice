@@ -23,7 +23,7 @@ export const useProfileData = (userId?: string) => {
         await Promise.all([
           dispatch(fetchProfile()).unwrap(),
           dispatch(fetchUserPosts()).unwrap(),
-          dispatch(fetchUserComments()).unwrap(),
+          dispatch(fetchUserPosts()).unwrap(),
         ]);
       } catch (error) {
         console.error('Error fetching profile data:', error);
@@ -102,7 +102,7 @@ export const useProfileData = (userId?: string) => {
     commentsByPost, // Added for grouped comments display
     loading,
     error,
-   
+
     // Actions
     fetchCompleteProfile,      // Fetch own profile (token-based)
     fetchUserProfile,          // Fetch another user's profile by username
