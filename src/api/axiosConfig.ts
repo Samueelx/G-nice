@@ -3,7 +3,7 @@ import { store } from '@/store/store'; // Import your Redux store
 
 // Create the main instance with JSON content type (for most API calls)
 const instance = axios.create({
-    baseURL: 'http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources',
+    baseURL: 'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources',
     headers: {
         'Content-Type': 'application/json'
     }
@@ -11,7 +11,7 @@ const instance = axios.create({
 
 // Create a separate instance for form data (login/signup)
 export const formInstance = axios.create({
-    baseURL: 'http://16.16.107.227:8080/',
+    baseURL: 'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
     }

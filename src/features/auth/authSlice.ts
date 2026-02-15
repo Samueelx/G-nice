@@ -59,7 +59,7 @@ export const loginUser = createAsyncThunk<
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        'http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/SignIn/login',
+        'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources/SignIn/login',
         {
           method: 'GET',
           headers: {
@@ -113,7 +113,7 @@ export const googleSignIn = createAsyncThunk<
       const googleUserInfo = await googleResponse.json();
 
       const backendResponse = await fetch(
-        'http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/SignIn/google-login',
+        'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources/SignIn/google-login',
         {
           method: 'POST',
           headers: {
@@ -156,7 +156,7 @@ export const setupPassword = createAsyncThunk<
   async ({ password, accessTkn }, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        'http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/SignIn/Sign-Up',
+        'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources/SignIn/Sign-Up',
         {
           method: 'PUT',
           headers: {
@@ -201,7 +201,7 @@ export const refreshAccessToken = createAsyncThunk<
       }
 
       const response = await fetch(
-        'http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/Refresh/Access',
+        'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources/Refresh/Access',
         {
           method: 'PUT',
           headers: {
@@ -238,7 +238,7 @@ export const resetPassword = createAsyncThunk<
   async ({ token, newPassword }, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        'http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/SignIn/reset-password',
+        'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources/SignIn/reset-password',
         {
           method: 'POST',
           headers: {
@@ -271,7 +271,7 @@ export const forgotPassword = createAsyncThunk<
   async (email, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        'http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/SignIn/ResetPassword',
+        'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources/SignIn/ResetPassword',
         {
           method: 'PUT',
           headers: {

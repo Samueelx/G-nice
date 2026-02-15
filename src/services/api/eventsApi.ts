@@ -72,30 +72,30 @@ const parseTimestamp = (timestamp: string) => {
     // Split by colon to separate date and time parts
     const [datePart, ...timeParts] = timestamp.split(':');
     const timePart = timeParts.join(':'); // Rejoin time parts in case there are multiple colons
-    
+
     // Split date part by dash: "23-05-2025" -> ["23", "05", "2025"]
     const [day, month, year] = datePart.split('-');
-    
+
     // Create ISO format string: "2025-05-23T12:00:00"
     const isoString = `${year}-${month}-${day}T${timePart}`;
-    
+
     // Parse the ISO string
     const date = new Date(isoString);
-    
+
     // Check if the date is valid
     if (isNaN(date.getTime())) {
       throw new Error('Invalid date');
     }
-    
-    const time = date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+
+    const time = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
-    
+
     const dayString = date.getDate().toString();
     const monthString = date.toLocaleDateString('en-US', { month: 'short' });
-    
+
     return { time, date: { day: dayString, month: monthString } };
   } catch (error) {
     console.warn('Failed to parse timestamp:', timestamp, error);
@@ -110,7 +110,7 @@ const parseTimestamp = (timestamp: string) => {
 // Transformation functions
 const transformBackendEventToFrontend = (backendEvent: BackendEvent): Event => {
   const { time, date } = parseTimestamp(backendEvent.timestamp);
-  
+
   return {
     id: backendEvent.eventId.toString(), // Convert to string and use 'id'
     title: backendEvent.title, // Keep title
@@ -140,7 +140,7 @@ const transformFrontendParamsToBackend = (frontendParams: EventsQueryParams): Ba
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.API_BASE_URL || "http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources",
+    baseUrl: import.meta.env.API_BASE_URL || "http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources",
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as any).auth?.token;
       if (token) {
@@ -157,7 +157,7 @@ export const eventsApi = createApi({
       query: (params: EventsQueryParams = {}) => {
         const backendParams = transformFrontendParamsToBackend(params);
         const searchParams = new URLSearchParams();
-        
+
         if (backendParams.page) searchParams.append("page", backendParams.page.toString());
         if (backendParams.limit) searchParams.append("limit", backendParams.limit.toString());
         if (backendParams.category) {
@@ -166,7 +166,7 @@ export const eventsApi = createApi({
         if (backendParams.Title) searchParams.append("Title", backendParams.Title);
         if (backendParams.sortBy) searchParams.append("sortBy", backendParams.sortBy);
         if (backendParams.sortOrder) searchParams.append("sortOrder", backendParams.sortOrder);
-        
+
         return `/Event?${searchParams.toString()}`;
       },
       transformResponse: (response: BackendEvent[] | { events: BackendEvent[]; total: number; page: number; limit: number }): EventsResponse => {

@@ -39,10 +39,10 @@ export interface NotificationFilters {
 export const notificationsApi = createApi({
   reducerPath: 'notificationsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://16.16.107.227:8080/Memefest-SNAPSHOT-01/resources/notifications',
+    baseUrl: 'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources/notifications',
     prepareHeaders: (headers, { getState }) => {
       // Add auth token if you have one in your state
-      const token = (getState() as RootState).auth.token;
+      const token = (getState() as RootState).auth.accessToken;
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }
@@ -62,7 +62,7 @@ export const notificationsApi = createApi({
         if (filters.isRead !== undefined) params.append('isRead', String(filters.isRead));
         if (filters.limit) params.append('limit', String(filters.limit));
         if (filters.cursor) params.append('cursor', filters.cursor);
-        
+
         return `?${params.toString()}`;
       },
       providesTags: ['Notification'],
