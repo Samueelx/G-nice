@@ -22,9 +22,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
     dispatch(fetchPosts());
   }, [dispatch]);
 
-  const handlePostClick = (postId: string) => {
-    navigate(`/post/${postId}`);
-  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 overflow-x-hidden">
@@ -105,8 +103,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
               posts.map((post) => (
                 <div
                   key={post.id}
-                  onClick={() => handlePostClick(post.id)}
-                  className="cursor-pointer"
                 >
                   <SocialPost
                     postId={post.id} // Add this

@@ -1,5 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import { MoreVertical, Heart, MessageCircle, Share2 } from "lucide-react";
+import { MoreVertical, Heart, MessageCircle, Share2, Copy, Twitter, Smartphone } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -52,7 +58,12 @@ const SocialPost = ({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const handleAvatarClick = async () => {
+  const handlePostClick = () => {
+    navigate(`/post/${postId}`);
+  };
+
+  const handleAvatarClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       // Dispatch the action to fetch user data by username
       const resultAction = await dispatch(fetchUserByUsername(author.username));
@@ -69,7 +80,8 @@ const SocialPost = ({
       console.error("Error fetching user profile:", error);
     }
   };
-  const handleLikeClick = async () => {
+  const handleLikeClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await dispatch(toggleLike(postId)).unwrap();
     } catch (error) {
@@ -77,8 +89,52 @@ const SocialPost = ({
     }
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareData = {
+      title: `Post by ${author.name}`,
+      text: content,
+      url: window.location.href, // Or a specific post URL if available
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log("Error sharing:", err);
+      }
+    } else {
+      // Fallback is handled by the DropdownMenu
+      console.log("Web Share API not supported");
+    }
+  };
+
+
+
+  const copyLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(window.location.href);
+    // You might want to show a toast here
+  };
+
+  const shareToTwitter = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = encodeURIComponent(`Check out this post by ${author.name}: ${content.substring(0, 100)}...`);
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+  };
+
+  const shareToWhatsApp = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = encodeURIComponent(`Check out this post by ${author.name}: ${window.location.href}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
   return (
-    <Card className="w-full bg-white/80 backdrop-blur-sm border border-purple-100 hover:border-purple-200 transition-all duration-300 hover:shadow-lg">
+    <Card
+      className="w-full bg-white/80 backdrop-blur-sm border border-purple-100 hover:border-purple-200 transition-all duration-300 hover:shadow-lg cursor-pointer"
+      onClick={handlePostClick}
+    >
       <CardHeader className="p-4">
         <div className="flex items-center justify-between">
           <div
@@ -103,6 +159,10 @@ const SocialPost = ({
             variant="ghost"
             size="icon"
             className="text-gray-500 hover:text-gray-700"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Add more menu logic here if needed
+            }}
           >
             <MoreVertical className="w-5 h-5" />
           </Button>
@@ -131,13 +191,12 @@ const SocialPost = ({
         {/* Images grid */}
         {images.length > 0 && (
           <div
-            className={`grid gap-2 mb-4 ${
-              images.length === 1
-                ? "grid-cols-1"
-                : images.length === 2
+            className={`grid gap-2 mb-4 ${images.length === 1
+              ? "grid-cols-1"
+              : images.length === 2
                 ? "grid-cols-2"
                 : "grid-cols-2 md:grid-cols-3"
-            }`}
+              }`}
           >
             {images.map((image, index) => (
               <div
@@ -161,11 +220,10 @@ const SocialPost = ({
             <Button
               variant="ghost"
               size="sm"
-              className={`flex items-center gap-1.5 ${
-                isLiked
-                  ? "text-pink-500 hover:text-pink-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className={`flex items-center gap-1.5 ${isLiked
+                ? "text-pink-500 hover:text-pink-600"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
               onClick={handleLikeClick}
             >
               <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
@@ -175,17 +233,41 @@ const SocialPost = ({
               variant="ghost"
               size="sm"
               className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700"
+              onClick={(e) => e.stopPropagation()}
             >
               <MessageCircle className="w-5 h-5" />
               <span className="text-sm font-medium">{comments}</span>
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700"
-            >
-              <Share2 className="w-5 h-5" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Share2 className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-white">
+                <DropdownMenuItem onClick={handleShare} className="cursor-pointer md:hidden">
+                  <Smartphone className="mr-2 h-4 w-4" />
+                  <span>Share via...</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={copyLink} className="cursor-pointer">
+                  <Copy className="mr-2 h-4 w-4" />
+                  <span>Copy Link</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={shareToTwitter} className="cursor-pointer">
+                  <Twitter className="mr-2 h-4 w-4" />
+                  <span>Twitter</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={shareToWhatsApp} className="cursor-pointer">
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  <span>WhatsApp</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </CardFooter>
