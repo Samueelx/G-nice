@@ -92,26 +92,7 @@ const SettingsPage = () => {
 
       {/* Content */}
       <div className="max-w-md mx-auto px-4 py-6">
-        {/* Profile Header */}
-        <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <img
-                src={profile?.avatar || '/api/placeholder/60/60'}
-                alt="Profile"
-                className="w-15 h-15 rounded-full object-cover bg-gray-200"
-              />
-            </div>
-            <div className="flex-1">
-              <h2 className="font-semibold text-gray-900 text-lg">
-                {profile ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || profile.username || 'User' : 'User'}
-              </h2>
-              <p className="text-gray-500 text-sm">
-                {profile?.email || 'user@example.com'}
-              </p>
-            </div>
-          </div>
-        </div>
+
 
         {/* Settings Options */}
         <div className="space-y-4">
