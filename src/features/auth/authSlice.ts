@@ -25,6 +25,7 @@ interface AuthState {
   error: string | null;
   message: string | null;
   isAuthenticated: boolean;
+  isGoogleAuth: boolean;
 }
 
 const initialState: AuthState = {
@@ -35,6 +36,7 @@ const initialState: AuthState = {
   error: null,
   message: null,
   isAuthenticated: !!localStorage.getItem('accessToken'),
+  isGoogleAuth: false,
 };
 
 // Helper function to store tokens
@@ -58,13 +60,16 @@ export const loginUser = createAsyncThunk<
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
+      // Encode credentials as base64 for standard HTTP Basic Auth
+      const encoded = btoa(`${credentials.username}:${credentials.password}`);
+
       const response = await fetch(
         'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources/SignIn/login',
         {
-          method: 'GET',
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Basic ${credentials.username}:${credentials.password}`,
+            'Authorization': `Basic ${encoded}`,
           },
         }
       );
@@ -85,7 +90,10 @@ export const loginUser = createAsyncThunk<
   }
 );
 
-/** Google Sign-In */
+/** Google Sign-In / Sign-Up
+ *  Sends the raw Google ID token directly to the backend.
+ *  The backend is responsible for verifying the token with Google.
+ */
 export const googleSignIn = createAsyncThunk<
   LoginResponse,
   string,
@@ -94,24 +102,6 @@ export const googleSignIn = createAsyncThunk<
   'auth/googleSignIn',
   async (credential, { rejectWithValue }) => {
     try {
-      const googleResponse = await fetch(
-        'https://oauth2.googleapis.com/tokeninfo',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: `id_token=${credential}`,
-        }
-      );
-
-      if (!googleResponse.ok) {
-        const errorData = await googleResponse.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Google sign in failed');
-      }
-
-      const googleUserInfo = await googleResponse.json();
-
       const backendResponse = await fetch(
         'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources/SignIn/google-login',
         {
@@ -119,20 +109,13 @@ export const googleSignIn = createAsyncThunk<
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            googleToken: credential,
-            userInfo: {
-              email: googleUserInfo?.email,
-              name: googleUserInfo?.name,
-              sub: googleUserInfo?.sub,
-            },
-          }),
+          body: JSON.stringify({ googleToken: credential }),
         }
       );
 
       if (!backendResponse.ok) {
         const errorData = await backendResponse.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Backend Auth Failed');
+        throw new Error(errorData.message || 'Google sign-in failed. Please try again.');
       }
 
       const data: LoginResponse = await backendResponse.json();
@@ -304,6 +287,7 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.refreshToken = null;
       state.isAuthenticated = false;
+      state.isGoogleAuth = false;
       state.message = null;
       state.error = null;
       clearTokens();
@@ -361,6 +345,7 @@ const authSlice = createSlice({
         state.error = null;
         state.message = null;
         state.isAuthenticated = true;
+        state.isGoogleAuth = true;
       })
       .addCase(googleSignIn.rejected, (state, action) => {
         state.isLoading = false;

@@ -10,11 +10,11 @@ const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   });
-  // const [error, setError] = useState<string | null>(null);
   const {isLoading, error} = useAppSelector((state) => state.auth);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
 
@@ -48,15 +48,16 @@ const LoginPage: React.FC = () => {
 
   const handleGoogleSuccess = async (credentialResponse: {credential?: string}) => {
     if(credentialResponse.credential){
-      console.log("Credentials: ", credentialResponse.credential);
+      setGoogleLoading(true);
       try{
-        const resultAction = await dispatch(googleSignIn(credentialResponse.credential) as unknown as  UnknownAction);
-        console.log("result action: ", resultAction);
+        const resultAction = await dispatch(googleSignIn(credentialResponse.credential) as unknown as UnknownAction);
         if(googleSignIn.fulfilled.match(resultAction)){
           navigate('/feeds');
         }
       } catch(error) {
         console.error('Google Sign-In error:', error);
+      } finally {
+        setGoogleLoading(false);
       }
     }
   };
@@ -149,16 +150,27 @@ const LoginPage: React.FC = () => {
             <hr className="border-gray-500" />
           </div>
 
-          <div className="flex justify-center mt-5">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleFailure}
-              type="standard"
-              theme="filled_blue"
-              size="large"
-              text="signin_with"
-              shape="rectangular"
-            />
+          <div className="relative mt-5">
+            <div className={`flex justify-center transition-opacity duration-200 ${googleLoading ? 'opacity-40 pointer-events-none' : ''}`}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleFailure}
+                type="standard"
+                theme="filled_blue"
+                size="large"
+                text="signin_with"
+                shape="rectangular"
+              />
+            </div>
+            {googleLoading && (
+              <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-gray-600">
+                <svg className="animate-spin h-4 w-4 text-[#002D74]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+                <span>Signing in with Google...</span>
+              </div>
+            )}
           </div>
 
           <div className="mt-10 text-xs border-b py-4">

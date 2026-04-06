@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerUser } from "@/features/auth/userSlice";
+import { googleSignIn } from "@/features/auth/authSlice";
 import type { RootState } from "@/store/store";
 import { useAppDispatch } from "@/hooks/hooks";
 import { useAppSelector } from "@/hooks/hooks";
+import { GoogleLogin } from "@react-oauth/google";
+import { UnknownAction } from "@reduxjs/toolkit";
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -16,6 +19,7 @@ const Signup: React.FC = () => {
     email: "",
     userName: "",
   });
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   /**Get state from redux */
   const { loading } = useAppSelector((state: RootState) => state.user);
@@ -56,6 +60,26 @@ const Signup: React.FC = () => {
 
   const handleLoginNavigation = () => {
     navigate("/login");
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
+    if (credentialResponse.credential) {
+      setGoogleLoading(true);
+      try {
+        const resultAction = await dispatch(googleSignIn(credentialResponse.credential) as unknown as UnknownAction);
+        if (googleSignIn.fulfilled.match(resultAction)) {
+          navigate('/feeds');
+        }
+      } catch (error) {
+        console.error('Google Sign-Up error:', error);
+      } finally {
+        setGoogleLoading(false);
+      }
+    }
+  };
+
+  const handleGoogleFailure = () => {
+    console.error('Google Sign-Up was unsuccessful');
   };
 
   return (
@@ -210,6 +234,37 @@ const Signup: React.FC = () => {
                 </>
               )}
             </button>
+
+            {/* Google Sign-Up */}
+            <div className="mt-2">
+              <div className="grid grid-cols-3 items-center text-gray-500 mb-4">
+                <hr className="border-gray-400" />
+                <p className="text-center text-xs">OR</p>
+                <hr className="border-gray-400" />
+              </div>
+              <div className="relative">
+                <div className={`flex justify-center transition-opacity duration-200 ${googleLoading ? 'opacity-40 pointer-events-none' : ''}`}>
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleFailure}
+                    type="standard"
+                    theme="outline"
+                    size="large"
+                    text="continue_with"
+                    shape="rectangular"
+                  />
+                </div>
+                {googleLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-gray-600">
+                    <svg className="animate-spin h-4 w-4 text-[#002D74]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    <span>Signing up with Google...</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Login Navigation */}
             <div className="text-center mt-4">
