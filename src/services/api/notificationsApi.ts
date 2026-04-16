@@ -39,7 +39,7 @@ export interface NotificationFilters {
 export const notificationsApi = createApi({
   reducerPath: 'notificationsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://ec2-13-63-62-3.eu-north-1.compute.amazonaws.com:8080/Memefest-SNAPSHOT-01/resources/notifications',
+    baseUrl: 'http://localhost:8080/Memefest-SNAPSHOT-01/resources/notifications',
     prepareHeaders: (headers, { getState }) => {
       // Add auth token if you have one in your state
       const token = (getState() as RootState).auth.accessToken;
