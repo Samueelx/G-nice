@@ -15,10 +15,8 @@ const EditProfilePage = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { profile, updating, uploadingAvatar, error } = useSelector((state: RootState) => state.profile);
   
-  // Initialize form data from Redux profile state
   const [formData, setFormData] = useState<EditProfileData>({
-    firstName: '',
-    lastName: '',
+    displayName: '',
     username: '',
     email: '',
     phoneNumber: '',
@@ -36,8 +34,7 @@ const EditProfilePage = () => {
   useEffect(() => {
     if (profile) {
       setFormData({
-        firstName: profile.firstName || '',
-        lastName: profile.lastName || '',
+        displayName: profile.displayName || '',
         username: profile.username || '',
         email: profile.email || '',
         phoneNumber: profile.phoneNumber || '',
@@ -107,8 +104,7 @@ const EditProfilePage = () => {
       // Optimistic update for better UX (only if profile exists)
       if (profile) {
         dispatch(updateProfileOptimistic({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          displayName: formData.displayName,
           username: formData.username,
           bio: formData.bio,
           location: formData.location,
@@ -207,32 +203,17 @@ const EditProfilePage = () => {
 
         {/* Form Fields */}
         <div className="space-y-6">
-          {/* First Name */}
+          {/* Display Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              First Name
+              Display Name
             </label>
             <input
               type="text"
-              value={formData.firstName}
-              onChange={(e) => handleInputChange('firstName', e.target.value)}
+              value={formData.displayName}
+              onChange={(e) => handleInputChange('displayName', e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-              placeholder="Enter your first name"
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Last Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Last Name
-            </label>
-            <input
-              type="text"
-              value={formData.lastName}
-              onChange={(e) => handleInputChange('lastName', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-              placeholder="Enter your last name"
+              placeholder="Enter your display name"
               disabled={isLoading}
             />
           </div>

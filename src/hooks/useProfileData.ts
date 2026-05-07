@@ -1,79 +1,62 @@
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import {
   fetchProfile,
-  fetchUserPosts,
-  fetchUserComments,
   fetchUserByUsername,
   updateProfile,
   clearProfile,
   clearError
 } from '@/features/profile/profileSlice';
+import { fetchUserPosts } from '@/features/posts/postsSlice';
 import { useCallback, useEffect } from 'react';
 
 export const useProfileData = (userId?: string) => {
   const dispatch = useAppDispatch();
-  const { profile, posts, comments, commentsByPost, loading, error } = useAppSelector(
-    (state) => state.profile
-  );
+  const { profile, loading, error } = useAppSelector((state) => state.profile);
+  const { userPosts: posts, comments } = useAppSelector((state) => state.posts);
 
   // Fetch complete profile data for the authenticated user (token-based)
-  const fetchCompleteProfile = useCallback(
-    async () => {
-      try {
-        await Promise.all([
-          dispatch(fetchProfile()).unwrap(),
-          dispatch(fetchUserPosts()).unwrap(),
-          dispatch(fetchUserPosts()).unwrap(),
-        ]);
-      } catch (error) {
-        console.error('Error fetching profile data:', error);
+  const fetchCompleteProfile = useCallback(async () => {
+    try {
+      const resultAction = await dispatch(fetchProfile());
+      if (fetchProfile.fulfilled.match(resultAction)) {
+        await dispatch(fetchUserPosts({ username: resultAction.payload.username }));
       }
-    },
-    [dispatch]
-  );
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    }
+  }, [dispatch]);
 
   // Fetch another user's profile by username
-  const fetchUserProfile = useCallback(
-    async (username: string) => {
-      try {
-        await dispatch(fetchUserByUsername(username)).unwrap();
-      } catch (error) {
-        console.error('Error fetching user profile:', error);
+  const fetchUserProfile = useCallback(async (username: string) => {
+    try {
+      const resultAction = await dispatch(fetchUserByUsername(username));
+      if (fetchUserByUsername.fulfilled.match(resultAction)) {
+        await dispatch(fetchUserPosts({ username }));
       }
-    },
-    [dispatch]
-  );
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  }, [dispatch]);
 
-  // Individual fetch functions for authenticated user (token-based)
-  const fetchProfileData = useCallback(
-    () => dispatch(fetchProfile()),
-    [dispatch]
-  );
+  // Individual fetch functions
+  const fetchProfileData = useCallback(() => dispatch(fetchProfile()), [dispatch]);
 
   const fetchPosts = useCallback(
-    () => dispatch(fetchUserPosts()),
+    (username: string) => dispatch(fetchUserPosts({ username })),
     [dispatch]
   );
 
-  const fetchComments = useCallback(
-    () => dispatch(fetchUserComments()),
-    [dispatch]
-  );
+  const fetchComments = useCallback(() => {
+    // Comments on profile are not explicitly defined in the UI yet
+  }, []);
 
   const updateProfileData = useCallback(
     (data: Parameters<typeof updateProfile>[0]) => dispatch(updateProfile(data)),
     [dispatch]
   );
 
-  const clearProfileData = useCallback(
-    () => dispatch(clearProfile()),
-    [dispatch]
-  );
-
-  const clearErrorMessage = useCallback(
-    () => dispatch(clearError()),
-    [dispatch]
-  );
+  const clearProfileData = useCallback(() => dispatch(clearProfile()), [dispatch]);
+  const clearErrorMessage = useCallback(() => dispatch(clearError()), [dispatch]);
 
   // Auto-fetch profile data when component mounts or userId changes
   useEffect(() => {
@@ -99,16 +82,16 @@ export const useProfileData = (userId?: string) => {
     profile,
     posts,
     comments,
-    commentsByPost, // Added for grouped comments display
+    commentsByPost: [], // Handled elsewhere or not needed
     loading,
     error,
 
     // Actions
-    fetchCompleteProfile,      // Fetch own profile (token-based)
-    fetchUserProfile,          // Fetch another user's profile by username
-    fetchProfileData,          // Fetch own profile data only
-    fetchPosts,                // Fetch own posts
-    fetchComments,             // Fetch own comments
+    fetchCompleteProfile,
+    fetchUserProfile,
+    fetchProfileData,
+    fetchPosts,
+    fetchComments,
     updateProfileData,
     clearProfileData,
     clearErrorMessage,

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import axios from "axios";
 import axiosInstance from "@/api/axiosConfig";
+import axios from "axios";
 
 // Types matching your ProfilePage component
 export type UserProfile = {
@@ -20,63 +20,12 @@ export type UserProfile = {
   email?: string;
   phoneNumber?: string;
   dateOfBirth?: string;
-};
-
-// Add this type for the backend response
-type BackendPost = {
-  id: number;
-  body: string;
-  createdAt: string;
-  likes: number;
-  user: {
-    userName: string;
-    userId: number;
-    verified: boolean;
-    avatar: string;
-    displayName: string;
-  };
-  taggedUsers: any[];
-};
-
-export type Post = {
-  id: string;
-  content: string;
-  timestamp: string;
-  likes: number;
-  comments: number;
-};
-
-// Updated Comment type to match backend response
-export type Comment = {
-  id: string;
-  postId: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string;
-  body: string;
-  createdAt: string;
-  comments: Comment[]; // Nested comments (replies)
-  likes: number;
-  taggedUsers: any[];
-  downvotes: number;
-};
-
-// Type for grouped comments by post
-export type CommentsByPost = {
-  postId: string;
-  postTitle: string;
-  postContent: string;
-  postAuthor?: string;
-  postTimestamp?: string;
-  postSubreddit?: string;
-  postLikes?: number;
-  userComments: Comment[];
+  displayName?: string; // Add displayName
 };
 
 // Edit Profile Form Data Type
 export type EditProfileData = {
-  firstName: string;
-  lastName: string;
+  displayName: string;
   username: string;
   email: string;
   phoneNumber: string;
@@ -89,9 +38,6 @@ export type EditProfileData = {
 
 interface ProfileState {
   profile: UserProfile | null;
-  posts: Post[];
-  comments: Comment[];
-  commentsByPost: CommentsByPost[]; // Grouped comments for display
   loading: boolean;
   error: string | null;
   // Loading states for different operations
@@ -101,14 +47,31 @@ interface ProfileState {
 
 const initialState: ProfileState = {
   profile: null,
-  posts: [],
-  comments: [],
-  commentsByPost: [],
   loading: false,
   error: null,
   updating: false,
   uploadingAvatar: false,
 };
+
+// Helper to transform backend user data to frontend UserProfile
+const transformUserData = (data: any): UserProfile => ({
+  id: data.id?.toString() || '',
+  username: data.username || '',
+  handle: `@${data.username || 'user'}`,
+  avatar: data.avatar_url || '',
+  bio: data.bio || '',
+  location: data.location || '',
+  occupation: data.occupation || '',
+  joinDate: data.created_at ? new Date(data.created_at).toLocaleDateString() : 'Recently',
+  followers: data.followers_count || 0,
+  following: data.following_count || 0,
+  firstName: data.firstName || '',
+  lastName: data.lastName || '',
+  email: data.email || '',
+  phoneNumber: data.phoneNumber || '',
+  dateOfBirth: data.dateOfBirth || '',
+  displayName: data.display_name || '',
+});
 
 // New async thunk for fetching user by username (for avatar clicks)
 export const fetchUserByUsername = createAsyncThunk(
@@ -116,7 +79,8 @@ export const fetchUserByUsername = createAsyncThunk(
   async (username: string, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get(`/users/${username}`);
-      return transformUserData(response.data);
+      const data = response.data?.data ?? response.data;
+      return transformUserData(data);
     } catch (error) {
       if (axios.isAxiosError(error)) {
         return rejectWithValue(error.response?.data?.message || 'Failed to fetch user profile');
@@ -126,33 +90,14 @@ export const fetchUserByUsername = createAsyncThunk(
   }
 );
 
-// Helper to transform backend user data to frontend UserProfile
-const transformUserData = (data: any): UserProfile => ({
-  id: data.userId?.toString() || '',
-  username: data.userName || '', // Map userName to username
-  handle: `@${data.userName || 'user'}`,
-  avatar: data.avatar || '',
-  bio: data.bio || '',
-  location: data.location || '',
-  occupation: data.occupation || '',
-  joinDate: data.joinDate || 'Recently',
-  followers: data.contacts || 0, // Assuming contacts might map to followers/connections
-  following: 0, // Backend doesn't seem to provide this
-  firstName: data.firstName,
-  lastName: data.lastName,
-  email: data.email,
-  phoneNumber: data.phoneNumber,
-  dateOfBirth: data.dateOfBirth,
-});
-
 // Async thunk for fetching profile data (token-based authentication)
 export const fetchProfile = createAsyncThunk(
   'profile/fetchProfile',
   async (_, { rejectWithValue }) => {
     try {
-      // Backend uses token to identify the user
-      const response = await axiosInstance.get('/User');
-      return transformUserData(response.data);
+      const response = await axiosInstance.get('/users/me');
+      const data = response.data?.data ?? response.data;
+      return transformUserData(data);
     } catch (error) {
       if (axios.isAxiosError(error)) {
         return rejectWithValue(error.response?.data?.message || 'Failed to fetch profile');
@@ -162,89 +107,28 @@ export const fetchProfile = createAsyncThunk(
   }
 );
 
-// Update the fetchUserPosts thunk to transform the data
-export const fetchUserPosts = createAsyncThunk(
-  'profile/fetchUserPosts',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await axiosInstance.get('/User/Posts');
-
-      // Transform backend data to match frontend Post type
-      const transformedPosts = response.data.map((post: BackendPost) => ({
-        id: post.id.toString(),
-        content: post.body,
-        timestamp: post.createdAt,
-        likes: post.likes,
-        comments: 0 // Backend doesn't provide this, set to 0 or fetch separately
-      }));
-
-      return transformedPosts;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data?.message || 'Failed to fetch posts');
-      }
-      return rejectWithValue('An unexpected error occurred');
-    }
-  }
-);
-
-
-// Async thunk for fetching user comments (token-based authentication)
-// Removed as per user request to not fetch comments
-export const fetchUserComments = createAsyncThunk(
-  'profile/fetchUserComments',
-  async (_, { rejectWithValue }) => {
-    return []; // Return empty array immediately
-  }
-);
-
 // Async thunk for updating profile (token-based authentication)
 export const updateProfile = createAsyncThunk(
   'profile/updateProfile',
   async (profileData: Partial<UserProfile>, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.put('/api/users/profile', profileData);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data?.message || 'Failed to update profile');
-      }
-      return rejectWithValue('An unexpected error occurred');
-    }
-  }
-);
+      // Map to backend schema
+      const backendPayload = {
+        display_name: profileData.displayName,
+        bio: profileData.bio,
+        avatar_url: profileData.avatar,
+        // The backend might not support the rest, but we can send them just in case
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        phoneNumber: profileData.phoneNumber,
+        dateOfBirth: profileData.dateOfBirth,
+        location: profileData.location,
+        occupation: profileData.occupation,
+      };
 
-// New async thunk for updating profile with edit form data (token-based authentication)
-export const updateProfileWithFormData = createAsyncThunk(
-  'profile/updateProfileWithFormData',
-  async (formData: EditProfileData, { rejectWithValue }) => {
-    try {
-      // Create FormData for multipart/form-data if avatar is a file
-      const requestData = new FormData();
-
-      // Add all form fields to FormData
-      requestData.append('firstName', formData.firstName);
-      requestData.append('lastName', formData.lastName);
-      requestData.append('username', formData.username);
-      requestData.append('email', formData.email);
-      requestData.append('phoneNumber', formData.phoneNumber);
-      requestData.append('dateOfBirth', formData.dateOfBirth);
-      requestData.append('bio', formData.bio);
-      requestData.append('location', formData.location);
-      requestData.append('occupation', formData.occupation);
-
-      // Add avatar file if it's a File object
-      if (formData.avatar && formData.avatar instanceof File) {
-        requestData.append('avatar', formData.avatar);
-      }
-
-      const response = await axiosInstance.put('/api/users/profile', requestData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      return response.data;
+      const response = await axiosInstance.patch('/users/me', backendPayload);
+      const data = response.data?.data ?? response.data;
+      return transformUserData(data);
     } catch (error) {
       if (axios.isAxiosError(error)) {
         return rejectWithValue(error.response?.data?.message || 'Failed to update profile');
@@ -260,18 +144,64 @@ export const uploadAvatar = createAsyncThunk(
   async (avatarFile: File, { rejectWithValue }) => {
     try {
       const formData = new FormData();
-      formData.append('avatar', avatarFile);
+      formData.append('file', avatarFile); // Backend expects 'file'
 
-      const response = await axiosInstance.post('/api/users/avatar', formData, {
+      const response = await axiosInstance.post('/uploads?type=avatars', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      return response.data.avatarUrl;
+      const data = response.data?.data ?? response.data;
+      return data.url || data.avatarUrl; // Handle different potential key names just in case
     } catch (error) {
       if (axios.isAxiosError(error)) {
         return rejectWithValue(error.response?.data?.message || 'Failed to upload avatar');
+      }
+      return rejectWithValue('An unexpected error occurred');
+    }
+  }
+);
+
+// New async thunk for updating profile with edit form data (token-based authentication)
+export const updateProfileWithFormData = createAsyncThunk(
+  'profile/updateProfileWithFormData',
+  async (formData: EditProfileData, { dispatch, rejectWithValue }) => {
+    try {
+      let avatarUrl = undefined;
+      
+      // Add avatar file if it's a File object
+      if (formData.avatar && formData.avatar instanceof File) {
+        const uploadAction = await dispatch(uploadAvatar(formData.avatar) as any);
+        if (uploadAvatar.fulfilled.match(uploadAction)) {
+          avatarUrl = uploadAction.payload;
+        } else {
+          throw new Error('Avatar upload failed');
+        }
+      } else if (typeof formData.avatar === 'string') {
+          avatarUrl = formData.avatar;
+      }
+
+      // Map to backend schema
+      const backendPayload = {
+        display_name: formData.displayName,
+        bio: formData.bio,
+        avatar_url: avatarUrl,
+        location: formData.location,
+        occupation: formData.occupation,
+        phoneNumber: formData.phoneNumber,
+        dateOfBirth: formData.dateOfBirth,
+      };
+
+      const response = await axiosInstance.patch('/users/me', backendPayload);
+      const data = response.data?.data ?? response.data;
+      return transformUserData(data);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to update profile');
+      }
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
       }
       return rejectWithValue('An unexpected error occurred');
     }
@@ -287,25 +217,10 @@ const profileSlice = createSlice({
     },
     clearProfile: (state) => {
       state.profile = null;
-      state.posts = [];
-      state.comments = [];
-      state.commentsByPost = [];
       state.error = null;
     },
     clearError: (state) => {
       state.error = null;
-    },
-    addPost: (state, action: PayloadAction<Post>) => {
-      state.posts.unshift(action.payload);
-    },
-    updatePost: (state, action: PayloadAction<Post>) => {
-      const index = state.posts.findIndex(post => post.id === action.payload.id);
-      if (index !== -1) {
-        state.posts[index] = action.payload;
-      }
-    },
-    deletePost: (state, action: PayloadAction<string>) => {
-      state.posts = state.posts.filter(post => post.id !== action.payload);
     },
     // New reducer for optimistic updates
     updateProfileOptimistic: (state, action: PayloadAction<Partial<UserProfile>>) => {
@@ -315,7 +230,7 @@ const profileSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Fetch User By Username (for avatar clicks)
+    // Fetch User By Username
     builder
       .addCase(fetchUserByUsername.pending, (state) => {
         state.loading = true;
@@ -341,53 +256,6 @@ const profileSlice = createSlice({
         state.profile = action.payload;
       })
       .addCase(fetchProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-
-    // Fetch User Posts
-    builder
-      .addCase(fetchUserPosts.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchUserPosts.fulfilled, (state, action) => {
-        state.loading = false;
-        state.posts = action.payload;
-      })
-      .addCase(fetchUserPosts.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-
-    // Fetch User Comments - Updated to group by post
-    builder
-      .addCase(fetchUserComments.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchUserComments.fulfilled, (state, action) => {
-        state.loading = false;
-        state.comments = action.payload;
-
-        // Group comments by postId
-        const grouped = new Map<string, CommentsByPost>();
-
-        action.payload.forEach((comment: Comment) => {
-          if (!grouped.has(comment.postId)) {
-            grouped.set(comment.postId, {
-              postId: comment.postId,
-              postTitle: '', // Will need to fetch or have backend provide this
-              postContent: '',
-              userComments: []
-            });
-          }
-          grouped.get(comment.postId)!.userComments.push(comment);
-        });
-
-        state.commentsByPost = Array.from(grouped.values());
-      })
-      .addCase(fetchUserComments.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
@@ -445,9 +313,6 @@ export const {
   setProfile,
   clearProfile,
   clearError,
-  addPost,
-  updatePost,
-  deletePost,
   updateProfileOptimistic
 } = profileSlice.actions;
 
