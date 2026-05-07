@@ -10,9 +10,10 @@ export interface UserRegistrationData {
   password?: string;
 }
 
-// Backend returns no data, just 200 OK status
+// Backend returns standard envelope, data contains message and email
 interface RegistrationResponse {
-  status: number;
+  message: string;
+  email: string;
 }
 
 interface UserState {
@@ -41,10 +42,10 @@ export const registerUser = createAsyncThunk<
       '/auth/register',
       userData
     );
-    // Backend returns no data, just check status code
-    return { status: response.status };
+    // Backend returns data envelope containing message and email
+    return response.data?.data ?? response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || 'Registration failed');
+    return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'Registration failed');
   }
 });
 

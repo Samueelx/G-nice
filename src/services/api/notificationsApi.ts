@@ -60,10 +60,20 @@ export const notificationsApi = createApi({
         const params = new URLSearchParams();
         if (filters.type && filters.type !== 'all') params.append('type', filters.type);
         if (filters.isRead !== undefined) params.append('isRead', String(filters.isRead));
-        if (filters.limit) params.append('limit', String(filters.limit));
-        if (filters.cursor) params.append('cursor', filters.cursor);
+        // Use standard pagination params
+        if (filters.limit) params.append('page_size', String(filters.limit));
+        if (filters.cursor) params.append('page', filters.cursor); // Assuming cursor is used as page
 
         return `?${params.toString()}`;
+      },
+      transformResponse: (response: any): NotificationsResponse => {
+        const data = response.data ?? response;
+        return {
+          notifications: data.items || data.notifications || [],
+          unreadCount: 0, // Should be fetched via getUnreadCount
+          hasMore: data.has_next || data.hasMore || false,
+          nextCursor: data.page ? String(data.page + 1) : undefined
+        };
       },
       providesTags: ['Notification'],
     }),
@@ -71,6 +81,7 @@ export const notificationsApi = createApi({
     // Get unread count only (for badge)
     getUnreadCount: builder.query<{ count: number }, void>({
       query: () => '/unread-count',
+      transformResponse: (response: any) => response.data ?? response,
       providesTags: ['Notification'],
     }),
 

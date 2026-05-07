@@ -153,7 +153,7 @@ export const fetchPosts = createAsyncThunk(
       const response = await axiosInstance.get("/posts", { params });
       const envelope = response.data;
       // The backend may return a paginated envelope or a plain array
-      const items: BackendPost[] = envelope.data?.items ?? envelope.data ?? envelope;
+      const items = envelope.data?.items ?? envelope.data?.data ?? envelope.data ?? envelope;
       return items.map(normalizePost);
     } catch (error: any) {
       return rejectWithValue(
@@ -175,7 +175,7 @@ export const fetchUserPosts = createAsyncThunk(
         params: { page, page_size },
       });
       const envelope = response.data;
-      const items: BackendPost[] = envelope.data?.items ?? envelope.data ?? envelope;
+      const items = envelope.data?.items ?? envelope.data?.data ?? envelope.data ?? envelope;
       return items.map(normalizePost);
     } catch (error: any) {
       return rejectWithValue(
@@ -266,7 +266,7 @@ export const fetchComments = createAsyncThunk(
         params: { page, page_size },
       });
       const envelope = response.data;
-      const items: BackendComment[] = envelope.data?.items ?? envelope.data ?? envelope;
+      const items: BackendComment[] = envelope.data?.items ?? envelope.data?.data ?? envelope.data ?? envelope;
       return { postId, comments: items.map((c) => normalizeComment(c, postId)) };
     } catch (error: any) {
       return rejectWithValue(

@@ -1,5 +1,5 @@
-// authSlice.ts - Fixed with proper typing
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import instance from "@/api/axiosConfig";
 
 interface LoginCredentials {
   email: string;
@@ -60,25 +60,10 @@ export const loginUser = createAsyncThunk<
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        'http://localhost:8080/api/v1/auth/login',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(credentials)
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || 'Login Failed!');
-      }
+      const response = await instance.post('/auth/login', credentials);
 
       // Handle standard API envelope
-      const responseBody = await response.json();
-      const data = responseBody.data;
+      const data = response.data?.data ?? response.data;
 
       // Extract token and user (using token as accessTkn)
       const token = data.token;
@@ -90,8 +75,8 @@ export const loginUser = createAsyncThunk<
         token: token,
         refresh_token: refresh_token,
       };
-    } catch (error) {
-      return rejectWithValue((error as Error).message);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'Login Failed!');
     }
   }
 );
@@ -105,24 +90,9 @@ export const verifyOtp = createAsyncThunk<
   'auth/verifyOtp',
   async ({ email, otp }, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        'http://localhost:8080/api/v1/auth/verify-otp',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, otp }),
-        }
-      );
+      const response = await instance.post('/auth/verify-otp', { email, otp });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || 'OTP verification failed');
-      }
-
-      const responseBody = await response.json();
-      const data = responseBody.data;
+      const data = response.data?.data ?? response.data;
       
       const token = data.token;
       const refresh_token = data.refresh_token;
@@ -133,8 +103,8 @@ export const verifyOtp = createAsyncThunk<
         token: token,
         refresh_token: refresh_token,
       };
-    } catch (error) {
-      return rejectWithValue((error as Error).message);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'OTP verification failed');
     }
   }
 );
@@ -259,7 +229,7 @@ export const refreshAccessToken = createAsyncThunk<
       }
 
       const responseBody = await response.json();
-      const data = responseBody.data;
+      const data = responseBody.data ?? responseBody;
 
       storeTokens(data.token, data.refresh_token);
 

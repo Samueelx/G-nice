@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import instance from '@/api/axiosConfig';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { verifyOtp } from '@/features/auth/authSlice';
 import { UnknownAction } from '@reduxjs/toolkit';
@@ -32,20 +33,11 @@ const OtpVerification: React.FC = () => {
 
   const handleResend = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/auth/resend-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-      if (response.ok) {
-        alert("OTP sent again!");
-      } else {
-        alert("Failed to resend OTP");
-      }
+      await instance.post('/auth/resend-otp', { email });
+      alert("OTP sent again!");
     } catch (error) {
       console.error("Error resending OTP:", error);
+      alert("Failed to resend OTP");
     }
   };
 
