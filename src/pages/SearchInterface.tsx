@@ -1,13 +1,13 @@
 import React, { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Search, Users, Hash, Image, Loader2 } from 'lucide-react';
+import { Search, Users, Hash, Calendar, Loader2, MessageSquare, ThumbsUp } from 'lucide-react';
 import { AppDispatch, RootState } from '@/store/store';
 import { searchContent, setQuery, setCategory } from '@/features/search/searchSlice';
-import { Meme, SearchCategory, Topic, User } from '@/types/search';
+import { SearchCategory, SearchUser, SearchPost, SearchEvent } from '@/types/search';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import {debounce} from 'lodash';
+import { debounce } from 'lodash';
 
 const SearchInterface: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -52,7 +52,7 @@ const SearchInterface: React.FC = () => {
           )}
           <Input 
             type="text"
-            placeholder="Search..."
+            placeholder="Search users, posts, or events..."
             value={query}
             onChange={handleSearchChange}
             className="w-full pl-10 pr-4 py-2 bg-white/50 border-purple-100 focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
@@ -63,7 +63,7 @@ const SearchInterface: React.FC = () => {
 
       {/* Category Tabs */}
       <div className="flex gap-2 p-3 border-b overflow-x-auto scrollbar-hide">
-        {(['all', 'people', 'topics', 'memes'] as const).map((category) => (
+        {(['all', 'users', 'posts', 'events'] as const).map((category) => (
           <Button
             key={category}
             variant={activeCategory === category ? 'default' : 'outline'}
@@ -71,9 +71,9 @@ const SearchInterface: React.FC = () => {
             onClick={() => handleCategoryChange(category)}
             className="flex-shrink-0"
           >
-            {category === 'people' && <Users className="w-4 h-4 mr-2" />}
-            {category === 'topics' && <Hash className="w-4 h-4 mr-2" />}
-            {category === 'memes' && <Image className="w-4 h-4 mr-2" />}
+            {category === 'users' && <Users className="w-4 h-4 mr-2" />}
+            {category === 'posts' && <Hash className="w-4 h-4 mr-2" />}
+            {category === 'events' && <Calendar className="w-4 h-4 mr-2" />}
             {category.charAt(0).toUpperCase() + category.slice(1)}
           </Button>
         ))}
@@ -81,22 +81,49 @@ const SearchInterface: React.FC = () => {
 
       {/* Results Sections */}
       <div className="divide-y">
-        {/* People Results */}
-        {(activeCategory === 'all' || activeCategory === 'people') && results!.people.length > 0 && (
+        {/* Users Results */}
+        {(activeCategory === 'all' || activeCategory === 'users') && results.users.length > 0 && (
           <div className="p-3">
-            <h2 className="text-sm font-medium text-gray-500 mb-2">People</h2>
+            <h2 className="text-sm font-medium text-gray-500 mb-2">Users</h2>
             <div className="space-y-3">
-              {results.people.map((person: User) => (
-                <div key={person.id} className="flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg transition-colors">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={person.avatar} />
-                    <AvatarFallback>{person.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-medium text-gray-900">{person.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {person.status === 'active' ? 'Active now' : `Last seen ${person.lastSeen}`}
-                    </p>
+              {results.users.map((user: SearchUser) => (
+                <div key={user.id} className="flex items-center justify-between p-2 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={user.avatar_url || undefined} />
+                      <AvatarFallback>{(user.display_name || user.username).charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium text-gray-900">{user.display_name || user.username}</h3>
+                      <p className="text-sm text-gray-500">@{user.username}</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm">View Profile</Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Posts Results */}
+        {(activeCategory === 'all' || activeCategory === 'posts') && results.posts.length > 0 && (
+          <div className="p-3">
+            <h2 className="text-sm font-medium text-gray-500 mb-2">Posts</h2>
+            <div className="space-y-3">
+              {results.posts.map((post: SearchPost) => (
+                <div key={post.id} className="flex flex-col gap-2 p-3 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-100">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={post.author?.avatar_url || undefined} />
+                      <AvatarFallback>{(post.author?.username || 'U').charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium text-gray-900">{post.author?.display_name || post.author?.username}</span>
+                    <span className="text-xs text-gray-500">• {new Date(post.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-sm text-gray-800 line-clamp-2">{post.content}</p>
+                  <div className="flex items-center gap-4 text-gray-500 text-xs mt-1">
+                    <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> {post.likes_count}</span>
+                    <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> {post.comments_count}</span>
                   </div>
                 </div>
               ))}
@@ -104,48 +131,20 @@ const SearchInterface: React.FC = () => {
           </div>
         )}
 
-        {/* Topics Results */}
-        {(activeCategory === 'all' || activeCategory === 'topics') && results.topics.length > 0 && (
+        {/* Events Results */}
+        {(activeCategory === 'all' || activeCategory === 'events') && results.events.length > 0 && (
           <div className="p-3">
-            <h2 className="text-sm font-medium text-gray-500 mb-2">Topics</h2>
+            <h2 className="text-sm font-medium text-gray-500 mb-2">Events</h2>
             <div className="space-y-3">
-              {results.topics.map((topic: Topic) => (
-                <div key={topic.id} className="flex items-center justify-between p-2 hover:bg-purple-50 rounded-lg transition-colors">
+              {results.events.map((event: SearchEvent) => (
+                <div key={event.id} className="flex flex-col p-3 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-100">
                   <div className="flex items-center gap-3">
-                    <Hash className="w-5 h-5 text-purple-500" />
-                    <div>
-                      <h3 className="font-medium text-gray-900">{topic.name}</h3>
-                      <p className="text-sm text-gray-500">{topic.memberCount.toLocaleString()} members</p>
-                    </div>
-                  </div>
-                  <Button 
-                    variant={topic.isJoined ? "secondary" : "outline"}
-                    size="sm"
-                  >
-                    {topic.isJoined ? 'Joined' : 'Join'}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Memes Results */}
-        {(activeCategory === 'all' || activeCategory === 'memes') && results.memes.length > 0 && (
-          <div className="p-3">
-            <h2 className="text-sm font-medium text-gray-500 mb-2">Memes</h2>
-            <div className="space-y-3">
-              {results.memes.map((meme: Meme) => (
-                <div key={meme.id} className="flex items-center justify-between p-2 hover:bg-purple-50 rounded-lg transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Image className="w-6 h-6 text-purple-500" />
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-5 h-5 text-purple-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">{meme.title}</h3>
-                      <p className="text-sm text-gray-500">
-                        {meme.category} • {meme.likes.toLocaleString()} likes
-                      </p>
+                      <h3 className="font-medium text-gray-900 line-clamp-1">{event.title}</h3>
+                      <p className="text-xs text-purple-600 font-medium">{new Date(event.date).toLocaleDateString()} • {event.location}</p>
                     </div>
                   </div>
                 </div>

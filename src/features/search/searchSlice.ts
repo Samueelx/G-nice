@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axiosInstance from '@/api/axiosConfig'; // Import your configured axios instance
-import axios from 'axios'; // Import axios for isAxiosError
+import axiosInstance from '@/api/axiosConfig';
+import axios from 'axios';
 import { SearchState, SearchCategory } from '@/types/search';
 
 const initialState: SearchState = {
@@ -9,9 +9,9 @@ const initialState: SearchState = {
   isLoading: false,
   error: null,
   results: {
-    people: [],
-    topics: [],
-    memes: []
+    users: [],
+    posts: [],
+    events: []
   }
 };
 
@@ -19,14 +19,22 @@ export const searchContent = createAsyncThunk(
   'search/searchContent',
   async ({ query, category }: { query: string; category: SearchCategory }, { rejectWithValue }) => {
     try {
-      // Use your configured axios instance instead of raw axios
-      const response = await axiosInstance.get('/api/search', {
-        params: { query, category }
+      // The backend expects ?q=...&type=...
+      const response = await axiosInstance.get('/search', {
+        params: { q: query, type: category }
       });
-      return response.data;
+      
+      const envelope = response.data?.data ?? response.data;
+      
+      // The backend paginates results under a `data` key (e.g. users.data[])
+      return {
+        users: envelope.users?.data ?? envelope.users?.items ?? [],
+        posts: envelope.posts?.data ?? envelope.posts?.items ?? [],
+        events: envelope.events?.data ?? envelope.events?.items ?? []
+      };
     } catch (error) {
-      if (axios.isAxiosError(error)) { // Fixed: Use axios.isAxiosError instead of axiosInstance.isAxiosError
-        return rejectWithValue(error.response?.data || 'Search failed');
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || error.response?.data?.error || 'Search failed');
       }
       return rejectWithValue('An unexpected error occurred');
     }
@@ -56,7 +64,13 @@ const searchSlice = createSlice({
       })
       .addCase(searchContent.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.results = action.payload;
+        // Depending on the category searched, we might only receive some arrays.
+        // We'll merge them or replace them entirely. The current UI approach replaces them.
+        state.results = {
+          users: action.payload.users || [],
+          posts: action.payload.posts || [],
+          events: action.payload.events || []
+        };
       })
       .addCase(searchContent.rejected, (state, action) => {
         state.isLoading = false;
