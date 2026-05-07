@@ -3,7 +3,7 @@ import { store } from '@/store/store'; // Import your Redux store
 
 // Create the main instance with JSON content type (for most API calls)
 const instance = axios.create({
-    baseURL: 'http://localhost:8080/Memefest-SNAPSHOT-01/resources',
+    baseURL: 'http://localhost:8080/api/v1',
     headers: {
         'Content-Type': 'application/json'
     }

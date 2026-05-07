@@ -14,9 +14,9 @@ const CreatePost = () => {
   const { toast } = useToast();
   const isLoading = useAppSelector((state) => state.posts.isLoading);
 
-  const [body, setBody] = useState('');
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [content, setContent] = useState('');
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageClick = () => {
@@ -26,7 +26,7 @@ const CreatePost = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         toast({
           title: 'Error',
           description: 'Image size should be less than 5MB',
@@ -34,19 +34,17 @@ const CreatePost = () => {
         });
         return;
       }
-
-      setImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // In a real flow you would upload via POST /uploads first to get the URL.
+      // For now, create a local preview URL.
+      const localUrl = URL.createObjectURL(file);
+      setMediaUrl(localUrl);
+      setMediaPreview(localUrl);
     }
   };
 
-  const removeImage = () => {
-    setImage(null);
-    setImagePreview(null);
+  const removeMedia = () => {
+    setMediaUrl(null);
+    setMediaPreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -54,18 +52,21 @@ const CreatePost = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!body.trim()) return;
+    if (!content.trim()) return;
 
     try {
-      await dispatch(createPost({ body, image })).unwrap();
-      setBody('');
-      setImage(null);
-      setImagePreview(null);
+      await dispatch(createPost({
+        content: content.trim(),
+        ...(mediaUrl && { media_url: mediaUrl, media_type: 'image' }),
+        is_public: true,
+      })).unwrap();
+      setContent('');
+      setMediaUrl(null);
+      setMediaPreview(null);
       toast({
         title: 'Success',
         description: 'Post created successfully!',
       });
-      // Navigate to feeds page after successful post creation
       navigate('/feeds');
     } catch (error) {
       toast({
@@ -81,20 +82,20 @@ const CreatePost = () => {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4 pt-6">
           <Textarea
-            placeholder="Share your joke..."
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
+            placeholder="What's on your mind?"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
             className="min-h-[150px]"
-            maxLength={240}
+            maxLength={500}
           />
           <div className="text-right text-sm text-gray-500">
-            {body.length}/240
+            {content.length}/500
           </div>
 
-          {imagePreview && (
+          {mediaPreview && (
             <div className="relative">
               <img
-                src={imagePreview}
+                src={mediaPreview}
                 alt="Preview"
                 className="max-h-96 w-full object-cover rounded-md"
               />
@@ -103,7 +104,7 @@ const CreatePost = () => {
                 variant="destructive"
                 size="icon"
                 className="absolute top-2 right-2"
-                onClick={removeImage}
+                onClick={removeMedia}
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -141,7 +142,7 @@ const CreatePost = () => {
 
           <Button
             type="submit"
-            disabled={isLoading || !body.trim()}
+            disabled={isLoading || !content.trim()}
             className="px-6"
           >
             {isLoading ? 'Posting...' : 'Post'}

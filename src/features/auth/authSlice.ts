@@ -2,7 +2,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -13,8 +13,8 @@ interface AuthTokens {
 
 interface LoginResponse {
   user: any;
-  accessTkn: string;
-  refreshTkn: string;
+  token: string;
+  refresh_token: string;
 }
 
 interface AuthState {
@@ -51,7 +51,7 @@ const clearTokens = () => {
   localStorage.removeItem('refreshToken');
 };
 
-/** Login with username/password */
+/** Login with email/password */
 export const loginUser = createAsyncThunk<
   LoginResponse,
   LoginCredentials,
@@ -60,30 +60,79 @@ export const loginUser = createAsyncThunk<
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      // Encode credentials as base64 for standard HTTP Basic Auth
-      const encoded = btoa(`${credentials.username}:${credentials.password}`);
-
       const response = await fetch(
-        'http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/login',
+        'http://localhost:8080/api/v1/auth/login',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Basic ${encoded}`,
           },
+          body: JSON.stringify(credentials)
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Login Failed!');
+        throw new Error(errorData.error || errorData.message || 'Login Failed!');
       }
 
-      const data: LoginResponse = await response.json();
+      // Handle standard API envelope
+      const responseBody = await response.json();
+      const data = responseBody.data;
 
-      storeTokens(data.accessTkn, data.refreshTkn);
+      // Extract token and user (using token as accessTkn)
+      const token = data.token;
+      const refresh_token = data.refresh_token;
+      storeTokens(token, refresh_token);
 
-      return data;
+      return {
+        user: data.user,
+        token: token,
+        refresh_token: refresh_token,
+      };
+    } catch (error) {
+      return rejectWithValue((error as Error).message);
+    }
+  }
+);
+
+/** Verify OTP */
+export const verifyOtp = createAsyncThunk<
+  LoginResponse,
+  { email: string; otp: string },
+  { rejectValue: string }
+>(
+  'auth/verifyOtp',
+  async ({ email, otp }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(
+        'http://localhost:8080/api/v1/auth/verify-otp',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, otp }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || 'OTP verification failed');
+      }
+
+      const responseBody = await response.json();
+      const data = responseBody.data;
+      
+      const token = data.token;
+      const refresh_token = data.refresh_token;
+      storeTokens(token, refresh_token);
+
+      return {
+        user: data.user,
+        token: token,
+        refresh_token: refresh_token,
+      };
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -103,7 +152,7 @@ export const googleSignIn = createAsyncThunk<
   async (credential, { rejectWithValue }) => {
     try {
       const backendResponse = await fetch(
-        'http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/google-login',
+        'http://localhost:8080/api/v1/SignIn/google-login',
         {
           method: 'POST',
           headers: {
@@ -118,11 +167,16 @@ export const googleSignIn = createAsyncThunk<
         throw new Error(errorData.message || 'Google sign-in failed. Please try again.');
       }
 
-      const data: LoginResponse = await backendResponse.json();
+      const responseBody = await backendResponse.json();
+      const data = responseBody.data ?? responseBody;
 
-      storeTokens(data.accessTkn, data.refreshTkn);
+      storeTokens(data.token, data.refresh_token ?? '');
 
-      return data;
+      return {
+        user: data.user,
+        token: data.token,
+        refresh_token: data.refresh_token ?? '',
+      };
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -139,7 +193,7 @@ export const setupPassword = createAsyncThunk<
   async ({ password, accessTkn }, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        'http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/Sign-Up',
+        'http://localhost:8080/api/v1/SignIn/Sign-Up',
         {
           method: 'PUT',
           headers: {
@@ -154,11 +208,16 @@ export const setupPassword = createAsyncThunk<
         throw new Error(errorData.message || 'Password setup failed');
       }
 
-      const data: LoginResponse = await response.json();
+      const responseBody = await response.json();
+      const data = responseBody.data ?? responseBody;
 
-      storeTokens(data.accessTkn, data.refreshTkn);
+      storeTokens(data.token, data.refresh_token ?? '');
 
-      return data;
+      return {
+        user: data.user,
+        token: data.token,
+        refresh_token: data.refresh_token ?? '',
+      };
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -184,13 +243,13 @@ export const refreshAccessToken = createAsyncThunk<
       }
 
       const response = await fetch(
-        'http://localhost:8080/Memefest-SNAPSHOT-01/resources/Refresh/Access',
+        'http://localhost:8080/api/v1/auth/refresh',
         {
-          method: 'PUT',
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ refreshTkn: refreshToken }),
+          body: JSON.stringify({ refresh_token: refreshToken }),
         }
       );
 
@@ -199,11 +258,15 @@ export const refreshAccessToken = createAsyncThunk<
         throw new Error('Token refresh failed');
       }
 
-      const data: AuthTokens = await response.json();
+      const responseBody = await response.json();
+      const data = responseBody.data;
 
-      storeTokens(data.accessTkn, data.refreshTkn);
+      storeTokens(data.token, data.refresh_token);
 
-      return data;
+      return {
+        accessTkn: data.token,
+        refreshTkn: data.refresh_token
+      };
     } catch (error) {
       clearTokens();
       return rejectWithValue((error as Error).message);
@@ -221,7 +284,7 @@ export const resetPassword = createAsyncThunk<
   async ({ token, newPassword }, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        'http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/reset-password',
+        'http://localhost:8080/api/v1/SignIn/reset-password',
         {
           method: 'POST',
           headers: {
@@ -254,7 +317,7 @@ export const forgotPassword = createAsyncThunk<
   async (email, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        'http://localhost:8080/Memefest-SNAPSHOT-01/resources/SignIn/ResetPassword',
+        'http://localhost:8080/api/v1/SignIn/ResetPassword',
         {
           method: 'PUT',
           headers: {
@@ -314,8 +377,8 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.user;
-        state.accessToken = action.payload.accessTkn;
-        state.refreshToken = action.payload.refreshTkn;
+        state.accessToken = action.payload.token;
+        state.refreshToken = action.payload.refresh_token;
         state.error = null;
         state.message = null;
         state.isAuthenticated = true;
@@ -323,6 +386,32 @@ const authSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || 'Login failed';
+        state.user = null;
+        state.accessToken = null;
+        state.refreshToken = null;
+        state.message = null;
+        state.isAuthenticated = false;
+        clearTokens();
+      })
+
+      // Verify OTP
+      .addCase(verifyOtp.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+        state.message = null;
+      })
+      .addCase(verifyOtp.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.accessToken = action.payload.token;
+        state.refreshToken = action.payload.refresh_token;
+        state.error = null;
+        state.message = null;
+        state.isAuthenticated = true;
+      })
+      .addCase(verifyOtp.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload || 'OTP verification failed';
         state.user = null;
         state.accessToken = null;
         state.refreshToken = null;
@@ -340,8 +429,8 @@ const authSlice = createSlice({
       .addCase(googleSignIn.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.user;
-        state.accessToken = action.payload.accessTkn;
-        state.refreshToken = action.payload.refreshTkn;
+        state.accessToken = action.payload.token;
+        state.refreshToken = action.payload.refresh_token;
         state.error = null;
         state.message = null;
         state.isAuthenticated = true;
@@ -366,8 +455,8 @@ const authSlice = createSlice({
       })
       .addCase(setupPassword.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.accessToken = action.payload.accessTkn;
-        state.refreshToken = action.payload.refreshTkn;
+        state.accessToken = action.payload.token;
+        state.refreshToken = action.payload.refresh_token;
         state.error = null;
         state.message = 'Password setup successful!';
         state.isAuthenticated = true;

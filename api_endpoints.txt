@@ -1,0 +1,399 @@
+# G-Nice API Endpoints Documentation
+
+## General Guidelines
+
+**Base URL**: `http://localhost:8080` (or your production URL)
+**API Prefix**: `/api/v1`
+
+**Authentication**: 
+Endpoints marked as `[Protected]` require a valid JWT token in the Authorization header:
+`Authorization: Bearer <your_token>`
+
+**Standard Response Envelope**:
+All API responses follow this standard envelope structure:
+```json
+{
+  "success": true,            // boolean: true if successful, false if error
+  "data": { ... },            // object/array: the actual payload (omitted if no data)
+  "message": "Success",       // string: optional message
+  "error": "Error details"    // string: present only if success is false
+}
+```
+
+**Pagination**:
+List endpoints accept `?page=1&page_size=20` as query parameters.
+Pagination responses in the `data` field look like:
+```json
+{
+  "items": [ ... ],
+  "total": 100,
+  "page": 1,
+  "page_size": 20,
+  "total_pages": 5,
+  "has_next": true,
+  "has_prev": false
+}
+```
+
+---
+
+## 1. Authentication
+
+### Register a new user
+`POST /api/v1/auth/register`
+**Body:**
+```json
+{
+  "username": "johndoe",
+  "email": "john@example.com",
+  "password": "strongpassword123",
+  "display_name": "John Doe" // optional
+}
+```
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "A 6-digit verification code has been sent...",
+    "email": "john@example.com"
+  }
+}
+```
+
+### Verify OTP (Completes registration / gets token)
+`POST /api/v1/auth/verify-otp`
+**Body:**
+```json
+{
+  "email": "john@example.com",
+  "otp": "123456"
+}
+```
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "refresh_token": "1:b8e2...",
+    "user": { "id": 1, "username": "johndoe", "email": "john@example.com", ... }
+  }
+}
+```
+
+### Resend OTP
+`POST /api/v1/auth/resend-otp`
+**Body:**
+```json
+{
+  "email": "john@example.com"
+}
+```
+**Returns:** 200 OK (Empty data)
+
+### Login
+`POST /api/v1/auth/login`
+**Body:**
+```json
+{
+  "email": "john@example.com",
+  "password": "strongpassword123"
+}
+```
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "refresh_token": "1:b8e2...",
+    "user": { "id": 1, "username": "johndoe", "email": "john@example.com", ... }
+  }
+}
+```
+
+### Refresh Token
+`POST /api/v1/auth/refresh`
+**Body:**
+```json
+{
+  "refresh_token": "1:b8e2..."
+}
+```
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "refresh_token": "1:c9f3...",
+    "user": { "id": 1, "username": "johndoe", "email": "john@example.com", ... }
+  }
+}
+```
+
+---
+
+## 2. Users & Profiles
+
+### Get Current User Profile `[Protected]`
+`GET /api/v1/users/me`
+**Returns:** Full user object including email.
+
+### Update Current User Profile `[Protected]`
+`PATCH /api/v1/users/me`
+**Body:** (Send only the fields you want to update)
+```json
+{
+  "display_name": "John D.",
+  "bio": "Software engineer",
+  "avatar_url": "https://...",
+  "is_private": false
+}
+```
+**Returns:** Updated full user object.
+
+### Get Public Profile by Username
+`GET /api/v1/users/:username`
+**Returns:** Public user object (no email).
+
+---
+
+## 3. Posts
+
+### List Feed (Global Feed)
+`GET /api/v1/posts?page=1&page_size=20`
+**Returns:** Paginated list of public posts.
+
+### List User Posts
+`GET /api/v1/users/:username/posts?page=1&page_size=20`
+**Returns:** Paginated list of posts for a specific user.
+
+### Get Single Post
+`GET /api/v1/posts/:id`
+**Returns:** Single post object with author details.
+
+### Create Post `[Protected]`
+`POST /api/v1/posts`
+**Body:**
+```json
+{
+  "content": "Hello world!",
+  "media_url": "https://...",      // optional
+  "media_type": "image",           // optional (image, video, gif)
+  "is_public": true                // optional, defaults to true
+}
+```
+**Returns:** Created post object.
+
+### Update Post `[Protected]`
+`PATCH /api/v1/posts/:id`
+**Body:**
+```json
+{
+  "content": "Updated content!",
+  "is_public": false
+}
+```
+**Returns:** Updated post object.
+
+### Delete Post `[Protected]`
+`DELETE /api/v1/posts/:id`
+**Returns:** 204 No Content
+
+---
+
+## 4. Media Uploads
+
+### Upload Media File `[Protected]`
+`POST /api/v1/uploads?type=posts` (type can be `posts` or `avatars`)
+**Headers:** `Content-Type: multipart/form-data`
+**Form Field:** `file` (the binary file)
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://g-nice-media.s3.af-south-1.amazonaws.com/posts/..."
+  }
+}
+```
+
+---
+
+## 5. Comments
+
+### List Comments on a Post
+`GET /api/v1/posts/:id/comments?page=1&page_size=20`
+**Returns:** Paginated list of top-level comments.
+
+### List Replies to a Comment
+`GET /api/v1/comments/:cid/replies?page=1&page_size=20`
+**Returns:** Paginated list of replies.
+
+### Create a Comment `[Protected]`
+`POST /api/v1/posts/:id/comments`
+**Body:**
+```json
+{
+  "content": "Great post!"
+}
+```
+**Returns:** Created comment object.
+
+### Create a Reply `[Protected]`
+`POST /api/v1/posts/:id/comments/:cid/replies`
+**Body:**
+```json
+{
+  "content": "I agree!"
+}
+```
+**Returns:** Created reply comment object.
+
+### Update a Comment `[Protected]`
+`PATCH /api/v1/comments/:cid`
+**Body:**
+```json
+{
+  "content": "Edited comment"
+}
+```
+**Returns:** Updated comment object.
+
+### Delete a Comment `[Protected]`
+`DELETE /api/v1/comments/:cid`
+**Returns:** 204 No Content
+
+---
+
+## 6. Likes
+
+### Toggle Post Like `[Protected]`
+`POST /api/v1/posts/:id/like`
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "liked": true,
+    "likes_count": 5
+  }
+}
+```
+
+### Toggle Comment Like `[Protected]`
+`POST /api/v1/comments/:cid/like`
+**Returns:** Same structure as Toggle Post Like.
+
+---
+
+## 7. Follows
+
+### List Followers
+`GET /api/v1/users/:username/followers?page=1&page_size=20`
+**Returns:** Paginated list of public user profiles.
+
+### List Following
+`GET /api/v1/users/:username/following?page=1&page_size=20`
+**Returns:** Paginated list of public user profiles.
+
+### Get My Followers `[Protected]`
+`GET /api/v1/users/me/followers?page=1&page_size=20`
+**Returns:** Paginated list of users following you.
+
+### Get My Following `[Protected]`
+`GET /api/v1/users/me/following?page=1&page_size=20`
+**Returns:** Paginated list of users you are following.
+
+### Follow a User `[Protected]`
+`POST /api/v1/users/:username/follow`
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "following": true,
+    "followers_count": 10
+  }
+}
+```
+
+### Unfollow a User `[Protected]`
+`DELETE /api/v1/users/:username/follow`
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "following": false,
+    "followers_count": 9
+  }
+}
+```
+
+### Check if Following `[Protected]`
+`GET /api/v1/users/:username/follow`
+**Returns:**
+```json
+{
+  "success": true,
+  "data": true // boolean
+}
+```
+
+---
+
+## 8. Notifications
+
+### List Notifications `[Protected]`
+`GET /api/v1/notifications?page=1&page_size=20`
+**Returns:** Paginated list of notifications.
+
+### Get Unread Count `[Protected]`
+`GET /api/v1/notifications/unread-count`
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "count": 5
+  }
+}
+```
+
+### Mark All as Read `[Protected]`
+`PATCH /api/v1/notifications/read-all`
+**Returns:** 200 OK (Empty data)
+
+### Mark Notification as Read `[Protected]`
+`PATCH /api/v1/notifications/:nid/read`
+**Returns:** 200 OK (Empty data)
+
+### Delete Notification `[Protected]`
+`DELETE /api/v1/notifications/:nid`
+**Returns:** 204 No Content
+
+---
+
+## 9. Search
+
+### Search Users and Posts
+`GET /api/v1/search?q=query&type=all&page=1&page_size=20`
+**Parameters:**
+- `q`: The search query string (required)
+- `type`: `all`, `users`, or `posts` (optional, defaults to `all`)
+
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "query": "query",
+    "type": "all",
+    "users": { ... paginated users ... }, // present if type is 'all' or 'users'
+    "posts": { ... paginated posts ... }  // present if type is 'all' or 'posts'
+  }
+}
+```

@@ -12,7 +12,7 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
   });
   const {isLoading, error} = useAppSelector((state) => state.auth);
@@ -88,19 +88,19 @@ const LoginPage: React.FC = () => {
             <div className="relative mt-6">
               <input
                 className="p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none"
-                type="text"
-                name="username"
-                id="username"
+                type="email"
+                name="email"
+                id="email"
                 placeholder=" "
-                value={formData.username}
+                value={formData.email}
                 onChange={handleInputChange}
               />
               <label
-                htmlFor="username"
+                htmlFor="email"
                 className="absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
                 peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm"
               >
-                Username
+                Email
               </label>
             </div>
             

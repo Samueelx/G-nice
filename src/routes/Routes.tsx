@@ -6,10 +6,9 @@ import LoginPage from "../pages/LoginPage";
 import PrivateRoute from "./PrivateRoute";
 import ProfilePage from "../pages/ProfilePage";
 import Signup from "../pages/Signup";
-import PasswordSetup from "@/pages/PasswordSetup";
+import OtpVerification from "@/pages/OtpVerification";
 import LandingPage from "@/pages/LandingPage";
 import ResetPassword from "@/pages/ResetPassword";
-import EmailVerification from "@/pages/EmailVerification";
 import ForgotPassword from "@/pages/ForgotPassword";
 import AppLayout from "./AppLayout";
 import EventsPage from "@/pages/EventsPage";
@@ -38,16 +37,12 @@ const router = createBrowserRouter([
         element: <PublicRoute><Signup /></PublicRoute>
     },
     {
-        path: '/password-setup',
-        element: <PublicRoute><PasswordSetup /></PublicRoute>
+        path: '/verify-otp',
+        element: <PublicRoute><OtpVerification /></PublicRoute>
     },
     {
         path: '/reset-password',
         element: <PublicRoute><ResetPassword /></PublicRoute>
-    },
-    {
-        path: '/email-verification',
-        element: <PublicRoute><EmailVerification/></PublicRoute>
     },
     {
         path: '/forgot-password',

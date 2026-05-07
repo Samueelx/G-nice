@@ -14,10 +14,10 @@ const Signup: React.FC = () => {
 
   /**Form state */
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    display_name: "",
     email: "",
-    userName: "",
+    username: "",
+    password: "",
   });
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -39,10 +39,10 @@ const Signup: React.FC = () => {
     e.preventDefault();
     /**Basic validation */
     if (
-      !formData.firstName ||
-      !formData.lastName ||
+      !formData.display_name ||
       !formData.email ||
-      !formData.userName
+      !formData.username ||
+      !formData.password
     ) {
       // You might want to add proper form validation here
       return;
@@ -51,7 +51,7 @@ const Signup: React.FC = () => {
     try {
       await dispatch(registerUser(formData)).unwrap();
       // If we reach here, registration was successful (200 OK)
-      navigate("/email-verification");
+      navigate("/verify-otp", { state: { email: formData.email } });
     } catch (error) {
       console.error("Registration failed: ", error);
       // Handle registration error (show error message to user)
@@ -110,36 +110,18 @@ const Signup: React.FC = () => {
               <input
                 type="text"
                 className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
-                name="firstName"
-                id="firstName"
+                name="display_name"
+                id="display_name"
                 placeholder=" "
-                value={formData.firstName}
+                value={formData.display_name}
                 onChange={handleChange}
               />
               <label
-                htmlFor="firstName"
+                htmlFor="display_name"
                 className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
                 peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
               >
-                First Name
-              </label>
-            </div>
-            <div className="relative">
-              <input
-                type="text"
-                className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
-                name="lastName"
-                id="lastName"
-                placeholder=" "
-                value={formData.lastName}
-                onChange={handleChange}
-              />
-              <label
-                htmlFor="lastName"
-                className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
-                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
-              >
-                Last Name
+                Display Name
               </label>
             </div>
             <div className="relative">
@@ -164,18 +146,36 @@ const Signup: React.FC = () => {
               <input
                 type="text"
                 className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
-                name="userName"
-                id="userName"
+                name="username"
+                id="username"
                 placeholder=" "
-                value={formData.userName}
+                value={formData.username}
                 onChange={handleChange}
               />
               <label
-                htmlFor="userName"
+                htmlFor="username"
                 className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
                 peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
               >
                 Choose a username
+              </label>
+            </div>
+            <div className="relative">
+              <input
+                type="password"
+                className={`p-2 rounded-xl border w-full peer placeholder-transparent focus:outline-none dark:text-white`}
+                name="password"
+                id="password"
+                placeholder=" "
+                value={formData.password}
+                onChange={handleChange}
+              />
+              <label
+                htmlFor="password"
+                className={`absolute left-3 -top-5 text-sm text-gray-500 transition-all duration-300 peer-placeholder-shown:text-base 
+                peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-focus:-top-5 peer-focus:text-sm`}
+              >
+                Password
               </label>
             </div>
             <button

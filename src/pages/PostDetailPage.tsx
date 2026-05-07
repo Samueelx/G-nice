@@ -33,7 +33,7 @@ const PostDetailPage: React.FC = () => {
   useEffect(() => {
     if (postId) {
       dispatch(fetchPostById(postId));
-      dispatch(fetchComments(postId));
+      dispatch(fetchComments({ postId }));
     }
 
     return () => {
@@ -50,7 +50,7 @@ const PostDetailPage: React.FC = () => {
       await dispatch(
         createComment({
           postId,
-          body: commentBody.trim(),
+          content: commentBody.trim(),
         }),
       ).unwrap();
       setCommentBody("");
@@ -216,18 +216,16 @@ const PostDetailPage: React.FC = () => {
 
                 {/* Post Content */}
                 <div className="p-4">
-                  <p className="text-gray-800 mb-4">{selectedPost.body}</p>
-                  {/* Updated to handle imageUrls array */}
-                  {selectedPost.imageUrls &&
-                    selectedPost.imageUrls.length > 0 && (
-                      <div className="rounded-lg overflow-hidden mb-4">
-                        <img
-                          src={selectedPost.imageUrls[0]}
-                          alt="Post content"
-                          className="w-full h-auto max-h-96 object-cover"
-                        />
-                      </div>
-                    )}
+                  <p className="text-gray-800 mb-4">{selectedPost.content}</p>
+                  {selectedPost.mediaUrl && (
+                    <div className="rounded-lg overflow-hidden mb-4">
+                      <img
+                        src={selectedPost.mediaUrl}
+                        alt="Post media"
+                        className="w-full h-auto max-h-96 object-cover"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Post Actions */}
@@ -328,23 +326,23 @@ const PostDetailPage: React.FC = () => {
                             <img
                               className="w-full h-full object-cover"
                               src={
-                                comment.user.userAvatar ||
-                                "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+                                comment.author.avatarUrl ||
+                                `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.author.displayName)}&background=9333ea&color=fff&bold=true`
                               }
-                              alt={`${comment.user.userName}'s avatar`}
+                              alt={`${comment.author.username}'s avatar`}
                             />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h4 className="font-semibold text-gray-900 text-sm">
-                                {comment.user.userName}
+                                {comment.author.displayName}
                               </h4>
                               <span className="text-xs text-gray-500">
                                 {formatTimeAgo(comment.createdAt)}
                               </span>
                             </div>
                             <p className="text-gray-800 text-sm leading-relaxed">
-                              {comment.body}
+                              {comment.content}
                             </p>
                           </div>
                         </div>

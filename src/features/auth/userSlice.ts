@@ -1,13 +1,13 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { formInstance } from '@/api/axiosConfig';
+import instance from '@/api/axiosConfig';
 import { AxiosResponse } from 'axios';
 
 // Types for the registration data and response
 export interface UserRegistrationData {
-  firstName: string;
-  lastName: string;
+  display_name: string;
   email: string;
-  userName: string;
+  username: string;
+  password?: string;
 }
 
 // Backend returns no data, just 200 OK status
@@ -37,8 +37,8 @@ export const registerUser = createAsyncThunk<
   }
 >('user/register', async (userData: UserRegistrationData, { rejectWithValue }) => {
   try {
-    const response: AxiosResponse = await formInstance.put(
-      'Memefest-SNAPSHOT-01/resources/SignIn/Verify-email',
+    const response: AxiosResponse = await instance.post(
+      '/auth/register',
       userData
     );
     // Backend returns no data, just check status code

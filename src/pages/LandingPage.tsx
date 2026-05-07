@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import SocialPost from "@/components/common/SocialPost";
 import JokeJumbotron from "@/components/templates/JokeJumbotron";
 import { Menu, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { fetchPosts } from "@/features/posts/postsSlice";
 
@@ -11,7 +10,6 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   // Get posts from Redux store
@@ -19,7 +17,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
 
   // Fetch posts on component mount
   useEffect(() => {
-    dispatch(fetchPosts());
+    dispatch(fetchPosts({}));
   }, [dispatch]);
 
 
@@ -105,23 +103,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ setIsSidebarOpen }) => {
                   key={post.id}
                 >
                   <SocialPost
-                    postId={post.id} // Add this
+                    postId={post.id}
                     author={{
                       name: post.displayName,
-                      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        post.displayName
-                      )}&background=9333ea&color=fff&bold=true`,
+                      avatar: post.avatarUrl ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          post.displayName
+                        )}&background=9333ea&color=fff&bold=true`,
                       username: post.username,
                     }}
-                    content={post.body}
-                    images={post.imageUrls?.map((url, index) => ({
-                      url,
-                      alt: `Image ${index + 1}`,
-                    }))}
+                    content={post.content}
+                    images={post.mediaUrl ? [{ url: post.mediaUrl, alt: 'Post media' }] : undefined}
                     timestamp={post.createdAt}
                     likes={post.likes}
                     comments={post.comments}
-                    isLiked={post.isLiked} // Add this
+                    isLiked={post.isLiked}
                   />
                 </div>
               ))

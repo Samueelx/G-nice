@@ -1,81 +1,90 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axiosInstance from "@/api/axiosConfig";
 
-// Types matching backend response
-// In postsSlice.ts
-// Types matching backend response
-interface Post {
-  id: number | string;  // Backend returns number, you convert to string
-  body: string;
-  imageUrls?: string[];
-  images?: any[];  // Add this - backend returns "images" or "Images"
-  Images?: any[];  // Add this as fallback
-  user: {
-    userId: string | null;        // ✅ Match backend (lowercase, nullable)
-    userName: string;              // ✅ Match backend (camelCase)
-    displayName: string | null;    // ✅ Nullable
-    avatar: string | null;         // Add this
-    verified?: boolean;
-    isFollowed?: boolean;
-  };
-  createdAt: string;
-  likes: number;
-  comments?: number;
-  isLiked?: boolean;
-  taggedUsers?: any[] | null;  // Add this
+// ─── Raw backend types (new API) ─────────────────────────────────────────────
+
+interface BackendUser {
+  id: number;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
 }
 
-// Normalized Post for frontend use
-interface NormalizedPost {
+interface BackendPost {
+  id: number;
+  content: string;
+  media_url: string | null;
+  media_type: string | null; // "image" | "video" | "gif"
+  is_public: boolean;
+  likes_count: number;
+  comments_count: number;
+  is_liked?: boolean;
+  created_at: string;
+  updated_at: string;
+  author: BackendUser;
+}
+
+interface BackendComment {
+  id: number;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  author: BackendUser;
+}
+
+// ─── Frontend-normalized types ────────────────────────────────────────────────
+
+export interface NormalizedPost {
   id: string;
-  body: string;
-  imageUrls?: string[];
+  content: string;
+  mediaUrl: string | null;
+  mediaType: string | null;
+  isPublic: boolean;
   userId: string;
   username: string;
   displayName: string;
+  avatarUrl: string | null;
   createdAt: string;
   likes: number;
   comments: number;
-  isLiked?: boolean; // Add this field
+  isLiked: boolean;
 }
 
-// Updated Comment interface with nested user object
 export interface Comment {
   id: string;
   postId: string;
-  user: {
-    userId: string;
-    userName: string;
-    userAvatar?: string;
-  };
-  body: string;
+  content: string;
   createdAt: string;
   updatedAt: string;
+  author: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
 }
 
+// ─── Input types ──────────────────────────────────────────────────────────────
+
 interface CreatePostData {
-  body: string;
-  image?: File | null;
+  content: string;
+  media_url?: string | null;
+  media_type?: string | null; // "image" | "video" | "gif"
+  is_public?: boolean;
+}
+
+interface UpdatePostData {
+  postId: string;
+  content?: string;
+  is_public?: boolean;
 }
 
 interface CreateCommentData {
   postId: string;
-  body: string;
+  content: string;
 }
 
-// Updated interface matching backend expectations
-interface CreatePostPayload {
-  body: string;
-  images?: Array<{
-    image: string; // base64 encoded string
-    imageType: string; // MIME type
-  }>;
-}
-
-interface LikeResponse {
-  likeCount: number;
-  isLiked: boolean;
-}
+// ─── State ────────────────────────────────────────────────────────────────────
 
 interface PostsState {
   posts: NormalizedPost[];
@@ -99,170 +108,212 @@ const initialState: PostsState = {
   error: null,
 };
 
-// Helper function to convert File to base64
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const base64String = (reader.result as string).split(",")[1];
-      resolve(base64String);
-    };
-    reader.onerror = (error) => reject(error);
-  });
-};
+// ─── Normalizers ──────────────────────────────────────────────────────────────
 
-// Helper function to normalize backend post to frontend format
-// In postsSlice.ts
-const normalizePost = (post: Post): NormalizedPost => ({
-  id: post.id.toString(),  // Convert to string if it's a number
-  body: post.body,
-  imageUrls: post.imageUrls || post.images || post.Images || [],  // Handle all cases
-  userId: post.user.userId || '',
-  username: post.user.userName,
-  displayName: post.user.displayName || post.user.userName,  // Fallback to userName
-  createdAt: post.createdAt,
-  likes: post.likes ?? 0,
-  comments: post.comments ?? 0,
-  isLiked: post.isLiked ?? false,
+const normalizePost = (post: BackendPost): NormalizedPost => ({
+  id: post.id.toString(),
+  content: post.content,
+  mediaUrl: post.media_url,
+  mediaType: post.media_type,
+  isPublic: post.is_public,
+  userId: post.author.id.toString(),
+  username: post.author.username,
+  displayName: post.author.display_name || post.author.username,
+  avatarUrl: post.author.avatar_url,
+  createdAt: post.created_at,
+  likes: post.likes_count ?? 0,
+  comments: post.comments_count ?? 0,
+  isLiked: post.is_liked ?? false,
 });
 
-// Async thunks
-export const createPost = createAsyncThunk(
-  "posts/createPost",
-  async (postData: CreatePostData, { rejectWithValue }) => {
-    try {
-      const payload: CreatePostPayload = {
-        body: postData.body,
-      };
+const normalizeComment = (comment: BackendComment, postId: string): Comment => ({
+  id: comment.id.toString(),
+  postId,
+  content: comment.content,
+  createdAt: comment.created_at,
+  updatedAt: comment.updated_at,
+  author: {
+    id: comment.author.id.toString(),
+    username: comment.author.username,
+    displayName: comment.author.display_name || comment.author.username,
+    avatarUrl: comment.author.avatar_url,
+  },
+});
 
-      // Convert image to base64 if provided - wrap in images array
-      if (postData.image) {
-        const base64Image = await fileToBase64(postData.image);
-        payload.images = [
-          {
-            image: base64Image,
-            imageType: postData.image.type,
-          },
-        ];
-      }
+// ─── Thunks ───────────────────────────────────────────────────────────────────
 
-      const response = await axiosInstance.post<Post>("/Post", payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      return normalizePost(response.data);
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to create post"
-      );
-    }
-  }
-);
-
+/** GET /posts — global feed */
 export const fetchPosts = createAsyncThunk(
   "posts/fetchPosts",
-  async (_, { rejectWithValue }) => {
+  async (
+    params: { page?: number; page_size?: number } = {},
+    { rejectWithValue }
+  ) => {
     try {
-      // Updated to match backend endpoint
-      const response = await axiosInstance.get<Post[]>("/Post");
-      return response.data.map(normalizePost);
+      const response = await axiosInstance.get("/posts", { params });
+      const envelope = response.data;
+      // The backend may return a paginated envelope or a plain array
+      const items: BackendPost[] = envelope.data?.items ?? envelope.data ?? envelope;
+      return items.map(normalizePost);
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch posts"
+        error.response?.data?.error || error.response?.data?.message || "Failed to fetch posts"
       );
     }
   }
 );
 
+/** GET /users/:username/posts */
 export const fetchUserPosts = createAsyncThunk(
   "posts/fetchUserPosts",
-  async (userId: string, { rejectWithValue }) => {
+  async (
+    { username, page = 1, page_size = 20 }: { username: string; page?: number; page_size?: number },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await axiosInstance.get<Post[]>(`/Post/user/${userId}`);
-      return response.data.map(normalizePost);
+      const response = await axiosInstance.get(`/users/${username}/posts`, {
+        params: { page, page_size },
+      });
+      const envelope = response.data;
+      const items: BackendPost[] = envelope.data?.items ?? envelope.data ?? envelope;
+      return items.map(normalizePost);
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch user posts"
+        error.response?.data?.error || error.response?.data?.message || "Failed to fetch user posts"
       );
     }
   }
 );
 
+/** GET /posts/:id */
 export const fetchPostById = createAsyncThunk(
   "posts/fetchPostById",
   async (postId: string, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<Post>(`/Post/${postId}`);
-      return normalizePost(response.data);
+      const response = await axiosInstance.get(`/posts/${postId}`);
+      const post: BackendPost = response.data?.data ?? response.data;
+      return normalizePost(post);
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch post"
+        error.response?.data?.error || error.response?.data?.message || "Failed to fetch post"
       );
     }
   }
 );
 
-export const fetchComments = createAsyncThunk(
-  "posts/fetchComments",
+/** POST /posts — create a new post */
+export const createPost = createAsyncThunk(
+  "posts/createPost",
+  async (postData: CreatePostData, { rejectWithValue }) => {
+    try {
+      const payload = {
+        content: postData.content,
+        ...(postData.media_url && { media_url: postData.media_url }),
+        ...(postData.media_type && { media_type: postData.media_type }),
+        is_public: postData.is_public ?? true,
+      };
+      const response = await axiosInstance.post("/posts", payload);
+      const post: BackendPost = response.data?.data ?? response.data;
+      return normalizePost(post);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.error || error.response?.data?.message || "Failed to create post"
+      );
+    }
+  }
+);
+
+/** PATCH /posts/:id — update a post */
+export const updatePost = createAsyncThunk(
+  "posts/updatePost",
+  async ({ postId, ...body }: UpdatePostData, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.patch(`/posts/${postId}`, body);
+      const post: BackendPost = response.data?.data ?? response.data;
+      return normalizePost(post);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.error || error.response?.data?.message || "Failed to update post"
+      );
+    }
+  }
+);
+
+/** DELETE /posts/:id */
+export const deletePost = createAsyncThunk(
+  "posts/deletePost",
   async (postId: string, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<Comment[]>(
-        `/Post/${postId}/Comments`
-      );
-      return response.data;
+      await axiosInstance.delete(`/posts/${postId}`);
+      return postId;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch comments"
+        error.response?.data?.error || error.response?.data?.message || "Failed to delete post"
       );
     }
   }
 );
 
+/** GET /posts/:id/comments */
+export const fetchComments = createAsyncThunk(
+  "posts/fetchComments",
+  async (
+    { postId, page = 1, page_size = 20 }: { postId: string; page?: number; page_size?: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await axiosInstance.get(`/posts/${postId}/comments`, {
+        params: { page, page_size },
+      });
+      const envelope = response.data;
+      const items: BackendComment[] = envelope.data?.items ?? envelope.data ?? envelope;
+      return { postId, comments: items.map((c) => normalizeComment(c, postId)) };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.error || error.response?.data?.message || "Failed to fetch comments"
+      );
+    }
+  }
+);
+
+/** POST /posts/:id/comments */
 export const createComment = createAsyncThunk(
   "posts/createComment",
-  async (commentData: CreateCommentData, { rejectWithValue }) => {
+  async ({ postId, content }: CreateCommentData, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post<Comment>(
-        `/Post/${commentData.postId}/Comments`,
-        { body: commentData.body },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      return response.data;
+      const response = await axiosInstance.post(`/posts/${postId}/comments`, { content });
+      const comment: BackendComment = response.data?.data ?? response.data;
+      return normalizeComment(comment, postId);
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create comment"
+        error.response?.data?.error || error.response?.data?.message || "Failed to create comment"
       );
     }
   }
 );
 
+/** POST /posts/:id/like — toggle like */
 export const toggleLike = createAsyncThunk(
   "posts/toggleLike",
   async (postId: string, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post<LikeResponse>(
-        `/User/Like/${postId}`
-      );
+      const response = await axiosInstance.post(`/posts/${postId}/like`);
+      const result = response.data?.data ?? response.data;
       return {
         postId,
-        ...response.data,
+        liked: result.liked as boolean,
+        likes_count: result.likes_count as number,
       };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to toggle like"
+        error.response?.data?.error || error.response?.data?.message || "Failed to toggle like"
       );
     }
   }
 );
 
-// Slice
+// ─── Slice ────────────────────────────────────────────────────────────────────
+
 const postsSlice = createSlice({
   name: "posts",
   initialState,
@@ -283,130 +334,140 @@ const postsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(createPost.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(
-        createPost.fulfilled,
-        (state, action: PayloadAction<NormalizedPost>) => {
-          state.isLoading = false;
-          state.posts.unshift(action.payload);
-          state.userPosts.unshift(action.payload);
-        }
-      )
-      .addCase(createPost.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      })
+      // ── fetchPosts ──
       .addCase(fetchPosts.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(
-        fetchPosts.fulfilled,
-        (state, action: PayloadAction<NormalizedPost[]>) => {
-          state.isLoading = false;
-          state.posts = action.payload;
-        }
-      )
+      .addCase(fetchPosts.fulfilled, (state, action: PayloadAction<NormalizedPost[]>) => {
+        state.isLoading = false;
+        state.posts = action.payload;
+      })
       .addCase(fetchPosts.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
+
+      // ── fetchUserPosts ──
       .addCase(fetchUserPosts.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(
-        fetchUserPosts.fulfilled,
-        (state, action: PayloadAction<NormalizedPost[]>) => {
-          state.isLoading = false;
-          state.userPosts = action.payload;
-        }
-      )
+      .addCase(fetchUserPosts.fulfilled, (state, action: PayloadAction<NormalizedPost[]>) => {
+        state.isLoading = false;
+        state.userPosts = action.payload;
+      })
       .addCase(fetchUserPosts.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
+
+      // ── fetchPostById ──
       .addCase(fetchPostById.pending, (state) => {
         state.isLoadingPost = true;
         state.error = null;
       })
-      .addCase(
-        fetchPostById.fulfilled,
-        (state, action: PayloadAction<NormalizedPost>) => {
-          state.isLoadingPost = false;
-          state.selectedPost = action.payload;
-        }
-      )
+      .addCase(fetchPostById.fulfilled, (state, action: PayloadAction<NormalizedPost>) => {
+        state.isLoadingPost = false;
+        state.selectedPost = action.payload;
+      })
       .addCase(fetchPostById.rejected, (state, action) => {
         state.isLoadingPost = false;
         state.error = action.payload as string;
       })
+
+      // ── createPost ──
+      .addCase(createPost.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(createPost.fulfilled, (state, action: PayloadAction<NormalizedPost>) => {
+        state.isLoading = false;
+        state.posts.unshift(action.payload);
+        state.userPosts.unshift(action.payload);
+      })
+      .addCase(createPost.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+
+      // ── updatePost ──
+      .addCase(updatePost.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updatePost.fulfilled, (state, action: PayloadAction<NormalizedPost>) => {
+        state.isLoading = false;
+        const idx = state.posts.findIndex((p) => p.id === action.payload.id);
+        if (idx !== -1) state.posts[idx] = action.payload;
+        const uIdx = state.userPosts.findIndex((p) => p.id === action.payload.id);
+        if (uIdx !== -1) state.userPosts[uIdx] = action.payload;
+        if (state.selectedPost?.id === action.payload.id) {
+          state.selectedPost = action.payload;
+        }
+      })
+      .addCase(updatePost.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+
+      // ── deletePost ──
+      .addCase(deletePost.fulfilled, (state, action: PayloadAction<string>) => {
+        state.posts = state.posts.filter((p) => p.id !== action.payload);
+        state.userPosts = state.userPosts.filter((p) => p.id !== action.payload);
+        if (state.selectedPost?.id === action.payload) {
+          state.selectedPost = null;
+        }
+      })
+      .addCase(deletePost.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // ── fetchComments ──
       .addCase(fetchComments.pending, (state) => {
         state.isLoadingComments = true;
         state.error = null;
       })
-      .addCase(
-        fetchComments.fulfilled,
-        (state, action: PayloadAction<Comment[]>) => {
-          state.isLoadingComments = false;
-          state.comments = action.payload;
-        }
-      )
+      .addCase(fetchComments.fulfilled, (state, action) => {
+        state.isLoadingComments = false;
+        state.comments = action.payload.comments;
+      })
       .addCase(fetchComments.rejected, (state, action) => {
         state.isLoadingComments = false;
         state.error = action.payload as string;
       })
+
+      // ── createComment ──
       .addCase(createComment.pending, (state) => {
         state.isLoadingComments = true;
         state.error = null;
       })
-      .addCase(
-        createComment.fulfilled,
-        (state, action: PayloadAction<Comment>) => {
-          state.isLoadingComments = false;
-          state.comments.push(action.payload);
-          if (state.selectedPost) {
-            state.selectedPost.comments += 1;
-          }
-          const postIndex = state.posts.findIndex(
-            (post) => post.id === action.payload.postId
-          );
-          if (postIndex !== -1) {
-            state.posts[postIndex].comments += 1;
-          }
+      .addCase(createComment.fulfilled, (state, action: PayloadAction<Comment>) => {
+        state.isLoadingComments = false;
+        state.comments.unshift(action.payload);
+        if (state.selectedPost) {
+          state.selectedPost.comments += 1;
         }
-      )
+        const postIndex = state.posts.findIndex((p) => p.id === action.payload.postId);
+        if (postIndex !== -1) state.posts[postIndex].comments += 1;
+      })
       .addCase(createComment.rejected, (state, action) => {
         state.isLoadingComments = false;
         state.error = action.payload as string;
       })
+
+      // ── toggleLike ──
       .addCase(toggleLike.fulfilled, (state, action) => {
-        const { postId, likeCount, isLiked } = action.payload;
-
-        // Update in posts array
-        const postIndex = state.posts.findIndex((post) => post.id === postId);
-        if (postIndex !== -1) {
-          state.posts[postIndex].likes = likeCount;
-          state.posts[postIndex].isLiked = isLiked;
-        }
-
-        // Update in userPosts array
-        const userPostIndex = state.userPosts.findIndex(
-          (post) => post.id === postId
-        );
-        if (userPostIndex !== -1) {
-          state.userPosts[userPostIndex].likes = likeCount;
-          state.userPosts[userPostIndex].isLiked = isLiked;
-        }
-
-        // Update selectedPost if it's the one being liked
-        if (state.selectedPost?.id === postId) {
-          state.selectedPost.likes = likeCount;
-          state.selectedPost.isLiked = isLiked;
-        }
+        const { postId, liked, likes_count } = action.payload;
+        const update = (post: NormalizedPost) => {
+          post.isLiked = liked;
+          post.likes = likes_count;
+        };
+        const idx = state.posts.findIndex((p) => p.id === postId);
+        if (idx !== -1) update(state.posts[idx]);
+        const uIdx = state.userPosts.findIndex((p) => p.id === postId);
+        if (uIdx !== -1) update(state.userPosts[uIdx]);
+        if (state.selectedPost?.id === postId) update(state.selectedPost);
       })
       .addCase(toggleLike.rejected, (state, action) => {
         state.error = action.payload as string;
@@ -416,4 +477,4 @@ const postsSlice = createSlice({
 
 export const { clearError, resetPosts, clearSelectedPost } = postsSlice.actions;
 export default postsSlice.reducer;
-export type { PostsState, NormalizedPost };
+export type { PostsState, NormalizedPost as Post, CreatePostData };
