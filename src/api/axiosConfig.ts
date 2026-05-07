@@ -57,12 +57,43 @@ interface ValidAxiosRequestConfig extends InternalAxiosRequestConfig {
     _retry?: boolean;
 }
 
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: any) => void }> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+
+    failedQueue = [];
+};
+
 const responseErrorInterceptor = async (error: any) => {
     const originalRequest = error.config as ValidAxiosRequestConfig;
 
     // Handle 401 unauthorized responses (token expired/invalid)
     if (error.response?.status === 401 && !originalRequest._retry) {
+        if (isRefreshing) {
+            return new Promise(function (resolve, reject) {
+                failedQueue.push({ resolve, reject });
+            })
+                .then((token) => {
+                    if (originalRequest.headers) {
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                    }
+                    return instance(originalRequest);
+                })
+                .catch((err) => {
+                    return Promise.reject(err);
+                });
+        }
+
         originalRequest._retry = true;
+        isRefreshing = true;
 
         try {
             // Import dynamically to avoid circular dependency issues if any
@@ -76,6 +107,8 @@ const responseErrorInterceptor = async (error: any) => {
                 // Get the new token from the result
                 const newToken = resultAction.payload.accessTkn;
 
+                processQueue(null, newToken);
+
                 // Update header and retry original request
                 if (originalRequest.headers) {
                     originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -83,14 +116,17 @@ const responseErrorInterceptor = async (error: any) => {
 
                 return instance(originalRequest);
             } else {
+                processQueue(new Error('Refresh failed'), null);
                 // Refresh failed - logout user
                 // @ts-ignore
                 store.dispatch(logout());
                 return Promise.reject(error);
             }
         } catch (refreshError) {
-            // Handle refresh errors
+            processQueue(refreshError, null);
             return Promise.reject(refreshError);
+        } finally {
+            isRefreshing = false;
         }
     }
 
