@@ -1,42 +1,42 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { axiosBaseQuery } from "@/api/axiosBaseQuery";
 
-// Backend types (matching your actual backend response)
+// Backend types (matching the new standard REST API contract)
 export interface BackendEvent {
-  eventId: number;
+  id: number;
   title: string;
-  venue: string; // Changed to camelCase
-  timestamp: string;
   description?: string;
-  createdAt?: string;
-  postedBy?: {
-    username: string;
-    userId: number;
-  };
-  // Optional fields that might not be in backend
+  location: string;
+  date: string; // ISO 8601 string
   price?: number;
-  imageUrl?: string[];
-  videoUrl?: string[];
   category?: string;
-  updatedAt?: string;
+  image_url?: string;
+  author?: {
+    id: number;
+    username: string;
+    display_name?: string;
+    avatar_url?: string;
+  };
+  created_at?: string;
 }
 
 export interface BackendEventsQueryParams {
   page?: number;
-  limit?: number;
-  category?: string[];
-  Title?: string;
-  sortBy?: "date" | "price" | "title";
-  sortOrder?: "asc" | "desc";
+  page_size?: number;
+  category?: string;
+  search?: string;
+  sort_by?: "date" | "price" | "title";
+  sort_order?: "asc" | "desc";
+  featured?: boolean;
 }
 
 // Frontend types (matching what EventsPage expects)
 export interface Event {
-  id: string; // EventsPage expects 'id'
-  title: string; // EventsPage expects 'title'
-  location: string; // EventsPage expects 'location'
-  time: string; // EventsPage expects 'time'
-  date: { // EventsPage expects parsed date object
+  id: string; 
+  title: string; 
+  location: string; 
+  time: string; 
+  date: { 
     day: string;
     month: string;
   };
@@ -45,7 +45,7 @@ export interface Event {
   category?: string;
   createdAt?: string;
   updatedAt?: string;
-  imageUrl: string; // EventsPage expects single string, not array
+  imageUrl: string; 
 }
 
 export interface EventsResponse {
@@ -62,78 +62,56 @@ export interface EventsQueryParams {
   search?: string;
   sortBy?: "date" | "price" | "title";
   sortOrder?: "asc" | "desc";
+  featured?: boolean;
 }
-
-// Helper function to parse timestamp and extract time/date
-// Helper function to parse timestamp and extract time/date
-const parseTimestamp = (timestamp: string) => {
-  try {
-    // Handle backend format: "23-05-2025:12:00:00"
-    // Split by colon to separate date and time parts
-    const [datePart, ...timeParts] = timestamp.split(':');
-    const timePart = timeParts.join(':'); // Rejoin time parts in case there are multiple colons
-
-    // Split date part by dash: "23-05-2025" -> ["23", "05", "2025"]
-    const [day, month, year] = datePart.split('-');
-
-    // Create ISO format string: "2025-05-23T12:00:00"
-    const isoString = `${year}-${month}-${day}T${timePart}`;
-
-    // Parse the ISO string
-    const date = new Date(isoString);
-
-    // Check if the date is valid
-    if (isNaN(date.getTime())) {
-      throw new Error('Invalid date');
-    }
-
-    const time = date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-
-    const dayString = date.getDate().toString();
-    const monthString = date.toLocaleDateString('en-US', { month: 'short' });
-
-    return { time, date: { day: dayString, month: monthString } };
-  } catch (error) {
-    console.warn('Failed to parse timestamp:', timestamp, error);
-    // Fallback if timestamp parsing fails
-    return {
-      time: 'TBD',
-      date: { day: '1', month: 'Jan' }
-    };
-  }
-};
 
 // Transformation functions
 const transformBackendEventToFrontend = (backendEvent: BackendEvent): Event => {
-  const { time, date } = parseTimestamp(backendEvent.timestamp);
+  let time = 'TBD';
+  let dateObj = { day: '1', month: 'Jan' };
+
+  try {
+    if (backendEvent.date) {
+      const parsedDate = new Date(backendEvent.date);
+      if (!isNaN(parsedDate.getTime())) {
+        time = parsedDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        dateObj = {
+          day: parsedDate.getDate().toString(),
+          month: parsedDate.toLocaleDateString('en-US', { month: 'short' })
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to parse date:', backendEvent.date, e);
+  }
 
   return {
-    id: backendEvent.eventId.toString(), // Convert to string and use 'id'
-    title: backendEvent.title, // Keep title
-    location: backendEvent.venue, // Map venue to location (now camelCase)
-    time, // Parsed time from timestamp
-    date, // Parsed date object with day/month
-    price: backendEvent.price || 0, // Default to 0 if not provided
+    id: backendEvent.id.toString(), 
+    title: backendEvent.title, 
+    location: backendEvent.location, 
+    time, 
+    date: dateObj, 
+    price: backendEvent.price || 0, 
     description: backendEvent.description,
     category: backendEvent.category,
-    createdAt: backendEvent.createdAt,
-    updatedAt: backendEvent.updatedAt,
-    imageUrl: backendEvent.imageUrl?.[0] || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=2000&auto=format&fit=crop',
+    createdAt: backendEvent.created_at,
+    imageUrl: backendEvent.image_url || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=2000&auto=format&fit=crop',
   };
 };
 
 const transformFrontendParamsToBackend = (frontendParams: EventsQueryParams): BackendEventsQueryParams => {
   return {
     page: frontendParams.page,
-    limit: frontendParams.limit,
-    category: frontendParams.category ? [frontendParams.category] : undefined,
-    Title: frontendParams.search,
-    sortBy: frontendParams.sortBy,
-    sortOrder: frontendParams.sortOrder,
+    page_size: frontendParams.limit,
+    category: frontendParams.category,
+    search: frontendParams.search,
+    sort_by: frontendParams.sortBy,
+    sort_order: frontendParams.sortOrder,
+    featured: frontendParams.featured,
   };
 };
 
@@ -151,50 +129,49 @@ export const eventsApi = createApi({
         const searchParams = new URLSearchParams();
 
         if (backendParams.page) searchParams.append("page", backendParams.page.toString());
-        if (backendParams.limit) searchParams.append("limit", backendParams.limit.toString());
-        if (backendParams.category) {
-          backendParams.category.forEach(cat => searchParams.append("category", cat));
-        }
-        if (backendParams.Title) searchParams.append("Title", backendParams.Title);
-        if (backendParams.sortBy) searchParams.append("sortBy", backendParams.sortBy);
-        if (backendParams.sortOrder) searchParams.append("sortOrder", backendParams.sortOrder);
+        if (backendParams.page_size) searchParams.append("page_size", backendParams.page_size.toString());
+        if (backendParams.category) searchParams.append("category", backendParams.category);
+        if (backendParams.search) searchParams.append("search", backendParams.search);
+        if (backendParams.sort_by) searchParams.append("sort_by", backendParams.sort_by);
+        if (backendParams.sort_order) searchParams.append("sort_order", backendParams.sort_order);
+        if (backendParams.featured) searchParams.append("featured", "true");
 
         return {
-          url: `/Event`,
+          url: `/events`,
           params: Object.fromEntries(searchParams)
         };
       },
-      transformResponse: (response: BackendEvent[] | { events: BackendEvent[]; total: number; page: number; limit: number }): EventsResponse => {
-        if (Array.isArray(response)) {
-          return {
-            events: response.map(transformBackendEventToFrontend),
-            total: response.length,
-            page: 1,
-            limit: response.length,
-          };
-        } else {
-          return {
-            events: response.events.map(transformBackendEventToFrontend),
-            total: response.total,
-            page: response.page,
-            limit: response.limit,
-          };
-        }
+      transformResponse: (response: any): EventsResponse => {
+        const envelope = response.data ?? response;
+        const items = envelope.items || envelope.events || envelope.data || [];
+        return {
+          events: items.map(transformBackendEventToFrontend),
+          total: envelope.total || items.length,
+          page: envelope.page || 1,
+          limit: envelope.page_size || envelope.limit || items.length,
+        };
       },
       providesTags: ["Event"],
     }),
 
     // Get a single event by ID
     getEventById: builder.query<Event, string>({
-      query: (id) => ({ url: `/Event/${id}` }), // Updated to match your backend pattern
-      transformResponse: (response: BackendEvent): Event => transformBackendEventToFrontend(response),
+      query: (id) => ({ url: `/events/${id}` }), 
+      transformResponse: (response: any): Event => {
+        const envelope = response.data ?? response;
+        return transformBackendEventToFrontend(envelope);
+      },
       providesTags: (_result, _error, id) => [{ type: "Event", id }],
     }),
 
     // Get featured/top picks events
     getFeaturedEvents: builder.query<Event[], void>({
-      query: () => ({ url: "/Event/featured" }), // Updated to match your backend pattern
-      transformResponse: (response: BackendEvent[]): Event[] => response.map(transformBackendEventToFrontend),
+      query: () => ({ url: "/events", params: { featured: "true" } }),
+      transformResponse: (response: any): Event[] => {
+        const envelope = response.data ?? response;
+        const items = envelope.items || envelope.events || envelope.data || [];
+        return items.map(transformBackendEventToFrontend);
+      },
       providesTags: ["Event"],
     }),
 
@@ -203,23 +180,16 @@ export const eventsApi = createApi({
       EventsResponse,
       { category: string; limit?: number }
     >({
-      query: ({ category, limit = 10 }) => ({ url: `/Event/category/${category}`, params: { limit } }),
-      transformResponse: (response: BackendEvent[] | { events: BackendEvent[]; total: number; page: number; limit: number }): EventsResponse => {
-        if (Array.isArray(response)) {
-          return {
-            events: response.map(transformBackendEventToFrontend),
-            total: response.length,
-            page: 1,
-            limit: response.length,
-          };
-        } else {
-          return {
-            events: response.events.map(transformBackendEventToFrontend),
-            total: response.total,
-            page: response.page,
-            limit: response.limit,
-          };
-        }
+      query: ({ category, limit = 10 }) => ({ url: `/events`, params: { category, page_size: limit } }),
+      transformResponse: (response: any): EventsResponse => {
+        const envelope = response.data ?? response;
+        const items = envelope.items || envelope.events || envelope.data || [];
+        return {
+          events: items.map(transformBackendEventToFrontend),
+          total: envelope.total || items.length,
+          page: envelope.page || 1,
+          limit: envelope.page_size || envelope.limit || items.length,
+        };
       },
       providesTags: ["Event"],
     }),

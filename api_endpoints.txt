@@ -397,3 +397,83 @@ Pagination responses in the `data` field look like:
   }
 }
 ```
+
+---
+
+## 10. Events
+
+### List Events
+`GET /api/v1/events`
+
+**Query Parameters (Optional):**
+- `page` (int) - Default 1
+- `page_size` (int) - Default 20
+- `category` (string) - Filter by category
+- `search` (string) - Search by title
+- `sort_by` (string) - `date`, `price`, or `title`
+- `sort_order` (string) - `asc` or `desc`
+- `featured` (boolean) - If true, returns only featured events.
+
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "title": "Summer Music Festival",
+        "description": "A great festival...",
+        "location": "Central Park, NY",
+        "date": "2025-05-23T12:00:00Z",
+        "price": 45.00,
+        "category": "Music",
+        "image_url": "https://...",
+        "author": {
+          "id": 10,
+          "username": "event_organizer",
+          "display_name": "Event Organizer",
+          "avatar_url": "https://..."
+        },
+        "created_at": "2025-01-01T10:00:00Z"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20
+  }
+}
+```
+
+### Get Single Event
+`GET /api/v1/events/:id`
+
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "title": "Summer Music Festival",
+    ...
+  }
+}
+```
+
+### Create Event `[Protected]`
+`POST /api/v1/events`
+
+**Body:**
+```json
+{
+  "title": "Summer Music Festival",
+  "description": "...",
+  "location": "Central Park, NY",
+  "date": "2025-05-23T12:00:00Z",
+  "price": 45.00,
+  "category": "Music",
+  "image_url": "https://..."
+}
+```
+
+**Returns:** Created event object inside the standard envelope.
