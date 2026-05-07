@@ -1,5 +1,5 @@
-// src/services/api/eventsApi.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { axiosBaseQuery } from "@/api/axiosBaseQuery";
 
 // Backend types (matching your actual backend response)
 export interface BackendEvent {
@@ -139,16 +139,8 @@ const transformFrontendParamsToBackend = (frontendParams: EventsQueryParams): Ba
 
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.API_BASE_URL || "http://localhost:8080/api/v1",
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as any).auth?.token;
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      headers.set("content-type", "application/json");
-      return headers;
-    },
+  baseQuery: axiosBaseQuery({
+    baseUrl: "", // Base URL is handled by axiosInstance
   }),
   tagTypes: ["Event"],
   endpoints: (builder) => ({
@@ -167,7 +159,10 @@ export const eventsApi = createApi({
         if (backendParams.sortBy) searchParams.append("sortBy", backendParams.sortBy);
         if (backendParams.sortOrder) searchParams.append("sortOrder", backendParams.sortOrder);
 
-        return `/Event?${searchParams.toString()}`;
+        return {
+          url: `/Event`,
+          params: Object.fromEntries(searchParams)
+        };
       },
       transformResponse: (response: BackendEvent[] | { events: BackendEvent[]; total: number; page: number; limit: number }): EventsResponse => {
         if (Array.isArray(response)) {
@@ -191,14 +186,14 @@ export const eventsApi = createApi({
 
     // Get a single event by ID
     getEventById: builder.query<Event, string>({
-      query: (id) => `/Event/${id}`, // Updated to match your backend pattern
+      query: (id) => ({ url: `/Event/${id}` }), // Updated to match your backend pattern
       transformResponse: (response: BackendEvent): Event => transformBackendEventToFrontend(response),
       providesTags: (_result, _error, id) => [{ type: "Event", id }],
     }),
 
     // Get featured/top picks events
     getFeaturedEvents: builder.query<Event[], void>({
-      query: () => "/Event/featured", // Updated to match your backend pattern
+      query: () => ({ url: "/Event/featured" }), // Updated to match your backend pattern
       transformResponse: (response: BackendEvent[]): Event[] => response.map(transformBackendEventToFrontend),
       providesTags: ["Event"],
     }),
@@ -208,8 +203,7 @@ export const eventsApi = createApi({
       EventsResponse,
       { category: string; limit?: number }
     >({
-      query: ({ category, limit = 10 }) =>
-        `/Event/category/${category}?limit=${limit}`, // Updated to match your backend pattern
+      query: ({ category, limit = 10 }) => ({ url: `/Event/category/${category}`, params: { limit } }),
       transformResponse: (response: BackendEvent[] | { events: BackendEvent[]; total: number; page: number; limit: number }): EventsResponse => {
         if (Array.isArray(response)) {
           return {

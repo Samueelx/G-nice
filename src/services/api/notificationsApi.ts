@@ -1,5 +1,5 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { RootState } from '@/store/store';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { axiosBaseQuery } from '@/api/axiosBaseQuery';
 
 export interface Notification {
   id: string;
@@ -38,16 +38,8 @@ export interface NotificationFilters {
 
 export const notificationsApi = createApi({
   reducerPath: 'notificationsApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:8080/api/v1/notifications',
-    prepareHeaders: (headers, { getState }) => {
-      // Add auth token if you have one in your state
-      const token = (getState() as RootState).auth.accessToken;
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
+  baseQuery: axiosBaseQuery({
+    baseUrl: '/notifications',
   }),
   tagTypes: ['Notification'],
   // Global configuration to keep polling even on errors
@@ -57,14 +49,16 @@ export const notificationsApi = createApi({
     // Get notifications with pagination and filters
     getNotifications: builder.query<NotificationsResponse, NotificationFilters>({
       query: (filters = {}) => {
-        const params = new URLSearchParams();
-        if (filters.type && filters.type !== 'all') params.append('type', filters.type);
-        if (filters.isRead !== undefined) params.append('isRead', String(filters.isRead));
-        // Use standard pagination params
-        if (filters.limit) params.append('page_size', String(filters.limit));
-        if (filters.cursor) params.append('page', filters.cursor); // Assuming cursor is used as page
+        const params: Record<string, string> = {};
+        if (filters.type && filters.type !== 'all') params['type'] = filters.type;
+        if (filters.isRead !== undefined) params['isRead'] = String(filters.isRead);
+        if (filters.limit) params['page_size'] = String(filters.limit);
+        if (filters.cursor) params['page'] = filters.cursor;
 
-        return `?${params.toString()}`;
+        return {
+          url: '',
+          params,
+        };
       },
       transformResponse: (response: any): NotificationsResponse => {
         const data = response.data ?? response;
@@ -80,7 +74,7 @@ export const notificationsApi = createApi({
 
     // Get unread count only (for badge)
     getUnreadCount: builder.query<{ count: number }, void>({
-      query: () => '/unread-count',
+      query: () => ({ url: '/unread-count' }),
       transformResponse: (response: any) => response.data ?? response,
       providesTags: ['Notification'],
     }),
@@ -156,7 +150,7 @@ export const notificationsApi = createApi({
       query: ({ notificationId, action }) => ({
         url: `/${notificationId}/access-response`,
         method: 'POST',
-        body: { action },
+        data: { action },
       }),
       invalidatesTags: ['Notification'],
     }),
