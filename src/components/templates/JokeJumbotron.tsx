@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Share, ThumbsUp, MessageCircle, ExternalLink } from 'lucide-react';
 import CommentSection from './CommentSection';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
@@ -118,12 +118,9 @@ const JokeJumbotron: React.FC = () => {
         {/* ── Header: label + date ── */}
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <Badge
-              variant="outline"
-              className="text-purple-700 border-purple-300 bg-purple-50 font-semibold text-xs px-2 py-0.5"
-            >
+            <span className="inline-flex items-center rounded-full border border-purple-300 bg-purple-50 px-2 py-0.5 text-xs font-semibold text-purple-700">
               🎉 Joke of the Day
-            </Badge>
+            </span>
             <span className="text-xs text-gray-400">
               {new Date(joke.date).toLocaleDateString(undefined, {
                 weekday: 'short',
