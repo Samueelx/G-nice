@@ -94,25 +94,26 @@ const JokeJumbotron: React.FC = () => {
     );
   }
 
-  // ── Error state (still shows dummy joke, with a retry option) ─────────────
-  if (error) {
-    return (
-      <Card className="w-full max-w-xl bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg">
-        <CardContent className="py-8">
-          <p className="text-center text-gray-600">
-            {error || 'Could not load joke of the day. Please try again later.'}
-          </p>
-          <div className="flex justify-center mt-4">
-            <Button onClick={() => dispatch(fetchJokeOfTheDay())}>Retry</Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // ── Error state (non-blocking banner — dummy joke still renders below) ──────
+  const showError = error && !currentJoke;
 
   // ── Main card ─────────────────────────────────────────────────────────────
   return (
     <>
+      {/* Non-blocking error banner — shows only when API failed and no real joke is available */}
+      {showError && (
+        <div className="w-full max-w-xl mb-2 flex items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+          <span>{error}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs text-red-600 hover:text-red-800"
+            onClick={() => dispatch(fetchJokeOfTheDay())}
+          >
+            Retry
+          </Button>
+        </div>
+      )}
       <Card className="w-full max-w-xl bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg hover:shadow-xl transition-shadow duration-300">
 
         {/* ── Header: label + date ── */}

@@ -51,6 +51,30 @@ const initialState: JokeState = {
 
 // ─── Async thunks ─────────────────────────────────────────────────────────────
 
+/** Map a raw API joke object to the frontend Joke shape. */
+function mapApiJoke(raw: any): Joke {
+  // The API returns sponsor as flat fields on the joke object,
+  // not as a nested { name, logo_url, website_url } object.
+  const sponsor: Joke['sponsor'] = raw.sponsor_name
+    ? {
+        name: raw.sponsor_name,
+        logo_url: raw.sponsor_logo_url ?? null,
+        website_url: raw.sponsor_website_url ?? null,
+      }
+    : (raw.sponsor ?? null);          // fall back to nested shape if present
+
+  return {
+    id: String(raw.id),
+    joke: raw.content ?? raw.joke ?? '',
+    sponsor,
+    date: raw.active_date ?? raw.date ?? new Date().toISOString(),
+    likes: raw.likes_count ?? raw.likes ?? 0,
+    // API returns comments_count (number), not a comments array.
+    // The full list is fetched separately via fetchJokeComments.
+    comments: Array.isArray(raw.comments) ? raw.comments : [],
+  };
+}
+
 /** Fetch today's Joke of the Day */
 export const fetchJokeOfTheDay = createAsyncThunk<Joke, void, { rejectValue: string }>(
   'jokes/fetchJokeOfTheDay',
@@ -58,7 +82,10 @@ export const fetchJokeOfTheDay = createAsyncThunk<Joke, void, { rejectValue: str
     try {
       const response = await instance.get('/jokes/today');
       // Unwrap standard API envelope: { success, data: Joke }
-      return response.data?.data ?? response.data;
+      const raw = response.data?.data ?? response.data;
+      // If the backend returns null (no joke today), reject gracefully
+      if (!raw) return rejectWithValue('No joke scheduled for today');
+      return mapApiJoke(raw);
     } catch (error) {
       if (axios.isAxiosError(error)) {
         return rejectWithValue(
@@ -72,6 +99,29 @@ export const fetchJokeOfTheDay = createAsyncThunk<Joke, void, { rejectValue: str
   }
 );
 
+/** Map a raw API comment object to the frontend Comment shape. */
+function mapApiComment(raw: any): Comment {
+  return {
+    commentId: String(raw.id ?? raw.commentId),
+    user: {
+      userId: String(raw.author?.id ?? raw.user?.userId ?? ''),
+      userName: raw.author?.display_name ?? raw.author?.username ?? raw.user?.userName ?? 'Unknown',
+      avatar:
+        raw.author?.avatar_url ??
+        raw.user?.avatar ??
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          raw.author?.display_name ?? raw.author?.username ?? 'U'
+        )}&background=9333ea&color=fff&bold=true`,
+    },
+    content: raw.content ?? '',
+    likes: raw.likes_count ?? raw.likes ?? 0,
+    replies: raw.replies_count ?? raw.replies ?? 0,
+    timestamp: raw.created_at
+      ? new Date(raw.created_at).toLocaleString()
+      : raw.timestamp ?? '',
+  };
+}
+
 /** Fetch comments for a specific joke (paginated list) */
 export const fetchJokeComments = createAsyncThunk<
   { jokeId: string; comments: Comment[] },
@@ -84,11 +134,14 @@ export const fetchJokeComments = createAsyncThunk<
       const response = await instance.get(`/jokes/${jokeId}/comments`);
       // Unwrap standard paginated envelope: { success, data: { items: [...] } }
       const envelope = response.data;
-      const comments: Comment[] =
+      const rawComments: any[] =
         envelope.data?.items ??
         envelope.data?.data ??
         envelope.data ??
         envelope;
+      const comments = Array.isArray(rawComments)
+        ? rawComments.map(mapApiComment)
+        : [];
       return { jokeId, comments };
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -114,7 +167,8 @@ export const addJokeComment = createAsyncThunk<
   async ({ jokeId, content }, { rejectWithValue }) => {
     try {
       const response = await instance.post(`/jokes/${jokeId}/comments`, { content });
-      const comment: Comment = response.data?.data ?? response.data;
+      const raw = response.data?.data ?? response.data;
+      const comment: Comment = mapApiComment(raw);
       return { jokeId, comment };
     } catch (error) {
       if (axios.isAxiosError(error)) {
