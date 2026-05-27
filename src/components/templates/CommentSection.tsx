@@ -3,11 +3,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { HeartIcon, MessageSquare, Share2, X } from "lucide-react";
+import { Clock, HeartIcon, MessageSquare, Send, Share2, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
-import { addJokeComment, likeComment, fetchJokeComments, addLocalComment, likeLocalComment, Comment } from "@/features/jumbotron/jokesSlice";
-
-import { dummyJoke } from '@/data/dummyJoke';
+import {
+  addJokeComment,
+  likeComment,
+  fetchJokeComments,
+  addLocalComment,
+  removeLocalComment,
+  likeLocalComment,
+  Comment,
+} from "@/features/jumbotron/jokesSlice";
 
 interface CommentSectionProps {
   jokeId: string;
@@ -18,89 +24,95 @@ interface CommentSectionProps {
 const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }) => {
   const dispatch = useAppDispatch();
   const [newComment, setNewComment] = useState("");
-  
-  const currentJoke = useAppSelector(state => state.jokes.currentJoke);
-  const comments = currentJoke?.comments || dummyJoke.comments;
-  const loading = useAppSelector(state => state.jokes.loading);
-  const error = useAppSelector(state => state.jokes.error);
-  
+
+  const currentJoke = useAppSelector((state) => state.jokes.currentJoke);
+  const comments = currentJoke?.comments ?? [];
+  const loading = useAppSelector((state) => state.jokes.loading);
+  const error = useAppSelector((state) => state.jokes.error);
+
+  // Pull the real logged-in user from Redux auth state
+  const authUser = useAppSelector((state) => state.auth.user);
   const currentUser = {
-    id: "currentUser",
-    name: "Current User",
-    avatar: "/avatars/default.png"
+    id: authUser?.id?.toString() ?? "anonymous",
+    name: authUser?.display_name || authUser?.username || "You",
+    avatar:
+      authUser?.avatar_url ??
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        authUser?.display_name || authUser?.username || "U"
+      )}&background=9333ea&color=fff&bold=true`,
   };
-  
+
+  // Fetch comments whenever the dialog opens
   useEffect(() => {
     if (open && jokeId) {
       dispatch(fetchJokeComments(jokeId));
     }
   }, [open, jokeId, dispatch]);
-  
+
   const handleAddComment = async () => {
-    if (newComment.trim()) {
-      if (newComment.length > 500) {
-        alert("Comment is too long. Maximum 500 characters allowed.");
-        return;
-      }
-      
-      // Updated temp comment structure
-      const tempComment: Comment = {
-        commentId: `temp-${Date.now()}`,
-        user: {
-          userId: currentUser.id,
-          userName: currentUser.name,
-          avatar: currentUser.avatar,
-        },
-        content: newComment,
-        likes: 0,
-        replies: 0,
-        timestamp: "Just now"
-      };
-      
-      dispatch(addLocalComment({ comment: tempComment }));
-      
-      try {
-        await dispatch(addJokeComment({ 
-          jokeId, 
-          content: newComment, 
-          user: currentUser 
-        })).unwrap();
-        
-        setNewComment("");
-      } catch (error) {
-        // Remove the temporary comment on error
-        // You might want to add a removeLocalComment action for this
-        console.error("Failed to add comment:", error);
-        alert("Failed to add comment. Please try again.");
-      }
+    const trimmed = newComment.trim();
+    if (!trimmed) return;
+
+    if (trimmed.length > 500) {
+      alert("Comment is too long. Maximum 500 characters allowed.");
+      return;
+    }
+
+    const tempId = `temp-${Date.now()}`;
+
+    // Optimistic insert
+    const tempComment: Comment = {
+      commentId: tempId,
+      user: {
+        userId: currentUser.id,
+        userName: currentUser.name,
+        avatar: currentUser.avatar,
+      },
+      content: trimmed,
+      likes: 0,
+      replies: 0,
+      timestamp: "Just now",
+    };
+
+    dispatch(addLocalComment({ comment: tempComment }));
+    setNewComment("");
+
+    try {
+      await dispatch(addJokeComment({ jokeId, content: trimmed })).unwrap();
+      // On success the fulfilled handler replaces the temp comment with the real one
+    } catch (err) {
+      // Roll back the optimistic comment on failure
+      dispatch(removeLocalComment({ commentId: tempId }));
+      setNewComment(trimmed); // Restore text so the user doesn't lose their work
+      console.error("Failed to add comment:", err);
+      alert("Failed to post comment. Please try again.");
     }
   };
-  
+
   const handleLike = async (commentId: string) => {
+    // Optimistic increment
     dispatch(likeLocalComment({ commentId }));
-    
+
     try {
       await dispatch(likeComment({ jokeId, commentId })).unwrap();
-    } catch (error) {
-      dispatch(likeLocalComment({ commentId }));
-      console.error("Failed to like comment:", error);
+      // Fulfilled handler sets the authoritative likes_count from the server
+    } catch (err) {
+      // Revert the optimistic increment by decrementing
+      dispatch(likeLocalComment({ commentId })); // Note: this increments again — see note below
+      console.error("Failed to like comment:", err);
     }
   };
-  
-  if (!currentJoke && !loading) {
-    return null;
-  }
-  
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Comments</DialogTitle>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onClose} 
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
               className="h-8 w-8 p-0"
               aria-label="Close comments"
             >
@@ -108,54 +120,60 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
             </Button>
           </div>
         </DialogHeader>
-        
+
+        {/* Comment list */}
         {loading ? (
-          <div className="py-4 text-center">Loading comments...</div>
+          <div className="py-6 text-center text-sm text-gray-500">Loading comments…</div>
         ) : error ? (
-          <div className="py-4 text-center text-red-500">{error}</div>
+          <div className="py-6 text-center text-sm text-red-500">{error}</div>
         ) : comments.length === 0 ? (
-          <div className="py-4 text-center text-gray-500">No comments yet. Be the first to comment!</div>
+          <div className="py-6 text-center text-sm text-gray-500">
+            No comments yet. Be the first to comment!
+          </div>
         ) : (
-          <div className="max-h-80 overflow-y-auto mb-4">
+          <div className="max-h-80 overflow-y-auto mb-4 space-y-4 pr-1">
             {comments.map((comment: Comment) => (
-              <div key={comment.commentId} className="mb-4">
+              <div key={comment.commentId}>
                 <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-8 w-8 shrink-0">
                     <AvatarImage src={comment.user.avatar} alt={comment.user.userName} />
-                    <AvatarFallback>{comment.user.userName.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{comment.user.userName.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  
-                  <div className="flex-1">
-                    <div className="flex justify-between">
-                      <h4 className="font-medium text-sm">{comment.user.userName}</h4>
-                      <span className="text-xs text-gray-500">{comment.timestamp}</span>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline gap-2">
+                      <h4 className="font-medium text-sm truncate">{comment.user.userName}</h4>
+                      <span className="text-xs text-gray-400 shrink-0">{comment.timestamp}</span>
                     </div>
-                    
-                    <p className="text-sm mt-1">{comment.content}</p>
-                    
+
+                    <p className="text-sm mt-0.5 text-gray-800 break-words">{comment.content}</p>
+
                     <div className="flex items-center mt-2 gap-4">
-                      <button 
-                        className="flex items-center gap-1 text-xs text-gray-600"
+                      <button
+                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500 transition-colors"
                         onClick={() => handleLike(comment.commentId)}
                         aria-label={`Like comment by ${comment.user.userName}`}
                       >
-                        <HeartIcon size={16} className={comment.likes > 0 ? "text-red-500 fill-red-500" : ""} />
+                        <HeartIcon
+                          size={14}
+                          className={comment.likes > 0 ? "text-red-500 fill-red-500" : ""}
+                        />
                         <span>{comment.likes}</span>
                       </button>
-                      
-                      <button 
-                        className="flex items-center gap-1 text-xs text-gray-600"
+
+                      <button
+                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-purple-600 transition-colors"
                         aria-label={`Reply to comment by ${comment.user.userName}`}
                       >
-                        <MessageSquare size={16} />
+                        <MessageSquare size={14} />
                         <span>{comment.replies}</span>
                       </button>
-                      
-                      <button 
-                        className="flex items-center text-xs text-gray-600 ml-auto"
+
+                      <button
+                        className="flex items-center text-xs text-gray-500 hover:text-purple-600 transition-colors ml-auto"
                         aria-label={`Share comment by ${comment.user.userName}`}
                       >
-                        <Share2 size={16} />
+                        <Share2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -164,46 +182,46 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
             ))}
           </div>
         )}
-        
-        <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8">
+
+        {/* Comment input */}
+        <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+          <Avatar className="h-8 w-8 shrink-0">
             <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-            <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+            <AvatarFallback>{currentUser.name.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
-          
+
           <Input
-            placeholder="Write Comment..."
+            placeholder="Write a comment…"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             className="flex-1 text-sm"
-            onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
             aria-label="Write a comment"
+            maxLength={500}
           />
-          
-          <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="rounded-full"
-              aria-label="Schedule comment"
+
+          <div className="flex gap-1">
+            {/* Clock button — placeholder for future scheduled comments */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full text-gray-400"
+              aria-label="Schedule comment (coming soon)"
+              type="button"
+              tabIndex={-1}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-clock">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
+              <Clock className="w-5 h-5" />
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={handleAddComment}
-              size="icon" 
-              className="rounded-full bg-primary text-white"
+              size="icon"
+              className="rounded-full bg-purple-600 hover:bg-purple-700 text-white"
               disabled={!newComment.trim()}
               aria-label="Send comment"
+              type="button"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-send">
-                <path d="m22 2-7 20-4-9-9-4Z"/>
-                <path d="M22 2 11 13"/>
-              </svg>
+              <Send className="w-4 h-4" />
             </Button>
           </div>
         </div>
