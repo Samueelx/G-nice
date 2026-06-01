@@ -10,11 +10,17 @@ COPY package*.json ./
 # Install all dependencies (including devDependencies needed for build)
 RUN npm ci
 
+# Accept build arguments
+ARG VITE_API_URL
+
+# Set as environment variable for the build process
+ENV VITE_API_URL=$VITE_API_URL
+
 # Copy source code
 COPY . .
 
-# Build the application (skip TypeScript check, let Vite handle it)
-RUN npx vite build
+# Build the application (runs tsc and vite build)
+RUN npm run build
 
 # Production stage
 FROM nginx:alpine

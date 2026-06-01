@@ -5,12 +5,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-https://api.g-nice.com/api}
     container_name: g-nice-frontend
     ports:
       - "4000:80"
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=https://your-api-domain.com/api
     restart: unless-stopped
     
     # Optional: Add volume for development
