@@ -37,6 +37,7 @@ interface JokeState {
   currentJoke: Joke | null;
   jokeHistory: Joke[];
   loading: boolean;
+  commentsLoading: boolean;
   error: string | null;
 }
 
@@ -46,6 +47,7 @@ const initialState: JokeState = {
   currentJoke: null,
   jokeHistory: [],
   loading: false,
+  commentsLoading: false,
   error: null,
 };
 
@@ -313,11 +315,11 @@ const jokeSlice = createSlice({
 
       // ── fetchJokeComments ──
       .addCase(fetchJokeComments.pending, (state) => {
-        state.loading = true;
+        state.commentsLoading = true;
         state.error = null;
       })
       .addCase(fetchJokeComments.fulfilled, (state, action) => {
-        state.loading = false;
+        state.commentsLoading = false;
         const { jokeId, comments } = action.payload;
 
         if (state.currentJoke && state.currentJoke.id === jokeId) {
@@ -329,7 +331,7 @@ const jokeSlice = createSlice({
         }
       })
       .addCase(fetchJokeComments.rejected, (state, action) => {
-        state.loading = false;
+        state.commentsLoading = false;
         state.error = action.payload as string;
       })
 

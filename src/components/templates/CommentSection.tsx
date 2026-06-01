@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Clock, HeartIcon, MessageSquare, Send, Share2, X } from "lucide-react";
+import { Clock, HeartIcon, MessageSquare, Send, Share2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import {
   addJokeComment,
@@ -27,7 +27,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
 
   const currentJoke = useAppSelector((state) => state.jokes.currentJoke);
   const comments = currentJoke?.comments ?? [];
-  const loading = useAppSelector((state) => state.jokes.loading);
+  const loading = useAppSelector((state) => state.jokes.commentsLoading);
   const error = useAppSelector((state) => state.jokes.error);
 
   // Pull the real logged-in user from Redux auth state
@@ -107,18 +107,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>Comments</DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8 p-0"
-              aria-label="Close comments"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle>Comments</DialogTitle>
         </DialogHeader>
 
         {/* Comment list */}
