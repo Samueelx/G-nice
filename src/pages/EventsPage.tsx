@@ -225,8 +225,8 @@ const EventsPage = () => {
           {eventsError && (
             <ErrorMessage 
               message={
-                'status' in eventsErrorDetails! 
-                  ? `Error ${eventsErrorDetails.status}: Failed to load events`
+                eventsErrorDetails && typeof eventsErrorDetails === 'object' && 'status' in eventsErrorDetails 
+                  ? `Error ${(eventsErrorDetails as any).status}: Failed to load events`
                   : 'Network error: Please check your connection'
               } 
             />

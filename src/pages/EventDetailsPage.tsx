@@ -34,8 +34,8 @@ const EventDetailsPage: React.FC = () => {
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Event Not Found</h2>
             <p className="text-gray-600 mb-4">
-              {error && 'status' in error 
-                ? `Error ${error.status}: Unable to load event details`
+              {error && typeof error === 'object' && 'status' in error 
+                ? `Error ${(error as any).status}: Unable to load event details`
                 : 'Something went wrong while loading the event.'}
             </p>
           </div>

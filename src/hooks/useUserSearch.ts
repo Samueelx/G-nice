@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import axiosInstance from '@/api/axiosConfig';
 import { SearchUser } from '@/types/search';
 import { debounce } from 'lodash';
