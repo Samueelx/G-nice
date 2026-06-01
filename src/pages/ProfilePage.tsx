@@ -14,6 +14,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate, useParams } from "react-router-dom";
 import { useProfileData } from "../hooks/useProfileData";
 import AdvancedProfileSkeleton from "@/components/templates/AdvancedProfileSkeleton";
+import { formatTimeAgo } from "@/lib/utils";
 
 type ProfilePageProps = {
   isOwnProfile?: boolean;
@@ -28,7 +29,7 @@ const ProfilePage = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { userId } = useParams<{ userId: string }>();
+  const { username } = useParams<{ username: string }>();
 
   const {
     profile,
@@ -36,7 +37,7 @@ const ProfilePage = ({
     loading,
     error,
     clearErrorMessage,
-  } = useProfileData(userId);
+  } = useProfileData(username);
 
   useEffect(() => {
     if (error) {
@@ -132,7 +133,7 @@ const ProfilePage = ({
                           {profile.handle}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {post.timestamp}
+                          {formatTimeAgo(post.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -143,18 +144,13 @@ const ProfilePage = ({
 
                   <p className="text-gray-900">{post.content}</p>
 
-                  <div className="flex justify-between items-center text-sm text-gray-500">
-                    <div className="flex items-center gap-4">
-                      <button className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors">
-                        ↑ {post.likes}
-                      </button>
-                      <button className="flex items-center gap-1 hover:text-gray-700 transition-colors">
-                        💬 {post.comments}
-                      </button>
-                    </div>
-                    <p className="flex items-center gap-1">
-                      👁 {Math.round(post.likes * 1.5)} views
-                    </p>
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <button className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors">
+                      ↑ {post.likes}
+                    </button>
+                    <button className="flex items-center gap-1 hover:text-gray-700 transition-colors">
+                      💬 {post.comments}
+                    </button>
                   </div>
                 </div>
               ))

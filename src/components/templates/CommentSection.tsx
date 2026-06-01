@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
+import { MentionInput } from "@/components/common/MentionInput";
+import { RenderWithMentions } from "@/components/common/RenderWithMentions";
 import { Clock, HeartIcon, MessageSquare, Send, Share2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import {
@@ -135,7 +136,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
                       <span className="text-xs text-gray-400 shrink-0">{comment.timestamp}</span>
                     </div>
 
-                    <p className="text-sm mt-0.5 text-gray-800 break-words">{comment.content}</p>
+                    <p className="text-sm mt-0.5 text-gray-800 break-words">
+                      <RenderWithMentions text={comment.content} />
+                    </p>
 
                     <div className="flex items-center mt-2 gap-4">
                       <button
@@ -179,15 +182,16 @@ const CommentSection: React.FC<CommentSectionProps> = ({ jokeId, open, onClose }
             <AvatarFallback>{currentUser.name.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
 
-          <Input
-            placeholder="Write a comment…"
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            className="flex-1 text-sm"
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
-            aria-label="Write a comment"
-            maxLength={500}
-          />
+          <div className="flex-1">
+            <MentionInput
+              placeholder="Write a comment…"
+              value={newComment}
+              onChange={(value) => setNewComment(value)}
+              className="w-full text-sm"
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
+              maxLength={500}
+            />
+          </div>
 
           <div className="flex gap-1">
             {/* Clock button — placeholder for future scheduled comments */}

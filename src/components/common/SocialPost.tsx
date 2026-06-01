@@ -17,6 +17,8 @@ import {
 import { useAppDispatch } from "@/hooks/hooks";
 import { fetchUserByUsername } from "@/features/profile/profileSlice";
 import { toggleLike } from "@/features/posts/postsSlice";
+import { RenderWithMentions } from "@/components/common/RenderWithMentions";
+import { formatTimeAgo } from "@/lib/utils";
 
 type PostImage = {
   url: string;
@@ -152,7 +154,7 @@ const SocialPost = ({
               <h3 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
                 {author.name}
               </h3>
-              <p className="text-sm text-purple-600">{timestamp}</p>
+              <p className="text-sm text-purple-600">{formatTimeAgo(timestamp)}</p>
             </div>
           </div>
           <Button
@@ -173,7 +175,7 @@ const SocialPost = ({
         {/* Content section */}
         <div className="mb-4">
           <p className="text-gray-800 text-base whitespace-pre-line">
-            {content}
+            <RenderWithMentions text={content} />
             {taggedUsers.length > 0 && (
               <span className="text-purple-500 font-medium">
                 {taggedUsers.map((user, index) => (

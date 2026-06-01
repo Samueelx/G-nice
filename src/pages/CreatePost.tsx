@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { MentionTextarea } from '@/components/common/MentionInput';
 import { Image, Link, X } from 'lucide-react';
 import { createPost } from '@/features/posts/postsSlice';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
@@ -81,10 +81,10 @@ const CreatePost = () => {
     <Card className="max-w-2xl mx-auto">
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4 pt-6">
-          <Textarea
+          <MentionTextarea
             placeholder="What's on your mind?"
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(value) => setContent(value)}
             className="min-h-[150px]"
             maxLength={500}
           />

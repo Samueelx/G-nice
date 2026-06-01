@@ -3,7 +3,7 @@ import { axiosBaseQuery } from '@/api/axiosBaseQuery';
 
 export interface Notification {
   id: string;
-  type: 'all' | 'mentions' | 'comments' | 'files' | 'access'; // Updated to match slice types
+  type: 'all' | 'mentions' | 'comments' | 'files' | 'access' | 'mention'; // Updated to match slice types
   userId: string;
   user: {
     name: string;
@@ -20,6 +20,9 @@ export interface Notification {
   createdAt: string;
   isRead: boolean;
   relatedEntityId?: string; // ID of post, comment, etc.
+  actor?: { username: string };
+  target_id?: number | string;
+  target_type?: string;
 }
 
 export interface NotificationsResponse {

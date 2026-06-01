@@ -69,9 +69,12 @@ const MobileNotifications = () => {
         }
         break;
       case 'mentions':
+      case 'mention':
         // Navigate to the post where user was mentioned
-        if (notification.relatedEntityId) {
-          navigate(`/posts/${notification.relatedEntityId}`);
+        if (notification.target_type === 'joke_comment') {
+          navigate('/feeds');
+        } else if (notification.relatedEntityId || notification.target_id) {
+          navigate(`/posts/${notification.relatedEntityId || notification.target_id}`);
         }
         break;
       default:
@@ -103,19 +106,25 @@ const MobileNotifications = () => {
           )}
           
           <img
-            src={notification.user.avatar}
+            src={notification.user?.avatar || `https://ui-avatars.com/api/?name=${notification.actor?.username || 'U'}&background=random`}
             alt=""
             className="w-8 h-8 rounded-full flex-shrink-0"
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm">
-              <span className="font-semibold">{notification.user.name}</span>{' '}
-              <span className="text-gray-600">{notification.action}</span>{' '}
-              <span className="font-medium">
-                <span className='truncate inline'>{notification.target}</span>
-              </span>
-              {notification.campaign && (
-                <span className="text-gray-600"> for {notification.campaign}</span>
+              <span className="font-semibold">{notification.actor?.username || notification.user?.name}</span>{' '}
+              {(notification.type === 'mention' || notification.type === 'mentions') ? (
+                <span className="text-gray-600">mentioned you in a {(notification.target_type || 'post').replace('_', ' ')}</span>
+              ) : (
+                <>
+                  <span className="text-gray-600">{notification.action}</span>{' '}
+                  <span className="font-medium">
+                    <span className='truncate inline'>{notification.target}</span>
+                  </span>
+                  {notification.campaign && (
+                    <span className="text-gray-600"> for {notification.campaign}</span>
+                  )}
+                </>
               )}
             </p>
             

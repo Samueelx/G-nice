@@ -17,6 +17,9 @@ import {
   toggleLike,
   Comment,
 } from "@/features/posts/postsSlice";
+import { formatTimeAgo } from "@/lib/utils";
+import { MentionTextarea } from "@/components/common/MentionInput";
+import { RenderWithMentions } from "@/components/common/RenderWithMentions";
 
 const PostDetailPage: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -74,18 +77,7 @@ const PostDetailPage: React.FC = () => {
     }
   };
 
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
 
-    if (diffInHours < 1) return "Just now";
-    if (diffInHours < 24)
-      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
-  };
 
   if (error) {
     return (
@@ -191,16 +183,19 @@ const PostDetailPage: React.FC = () => {
                 {/* Post Header */}
                 <div className="p-4 border-b border-purple-50">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
+                    <div 
+                      className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 -m-2 rounded-lg transition-colors group"
+                      onClick={() => navigate(`/profile/${selectedPost.username}`)}
+                    >
                       <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-purple-200">
                         <img
                           className="w-full h-full object-cover"
-                          src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+                          src={selectedPost.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedPost.displayName)}&background=random`}
                           alt="User Avatar"
                         />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
                           {selectedPost.displayName}
                         </h3>
                         <p className="text-sm text-gray-500">
@@ -216,7 +211,9 @@ const PostDetailPage: React.FC = () => {
 
                 {/* Post Content */}
                 <div className="p-4">
-                  <p className="text-gray-800 mb-4">{selectedPost.content}</p>
+                  <p className="text-gray-800 mb-4 whitespace-pre-line">
+                    <RenderWithMentions text={selectedPost.content} />
+                  </p>
                   {selectedPost.mediaUrl && (
                     <div className="rounded-lg overflow-hidden mb-4">
                       <img
@@ -234,16 +231,14 @@ const PostDetailPage: React.FC = () => {
                     <button
                       onClick={handleToggleLike}
                       disabled={isTogglingLike}
-                      className={`flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                        selectedPost.isLiked
+                      className={`flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${selectedPost.isLiked
                           ? "text-red-500"
                           : "text-gray-600 hover:text-red-500"
-                      }`}
+                        }`}
                     >
                       <Heart
-                        className={`w-5 h-5 transition-all ${
-                          selectedPost.isLiked ? "fill-current" : ""
-                        }`}
+                        className={`w-5 h-5 transition-all ${selectedPost.isLiked ? "fill-current" : ""
+                          }`}
                       />
                       <span className="text-sm font-medium">
                         {selectedPost.likes}
@@ -279,9 +274,9 @@ const PostDetailPage: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1 relative">
-                      <textarea
+                      <MentionTextarea
                         value={commentBody}
-                        onChange={(e) => setCommentBody(e.target.value)}
+                        onChange={(value) => setCommentBody(value)}
                         placeholder="Write a comment..."
                         className="w-full px-4 py-3 border border-purple-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         rows={3}
@@ -322,7 +317,10 @@ const PostDetailPage: React.FC = () => {
                         className="p-4 hover:bg-purple-25 transition-colors"
                       >
                         <div className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-200 flex-shrink-0">
+                          <div 
+                            className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-200 flex-shrink-0 cursor-pointer"
+                            onClick={() => navigate(`/profile/${comment.author.username}`)}
+                          >
                             <img
                               className="w-full h-full object-cover"
                               src={
@@ -334,15 +332,18 @@ const PostDetailPage: React.FC = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-semibold text-gray-900 text-sm">
+                              <h4 
+                                className="font-semibold text-gray-900 text-sm cursor-pointer hover:text-purple-600 hover:underline"
+                                onClick={() => navigate(`/profile/${comment.author.username}`)}
+                              >
                                 {comment.author.displayName}
                               </h4>
                               <span className="text-xs text-gray-500">
                                 {formatTimeAgo(comment.createdAt)}
                               </span>
                             </div>
-                            <p className="text-gray-800 text-sm leading-relaxed">
-                              {comment.content}
+                            <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-line">
+                              <RenderWithMentions text={comment.content} />
                             </p>
                           </div>
                         </div>
