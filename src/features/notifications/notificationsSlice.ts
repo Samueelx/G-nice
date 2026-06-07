@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 // Updated to match the API types
-export type NotificationTab = 'all' | 'mentions' | 'comments' | 'files' | 'access';
+export type NotificationTab = 'all' | 'like_post' | 'like_comment' | 'comment' | 'reply' | 'follow' | 'mention';
 
 interface NotificationsState {
   activeTab: NotificationTab;

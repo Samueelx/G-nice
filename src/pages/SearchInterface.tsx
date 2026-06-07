@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Search, Users, Hash, Calendar, Loader2, MessageSquare, ThumbsUp } from 'lucide-react';
 import { AppDispatch, RootState } from '@/store/store';
@@ -11,6 +12,7 @@ import { debounce } from 'lodash';
 
 const SearchInterface: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { query, activeCategory, results, isLoading, error } = useSelector(
     (state: RootState) => state.search
   );
@@ -98,7 +100,7 @@ const SearchInterface: React.FC = () => {
                       <p className="text-sm text-gray-500">@{user.username}</p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">View Profile</Button>
+                  <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/profile/${user.username}`); }}>View Profile</Button>
                 </div>
               ))}
             </div>
@@ -111,7 +113,7 @@ const SearchInterface: React.FC = () => {
             <h2 className="text-sm font-medium text-gray-500 mb-2">Posts</h2>
             <div className="space-y-3">
               {results.posts.map((post: SearchPost) => (
-                <div key={post.id} className="flex flex-col gap-2 p-3 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-100">
+                <div key={post.id} className="flex flex-col gap-2 p-3 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-100" onClick={() => navigate(`/post/${post.id}`)}>
                   <div className="flex items-center gap-2">
                     <Avatar className="w-6 h-6">
                       <AvatarImage src={post.author?.avatar_url || undefined} />

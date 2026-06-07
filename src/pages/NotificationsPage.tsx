@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { 
   useGetNotificationsQuery,
   useMarkAsReadMutation,
-  useRespondToAccessRequestMutation,
   type Notification 
 } from '@/services/api/notificationsApi';
 import { setActiveTab, setLastSeenTimestamp } from '@/features/notifications/notificationsSlice';
@@ -43,7 +42,6 @@ const MobileNotifications = () => {
   }, [isLoading, isError, error, notificationsData]);
 
   const [markAsRead] = useMarkAsReadMutation();
-  const [respondToAccessRequest] = useRespondToAccessRequestMutation();
 
   // Update last seen timestamp when component mounts
   useEffect(() => {
@@ -52,122 +50,68 @@ const MobileNotifications = () => {
 
   const handleNotificationClick = async (notification: Notification) => {
     // Mark as read if not already read
-    if (!notification.isRead) {
+    if (!notification.is_read) {
       try {
-        await markAsRead(notification.id);
+        await markAsRead(notification.id.toString());
       } catch (error) {
         console.error('Failed to mark notification as read:', error);
       }
     }
 
     // Navigate based on notification type
-    switch (notification.type) {
-      case 'comments':
-        // Navigate to the post/comment
-        if (notification.relatedEntityId) {
-          navigate(`/posts/${notification.relatedEntityId}`);
-        }
-        break;
-      case 'mentions':
-      case 'mention':
-        // Navigate to the post where user was mentioned
-        if (notification.target_type === 'joke_comment') {
-          navigate('/feeds');
-        } else if (notification.relatedEntityId || notification.target_id) {
-          navigate(`/posts/${notification.relatedEntityId || notification.target_id}`);
-        }
-        break;
-      default:
-        // Default navigation or no navigation
-        break;
+    if (notification.target_type === 'Post' && notification.target_id) {
+      navigate(`/posts/${notification.target_id}`);
+    } else if (notification.type === 'follow' && notification.actor?.username) {
+      navigate(`/users/${notification.actor.username}`);
     }
   };
 
-  const handleAccessRequest = async (notificationId: string, action: 'approve' | 'deny') => {
-    try {
-      await respondToAccessRequest({ notificationId, action });
-    } catch (error) {
-      console.error(`Failed to ${action} access request:`, error);
+  const getActionText = (type: string) => {
+    switch (type) {
+      case 'like_post': return 'liked your post';
+      case 'like_comment': return 'liked your comment';
+      case 'comment': return 'commented on your post';
+      case 'reply': return 'replied to your comment';
+      case 'follow': return 'started following you';
+      case 'mention': return 'mentioned you';
+      default: return 'interacted with you';
     }
   };
 
-  const NotificationItem = ({ notification }: { notification: Notification }) => {
-    return (
-      <div 
-        className={`py-4 px-4 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${
-          !notification.isRead ? 'bg-blue-50' : ''
-        }`}
-        onClick={() => handleNotificationClick(notification)}
-      >
-        <div className="flex gap-3">
-          {/* Unread indicator */}
-          {!notification.isRead && (
-            <div className="w-2 h-2 bg-blue-500 rounded-full mt-3 flex-shrink-0" />
-          )}
+  const NotificationItem = ({ notification }: { notification: Notification }) => (
+    <div 
+      className={`py-4 px-4 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${
+        !notification.is_read ? 'bg-blue-50' : ''
+      }`}
+      onClick={() => handleNotificationClick(notification)}
+    >
+      <div className="flex gap-3">
+        {/* Unread indicator */}
+        {!notification.is_read && (
+          <div className="w-2 h-2 bg-blue-500 rounded-full mt-3 flex-shrink-0" />
+        )}
+        
+        <img
+          src={notification.actor?.avatar_url || `https://ui-avatars.com/api/?name=${notification.actor?.username || 'U'}&background=random`}
+          alt=""
+          className="w-8 h-8 rounded-full flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm">
+            <span className="font-semibold">{notification.actor?.display_name || notification.actor?.username || 'Someone'}</span>{' '}
+            <span className="text-gray-600">{getActionText(notification.type)}</span>
+          </p>
           
-          <img
-            src={notification.user?.avatar || `https://ui-avatars.com/api/?name=${notification.actor?.username || 'U'}&background=random`}
-            alt=""
-            className="w-8 h-8 rounded-full flex-shrink-0"
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm">
-              <span className="font-semibold">{notification.actor?.username || notification.user?.name}</span>{' '}
-              {(notification.type === 'mention' || notification.type === 'mentions') ? (
-                <span className="text-gray-600">mentioned you in a {(notification.target_type || 'post').replace('_', ' ')}</span>
-              ) : (
-                <>
-                  <span className="text-gray-600">{notification.action}</span>{' '}
-                  <span className="font-medium">
-                    <span className='truncate inline'>{notification.target}</span>
-                  </span>
-                  {notification.campaign && (
-                    <span className="text-gray-600"> for {notification.campaign}</span>
-                  )}
-                </>
-              )}
-            </p>
-            
-            {notification.fileDetails && (
-              <div className="mt-2 bg-gray-50 rounded-lg p-3 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-gray-500" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {notification.fileDetails.name}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {notification.fileDetails.size}
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-2 mt-1">
-              <Clock className="w-3 h-3 text-gray-400" />
-              <span className="text-xs text-gray-500">{notification.timeAgo}</span>
-            </div>
-
-            {notification.type === 'access' && (
-              <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
-                <button 
-                  className="px-3 py-1 text-xs bg-[#B43E8F] text-white rounded-md hover:bg-gray-800"
-                  onClick={() => handleAccessRequest(notification.id, 'approve')}
-                >
-                  Approve
-                </button>
-                <button 
-                  className="px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-50"
-                  onClick={() => handleAccessRequest(notification.id, 'deny')}
-                >
-                  Deny
-                </button>
-              </div>
-            )}
+          <div className="flex items-center gap-2 mt-1">
+            <Clock className="w-3 h-3 text-gray-400" />
+            <span className="text-xs text-gray-500">
+              {new Date(notification.created_at).toLocaleDateString()}
+            </span>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
   if (isError) {
     return (
@@ -204,11 +148,11 @@ const MobileNotifications = () => {
         
         <div className="flex px-4 gap-4 pb-2 justify-evenly">
           {[
-            { key: 'all', label: 'View All' },
-            { key: 'mentions', label: 'Mentions' },
-            { key: 'comments', label: 'Comments' },
-            { key: 'files', label: 'Files' },
-            { key: 'access', label: 'Access' }
+            { key: 'all', label: 'All' },
+            { key: 'mention', label: 'Mentions' },
+            { key: 'comment', label: 'Comments' },
+            { key: 'like_post', label: 'Likes' },
+            { key: 'follow', label: 'Follows' }
           ].map((tab) => (
             <button
               key={tab.key}

@@ -2,27 +2,21 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/api/axiosBaseQuery';
 
 export interface Notification {
-  id: string;
-  type: 'all' | 'mentions' | 'comments' | 'files' | 'access' | 'mention'; // Updated to match slice types
-  userId: string;
-  user: {
-    name: string;
-    avatar: string;
+  id: number;
+  type: 'like_post' | 'like_comment' | 'comment' | 'reply' | 'follow' | 'mention';
+  user_id: number;
+  actor_id: number;
+  actor?: {
+    id: number;
+    username: string;
+    display_name: string;
+    avatar_url: string;
   };
-  action: string;
-  target: string;
-  campaign?: string;
-  fileDetails?: {
-    name: string;
-    size: string;
-  };
-  timeAgo: string;
-  createdAt: string;
-  isRead: boolean;
-  relatedEntityId?: string; // ID of post, comment, etc.
-  actor?: { username: string };
-  target_id?: number | string;
+  target_id?: number;
   target_type?: string;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface NotificationsResponse {
@@ -33,7 +27,7 @@ export interface NotificationsResponse {
 }
 
 export interface NotificationFilters {
-  type?: 'all' | 'mentions' | 'comments' | 'files' | 'access'; // Updated to match slice types
+  type?: 'all' | 'like_post' | 'like_comment' | 'comment' | 'reply' | 'follow' | 'mention';
   isRead?: boolean;
   limit?: number;
   cursor?: string;
@@ -66,10 +60,10 @@ export const notificationsApi = createApi({
       transformResponse: (response: any): NotificationsResponse => {
         const data = response.data ?? response;
         return {
-          notifications: data.items || data.notifications || [],
-          unreadCount: 0, // Should be fetched via getUnreadCount
+          notifications: data.data || data.items || data.notifications || [],
+          unreadCount: data.total ?? 0,
           hasMore: data.has_next || data.hasMore || false,
-          nextCursor: data.page ? String(data.page + 1) : undefined
+          nextCursor: data.has_next && data.page ? String(data.page + 1) : undefined
         };
       },
       providesTags: ['Notification'],
@@ -78,7 +72,10 @@ export const notificationsApi = createApi({
     // Get unread count only (for badge)
     getUnreadCount: builder.query<{ count: number }, void>({
       query: () => ({ url: '/unread-count' }),
-      transformResponse: (response: any) => response.data ?? response,
+      transformResponse: (response: any) => {
+        const data = response.data ?? response;
+        return { count: data.unread_count ?? data.count ?? 0 };
+      },
       providesTags: ['Notification'],
     }),
 
@@ -93,9 +90,9 @@ export const notificationsApi = createApi({
       async onQueryStarted(notificationId, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
           notificationsApi.util.updateQueryData('getNotifications', {}, (draft) => {
-            const notification = draft.notifications.find(n => n.id === notificationId);
+            const notification = draft.notifications.find(n => n.id === Number(notificationId));
             if (notification) {
-              notification.isRead = true;
+              notification.is_read = true;
             }
             draft.unreadCount = Math.max(0, draft.unreadCount - 1);
           })
@@ -119,7 +116,7 @@ export const notificationsApi = createApi({
     // Mark all notifications as read
     markAllAsRead: builder.mutation<void, void>({
       query: () => ({
-        url: '/mark-all-read',
+        url: '/read-all',
         method: 'PATCH',
       }),
       invalidatesTags: ['Notification'],
@@ -127,7 +124,7 @@ export const notificationsApi = createApi({
         const patchResult = dispatch(
           notificationsApi.util.updateQueryData('getNotifications', {}, (draft) => {
             draft.notifications.forEach(notification => {
-              notification.isRead = true;
+              notification.is_read = true;
             });
             draft.unreadCount = 0;
           })
@@ -147,16 +144,6 @@ export const notificationsApi = createApi({
         }
       },
     }),
-
-    // Handle access request responses (approve/deny)
-    respondToAccessRequest: builder.mutation<void, { notificationId: string; action: 'approve' | 'deny' }>({
-      query: ({ notificationId, action }) => ({
-        url: `/${notificationId}/access-response`,
-        method: 'POST',
-        data: { action },
-      }),
-      invalidatesTags: ['Notification'],
-    }),
   }),
 });
 
@@ -165,5 +152,4 @@ export const {
   useGetUnreadCountQuery,
   useMarkAsReadMutation,
   useMarkAllAsReadMutation,
-  useRespondToAccessRequestMutation,
 } = notificationsApi;
