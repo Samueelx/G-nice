@@ -15,6 +15,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useProfileData } from "../hooks/useProfileData";
 import AdvancedProfileSkeleton from "@/components/templates/AdvancedProfileSkeleton";
 import { formatTimeAgo } from "@/lib/utils";
+import { FollowButton } from "@/components/specific/FollowButton";
 
 type ProfilePageProps = {
   isOwnProfile?: boolean;
@@ -38,6 +39,14 @@ const ProfilePage = ({
     error,
     clearErrorMessage,
   } = useProfileData(username);
+
+  const [followersCount, setFollowersCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (profile) {
+      setFollowersCount(profile.followers);
+    }
+  }, [profile]);
 
   useEffect(() => {
     if (error) {
@@ -99,6 +108,8 @@ const ProfilePage = ({
     setShowDropdown(false);
     if (onEditProfile) {
       onEditProfile();
+    } else {
+      navigate("/profile/edit");
     }
   };
 
@@ -192,12 +203,7 @@ const ProfilePage = ({
               </div>
             )}
             <div className="space-y-4">
-              {profile.location && (
-                <div className="flex items-center gap-3 text-gray-600">
-                  <MapPin className="w-5 h-5" />
-                  <span>{profile.location}</span>
-                </div>
-              )}
+
               {profile.occupation && (
                 <div className="flex items-center gap-3 text-gray-600">
                   <Briefcase className="w-5 h-5" />
@@ -211,7 +217,7 @@ const ProfilePage = ({
               <div className="flex items-center gap-3 text-gray-600">
                 <Users className="w-5 h-5" />
                 <span>
-                  <strong>{profile.followers}</strong> followers ·{" "}
+                  <strong>{followersCount}</strong> followers ·{" "}
                   <strong>{profile.following}</strong> following
                 </span>
               </div>
@@ -272,9 +278,12 @@ const ProfilePage = ({
             </h1>
             <p className="text-gray-600">{profile.handle}</p>
           </div>
-          {isOwnProfile && (
+          {isOwnProfile ? (
             <button
-              onClick={onEditProfile}
+              onClick={() => {
+                if (onEditProfile) onEditProfile();
+                else navigate("/profile/edit");
+              }}
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-full flex items-center gap-2 transition-colors"
             >
@@ -285,6 +294,12 @@ const ProfilePage = ({
               )}
               Edit Profile
             </button>
+          ) : (
+            <FollowButton
+              username={profile.username}
+              onFollowChange={(_isFollowing, newCount) => setFollowersCount(newCount)}
+              className="px-6 py-2 rounded-full"
+            />
           )}
         </div>
 
@@ -299,12 +314,14 @@ const ProfilePage = ({
                     : "text-gray-500 hover:text-gray-700"
                   }`}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                {tab === "posts" && posts.length > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {posts.length}
-                  </span>
-                )}
+                <span className="flex items-center gap-1.5">
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === "posts" && posts.length > 0 && (
+                    <span className="text-gray-500 text-xs font-normal">
+                      ({posts.length})
+                    </span>
+                  )}
+                </span>
               </button>
             ))}
           </div>

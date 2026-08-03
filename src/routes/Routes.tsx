@@ -1,5 +1,5 @@
-import React from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import React, { Suspense, lazy } from "react";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import PublicRoute from "./PublicRoute";
 import Homepage from "../pages/Homepage";
 import LoginPage from "../pages/LoginPage";
@@ -22,6 +22,11 @@ import PostDetailPage from "@/pages/PostDetailPage";
 import EditProfilePage from "@/pages/EditProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import ChangePasswordPage from "@/pages/ChangePasswordPage";
+import AdminRoute from "./AdminRoute";
+
+const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
+const AdminJokesPage = lazy(() => import("@/pages/admin/AdminJokesPage"));
+const AdminEventsPage = lazy(() => import("@/pages/admin/AdminEventsPage"));
 
 const router = createBrowserRouter([
     {
@@ -106,6 +111,30 @@ const router = createBrowserRouter([
     {
         path: '/settings/change-password',
         element: <PrivateRoute><ChangePasswordPage /></PrivateRoute>
+    },
+    {
+        path: '/admin',
+        element: (
+            <AdminRoute>
+                <Suspense fallback={<div className="flex h-screen items-center justify-center bg-gray-50 text-gray-500">Loading Admin Dashboard...</div>}>
+                    <AdminLayout />
+                </Suspense>
+            </AdminRoute>
+        ),
+        children: [
+            {
+                index: true,
+                element: <Navigate to="jokes" replace />
+            },
+            {
+                path: 'jokes',
+                element: <AdminJokesPage />
+            },
+            {
+                path: 'events',
+                element: <AdminEventsPage />
+            }
+        ]
     }
 ]);
 

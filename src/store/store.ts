@@ -10,6 +10,7 @@ import jokesReducer from "../features/jumbotron/jokesSlice";
 import notificationsReducer from "../features/notifications/notificationsSlice";
 import { notificationsApi } from "@/services/api/notificationsApi";
 import { eventsApi } from "@/services/api/eventsApi";
+import { usersApi } from "@/services/api/usersApi";
 
 
 // Remove the explicit Store type annotation - let TypeScript infer it
@@ -25,6 +26,7 @@ export const store = configureStore({
     notifications: notificationsReducer,
     [eventsApi.reducerPath]: eventsApi.reducer,
     [notificationsApi.reducerPath]: notificationsApi.reducer,
+    [usersApi.reducerPath]: usersApi.reducer,
   },
   // Add middleware to handle async actions and provide better dev experience
   middleware: (getDefaultMiddleware) =>
@@ -36,7 +38,8 @@ export const store = configureStore({
       // thunk: true is redundant - it's enabled by default in getDefaultMiddleware()
     }).concat(
       eventsApi.middleware,
-      notificationsApi.middleware
+      notificationsApi.middleware,
+      usersApi.middleware
     ),
   // Enable Redux DevTools in development
   devTools: process.env.NODE_ENV !== "production",

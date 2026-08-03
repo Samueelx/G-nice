@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, Check } from 'lucide-react';
-import { 
-  updateProfileWithFormData, 
+import {
+  updateProfileWithFormData,
   clearError,
   updateProfileOptimistic,
-  type EditProfileData 
+  fetchProfile,
+  type EditProfileData
 } from '@/features/profile/profileSlice';
 import { RootState } from '@/store/store';
 import { AppDispatch } from '@/store/store';
@@ -13,8 +15,9 @@ import { AppDispatch } from '@/store/store';
 
 const EditProfilePage = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { profile, updating, uploadingAvatar, error } = useSelector((state: RootState) => state.profile);
-  
+
   const [formData, setFormData] = useState<EditProfileData>({
     displayName: '',
     username: '',
@@ -29,6 +32,11 @@ const EditProfilePage = () => {
   const [profileImage, setProfileImage] = useState<string>('/api/placeholder/120/120');
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Fetch the current user's profile on mount to ensure we have the data
+  useEffect(() => {
+    dispatch(fetchProfile());
+  }, [dispatch]);
 
   // Update form data when profile loads from Redux
   useEffect(() => {
@@ -69,7 +77,7 @@ const EditProfilePage = () => {
         alert('Please select a valid image file');
         return;
       }
-      
+
       // Validate file size (e.g., max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert('File size must be less than 5MB');
@@ -77,7 +85,7 @@ const EditProfilePage = () => {
       }
 
       setSelectedAvatarFile(file);
-      
+
       // Preview the image
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -118,7 +126,7 @@ const EditProfilePage = () => {
       // Show success message
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
-      
+
       // Reset selected file after successful upload
       setSelectedAvatarFile(null);
 
@@ -129,9 +137,7 @@ const EditProfilePage = () => {
   };
 
   const handleGoBack = () => {
-    // Add navigation logic here - could use react-router
-    // window.history.back();
-    console.log('Navigate back to profile');
+    navigate('/profile');
   };
 
   const isLoading = updating || uploadingAvatar;
@@ -149,7 +155,7 @@ const EditProfilePage = () => {
       {error && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
           {error}
-          <button 
+          <button
             onClick={() => dispatch(clearError())}
             className="ml-4 text-white hover:text-gray-200"
           >
@@ -162,7 +168,7 @@ const EditProfilePage = () => {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={handleGoBack}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
@@ -226,11 +232,11 @@ const EditProfilePage = () => {
             <input
               type="text"
               value={formData.username}
-              onChange={(e) => handleInputChange('username', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-              placeholder="Enter your username"
-              disabled={isLoading}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+              disabled
+              readOnly
             />
+            <p className="text-xs text-gray-400 mt-1">Username cannot be changed.</p>
           </div>
 
           {/* Email */}
@@ -242,16 +248,16 @@ const EditProfilePage = () => {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className="w-full px-4 py-3 pr-20 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                placeholder="Enter your email"
-                disabled={isLoading}
+                className="w-full px-4 py-3 pr-20 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                disabled
+                readOnly
               />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded text-xs">
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded text-xs opacity-70">
                 <Check className="w-3 h-3 text-blue-600" />
                 <span className="text-blue-600 font-medium">VERIFIED</span>
               </div>
             </div>
+            <p className="text-xs text-gray-400 mt-1">Email address cannot be changed.</p>
           </div>
 
           {/* Phone Number */}

@@ -122,7 +122,7 @@ export const googleSignIn = createAsyncThunk<
   async (credential, { rejectWithValue }) => {
     try {
       const backendResponse = await fetch(
-        'http://localhost:8080/api/v1/SignIn/google-login',
+        'http://localhost:8080/api/v1/auth/google-login',
         {
           method: 'POST',
           headers: {
